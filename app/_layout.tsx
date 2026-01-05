@@ -1,24 +1,20 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { useEffect } from 'react';
+import { useStore } from '../store/useStore';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+export default function Layout() {
+    const loadTopics = useStore((state) => state.loadTopics);
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+    useEffect(() => {
+        loadTopics();
+    }, []);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+    return (
+        <Stack>
+            <Stack.Screen name="index" options={{ title: 'KnowIt - Topics' }} />
+            <Stack.Screen name="[topicId]/index" options={{ title: 'Historique' }} />
+            <Stack.Screen name="[topicId]/session" options={{ title: 'Session en cours', presentation: 'modal' }} />
+            <Stack.Screen name="[topicId]/result" options={{ title: 'Analyse', presentation: 'modal' }} />
+        </Stack>
+    );
 }
