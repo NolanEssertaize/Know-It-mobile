@@ -8,7 +8,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { GlassColors } from '@/theme';
+import { GlassColors } from '@/theme/colors';
 import { WelcomeScreen } from '@/features/welcome';
 import { useAppShell } from '@/features/app-shell';
 
