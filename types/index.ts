@@ -1,19 +1,16 @@
-export interface AnalysisResult {
-    valid: string[];
-    corrections: string[];
-    missing: string[];
-}
+/**
+ * @file index.ts
+ * @description Re-export de tous les types
+ */
 
-export interface Session {
-    id: string;
-    date: string; // ISO String
-    audioUri?: string;
-    transcription?: string;
-    analysis: AnalysisResult;
-}
+export type {
+  Topic,
+  TopicTheme,
+  TopicCategory,
+} from './topic.types';
 
-export interface Topic {
-    id: string;
-    title: string;
-    sessions: Session[];
-}
+export type {
+  Session,
+  AnalysisResult,
+  RecordingState,
+} from './session.types';
