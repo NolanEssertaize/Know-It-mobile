@@ -14,7 +14,7 @@ import {
     View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GlassColors, BorderRadius, Shadows } from '@/constants/theme';
+import { GlassColors, BorderRadius, Shadows } from '@/theme/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'glass' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';

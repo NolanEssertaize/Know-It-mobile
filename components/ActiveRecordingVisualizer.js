@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Canvas, Circle, Paint, BlurMask, useDerivedValue, mix } from '@shopify/react-native-skia';
-import { THEME } from '../constants/theme';
+import { THEME } from '../theme/theme';
 
 /**
  * Un anneau unique qui réagit au niveau audio.

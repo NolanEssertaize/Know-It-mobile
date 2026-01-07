@@ -12,7 +12,7 @@ import {
     ViewStyle,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { GlassColors, BorderRadius, Shadows } from '@/constants/theme';
+import { GlassColors, BorderRadius, Shadows } from '@/theme/theme';
 
 export type GlassVariant = 'default' | 'light' | 'dark' | 'accent';
 export type GlassIntensity = 'subtle' | 'medium' | 'strong';

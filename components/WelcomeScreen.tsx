@@ -13,7 +13,7 @@ import {
     Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GlassColors } from '@/constants/theme';
+import { GlassColors } from '@/theme/theme';
 
 const { width, height } = Dimensions.get('window');
 

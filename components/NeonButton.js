@@ -1,6 +1,6 @@
 import { Pressable, Text, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { THEME } from '../constants/theme';
+import { THEME } from '../theme/theme';
 
 export const NeonButton = ({ title, onPress, style }) => {
     const handlePress = () => {

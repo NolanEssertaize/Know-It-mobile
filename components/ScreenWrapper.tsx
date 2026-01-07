@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlassColors } from '@/constants/theme';
+import { GlassColors } from '@/theme/theme';
 
 interface ScreenWrapperProps {
     children: ReactNode;

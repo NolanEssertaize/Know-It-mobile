@@ -5,6 +5,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, FlatList } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
 import { GlassColors } from '@/theme';
 
@@ -17,100 +18,112 @@ import { styles } from './TopicDetailScreen.styles';
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const TopicDetailScreen = memo(function TopicDetailScreen() {
-  // Setup Hook - Logic Controller
-  const logic = useTopicDetail();
+    // Setup Hook - Logic Controller
+    const logic = useTopicDetail();
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // GUARD: Topic not found
-  // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // GUARD: Topic not found
+    // ─────────────────────────────────────────────────────────────────────────
 
-  if (!logic.topic) {
-    return (
-      <ScreenWrapper centered>
-        <Text style={styles.errorText}>Topic introuvable</Text>
-      </ScreenWrapper>
+    if (!logic.topic) {
+        return (
+            <ScreenWrapper centered>
+                <Text style={styles.errorText}>Topic introuvable</Text>
+            </ScreenWrapper>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDER HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const renderHeader = useCallback(
+        () => (
+            <View style={styles.header}>
+                <GlassView
+                    variant="accent"
+                    glow
+                    glowColor={GlassColors.accent.glow}
+                    style={styles.topicBanner}
+                >
+                    <Text style={styles.topicTitle}>{logic.topic?.title}</Text>
+                    <Text style={styles.topicStats}>
+                        {logic.sessions.length} session
+                        {logic.sessions.length !== 1 ? 's' : ''} enregistrée
+                        {logic.sessions.length !== 1 ? 's' : ''}
+                    </Text>
+                </GlassView>
+
+                <GlassButton
+                    title="Démarrer une session"
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onPress={logic.handleStartSession}
+                    style={styles.startButton}
+                    icon={
+                        <MaterialCommunityIcons
+                            name="microphone"
+                            size={20}
+                            color="#FFFFFF"
+                        />
+                    }
+                />
+
+                {logic.sessions.length > 0 && (
+                    <Text style={styles.sectionTitle}>Historique</Text>
+                )}
+            </View>
+        ),
+        [logic]
     );
-  }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+    const renderSession = useCallback(
+        ({ item }: { item: SessionItemData }) => <SessionHistoryCard data={item} />,
+        []
+    );
 
-  const renderHeader = useCallback(
-    () => (
-      <View style={styles.header}>
-        <GlassView
-          variant="accent"
-          glow
-          glowColor={GlassColors.accent.glow}
-          style={styles.topicBanner}
-        >
-          <Text style={styles.topicTitle}>{logic.topic?.title}</Text>
-          <Text style={styles.topicStats}>
-            {logic.sessions.length} session
-            {logic.sessions.length !== 1 ? 's' : ''} enregistrée
-            {logic.sessions.length !== 1 ? 's' : ''}
-          </Text>
-        </GlassView>
+    const renderEmpty = useCallback(
+        () => (
+            <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons
+                    name="microphone-outline"
+                    size={64}
+                    color={GlassColors.text.tertiary}
+                    style={styles.emptyIcon}
+                />
+                <Text style={styles.emptyTitle}>Aucune session</Text>
+                <Text style={styles.emptySubtitle}>
+                    Démarrez votre première session pour commencer à réviser ce sujet
+                </Text>
+            </View>
+        ),
+        []
+    );
 
-        <GlassButton
-          title="🎙️  Démarrer une session"
-          variant="primary"
-          size="lg"
-          fullWidth
-          onPress={logic.handleStartSession}
-          style={styles.startButton}
-        />
+    const keyExtractor = useCallback(
+        (item: SessionItemData) => item.session.id,
+        []
+    );
 
-        {logic.sessions.length > 0 && (
-          <Text style={styles.sectionTitle}>Historique</Text>
-        )}
-      </View>
-    ),
-    [logic]
-  );
+    const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
 
-  const renderSession = useCallback(
-    ({ item }: { item: SessionItemData }) => <SessionHistoryCard data={item} />,
-    []
-  );
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────────────────
 
-  const renderEmpty = useCallback(
-    () => (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>🎤</Text>
-        <Text style={styles.emptyTitle}>Aucune session</Text>
-        <Text style={styles.emptySubtitle}>
-          Démarrez votre première session pour commencer à réviser ce sujet
-        </Text>
-      </View>
-    ),
-    []
-  );
-
-  const keyExtractor = useCallback(
-    (item: SessionItemData) => item.session.id,
-    []
-  );
-
-  const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
-
-  return (
-    <ScreenWrapper useSafeArea={false} padding={0}>
-      <FlatList
-        data={logic.sessions}
-        keyExtractor={keyExtractor}
-        renderItem={renderSession}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        ItemSeparatorComponent={renderSeparator}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-    </ScreenWrapper>
-  );
+    return (
+        <ScreenWrapper useSafeArea={false} padding={0}>
+            <FlatList
+                data={logic.sessions}
+                keyExtractor={keyExtractor}
+                renderItem={renderSession}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={renderEmpty}
+                ItemSeparatorComponent={renderSeparator}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+            />
+        </ScreenWrapper>
+    );
 });

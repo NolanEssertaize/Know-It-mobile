@@ -13,7 +13,7 @@ import {
     TextInputProps,
     Animated,
 } from 'react-native';
-import { GlassColors, BorderRadius, Shadows } from '@/constants/theme';
+import { GlassColors, BorderRadius, Shadows } from '@/theme/theme';
 
 interface GlassInputProps extends TextInputProps {
     /** Label du champ */
