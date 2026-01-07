@@ -7,16 +7,14 @@ import { StyleSheet } from 'react-native';
 import { GlassColors, Spacing, BorderRadius, Shadows } from '@/theme';
 
 export const styles = StyleSheet.create({
-    // Container
-    listContent: {
-        padding: Spacing.lg,
-        paddingBottom: 100,
+    // Fixed Header (en dehors de la FlatList)
+    fixedHeader: {
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.sm,
     },
 
-    // Header
-    header: {
-        marginBottom: Spacing.lg,
-    },
+    // Greeting
     greetingSection: {
         marginBottom: Spacing.lg,
     },
@@ -51,12 +49,12 @@ export const styles = StyleSheet.create({
         gap: Spacing.sm,
     },
     statNumber: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
         color: GlassColors.text.primary,
     },
     statLabel: {
-        fontSize: 12,
+        fontSize: 11,
         color: GlassColors.text.secondary,
     },
 
@@ -73,29 +71,19 @@ export const styles = StyleSheet.create({
         marginLeft: Spacing.sm,
         fontSize: 16,
         color: GlassColors.text.primary,
+        paddingVertical: Spacing.xs,
     },
 
-    // Categories
-    categoriesContainer: {
-        paddingVertical: Spacing.sm,
-        gap: Spacing.sm,
+    // List Content
+    listContent: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: 100,
+        flexGrow: 1,
     },
-    categoryChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.sm,
-        borderRadius: BorderRadius.full,
-        gap: Spacing.xs,
-    },
-    categoryLabel: {
-        fontSize: 14,
-        color: GlassColors.text.secondary,
-    },
-    categoryLabelActive: {
-        fontSize: 14,
-        color: GlassColors.text.primary,
-        fontWeight: '600',
+
+    // List Header (dans la FlatList)
+    listHeader: {
+        marginBottom: Spacing.md,
     },
 
     // Section header
@@ -103,7 +91,6 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: Spacing.lg,
         marginBottom: Spacing.sm,
     },
     sectionTitle: {
@@ -115,10 +102,17 @@ export const styles = StyleSheet.create({
         fontSize: 14,
         color: GlassColors.text.secondary,
     },
+
+    // Swipe hint
+    swipeHintContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+        marginBottom: Spacing.sm,
+    },
     swipeHint: {
         fontSize: 12,
         color: GlassColors.text.tertiary,
-        marginBottom: Spacing.md,
         fontStyle: 'italic',
     },
 

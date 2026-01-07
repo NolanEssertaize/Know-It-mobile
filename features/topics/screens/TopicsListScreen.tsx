@@ -30,92 +30,10 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
     // RENDER HELPERS
     // ─────────────────────────────────────────────────────────────────────────
 
-    const renderHeader = useCallback(
+    // Header de la liste (sans la barre de recherche pour éviter les re-renders)
+    const renderListHeader = useCallback(
         () => (
-            <View style={styles.header}>
-                {/* Salutation */}
-                <View style={styles.greetingSection}>
-                    <View style={styles.greetingLeft}>
-                        <View style={styles.greetingRow}>
-                            <Text style={styles.greeting}>{logic.greeting}</Text>
-                            <MaterialCommunityIcons
-                                name="hand-wave"
-                                size={28}
-                                color={GlassColors.semantic.warning}
-                            />
-                        </View>
-                        <Text style={styles.subtitle}>Prêt à réviser ?</Text>
-                    </View>
-                </View>
-
-                {/* Stats */}
-                <View style={styles.statsRow}>
-                    <GlassView style={styles.statCard}>
-                        <MaterialCommunityIcons
-                            name="book-multiple"
-                            size={24}
-                            color={GlassColors.accent.primary}
-                        />
-                        <View>
-                            <Text style={styles.statNumber}>{logic.topicsCount}</Text>
-                            <Text style={styles.statLabel}>Sujets</Text>
-                        </View>
-                    </GlassView>
-                    <GlassView style={styles.statCard}>
-                        <MaterialCommunityIcons
-                            name="microphone"
-                            size={24}
-                            color={GlassColors.semantic.success}
-                        />
-                        <View>
-                            <Text style={styles.statNumber}>{logic.totalSessions}</Text>
-                            <Text style={styles.statLabel}>Sessions</Text>
-                        </View>
-                    </GlassView>
-                    <GlassView style={styles.statCard}>
-                        <MaterialCommunityIcons
-                            name="fire"
-                            size={24}
-                            color={GlassColors.semantic.warning}
-                        />
-                        <View>
-                            <Text style={styles.statNumber}>0</Text>
-                            <Text style={styles.statLabel}>Streak</Text>
-                        </View>
-                    </GlassView>
-                </View>
-
-                {/* Barre de recherche */}
-                <GlassView style={styles.searchContainer}>
-                    <MaterialIcons
-                        name="search"
-                        size={22}
-                        color={GlassColors.text.tertiary}
-                    />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Rechercher un sujet..."
-                        placeholderTextColor={GlassColors.text.tertiary}
-                        value={logic.searchText}
-                        onChangeText={logic.setSearchText}
-                    />
-                    {logic.searchText.length > 0 && (
-                        <Pressable onPress={() => logic.setSearchText('')}>
-                            <MaterialIcons
-                                name="close"
-                                size={20}
-                                color={GlassColors.text.tertiary}
-                            />
-                        </Pressable>
-                    )}
-                </GlassView>
-
-                {/* Catégories */}
-                <CategoryFilter
-                    selectedCategory={logic.selectedCategory}
-                    onSelectCategory={logic.setSelectedCategory}
-                />
-
+            <View style={styles.listHeader}>
                 {/* Titre de section */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Mes Sujets</Text>
@@ -125,13 +43,13 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 </View>
 
                 {/* Indication de swipe */}
-                <Text style={styles.swipeHint}>
-                    <MaterialIcons name="swipe" size={12} color={GlassColors.text.tertiary} />
-                    {' '}Glissez pour plus d'options
-                </Text>
+                <View style={styles.swipeHintContainer}>
+                    <MaterialIcons name="swipe" size={14} color={GlassColors.text.tertiary} />
+                    <Text style={styles.swipeHint}>Glissez pour plus d'options</Text>
+                </View>
             </View>
         ),
-        [logic]
+        [logic.filteredTopics.length]
     );
 
     const renderTopic = useCallback(
@@ -146,7 +64,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 unregisterRef={() => logic.unregisterSwipeableRef(item.topic.id)}
             />
         ),
-        [logic]
+        [logic.handleCardPress, logic.handleEdit, logic.handleShare, logic.handleDelete, logic.registerSwipeableRef, logic.unregisterSwipeableRef]
     );
 
     const renderEmpty = useCallback(
@@ -208,12 +126,104 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
 
     return (
         <ScreenWrapper useSafeArea padding={0}>
+            {/* Header fixe (ne se re-render pas avec la liste) */}
+            <View style={styles.fixedHeader}>
+                {/* Salutation */}
+                <View style={styles.greetingSection}>
+                    <View style={styles.greetingLeft}>
+                        <View style={styles.greetingRow}>
+                            <Text style={styles.greeting}>{logic.greeting}</Text>
+                            <MaterialCommunityIcons
+                                name="hand-wave"
+                                size={28}
+                                color={GlassColors.semantic.warning}
+                            />
+                        </View>
+                        <Text style={styles.subtitle}>Prêt à réviser ?</Text>
+                    </View>
+                </View>
+
+                {/* Stats */}
+                <View style={styles.statsRow}>
+                    <GlassView style={styles.statCard}>
+                        <MaterialCommunityIcons
+                            name="book-multiple"
+                            size={24}
+                            color={GlassColors.accent.primary}
+                        />
+                        <View>
+                            <Text style={styles.statNumber}>{logic.topicsCount}</Text>
+                            <Text style={styles.statLabel}>Sujets</Text>
+                        </View>
+                    </GlassView>
+                    <GlassView style={styles.statCard}>
+                        <MaterialCommunityIcons
+                            name="microphone"
+                            size={24}
+                            color={GlassColors.semantic.success}
+                        />
+                        <View>
+                            <Text style={styles.statNumber}>{logic.totalSessions}</Text>
+                            <Text style={styles.statLabel}>Sessions</Text>
+                        </View>
+                    </GlassView>
+                    <GlassView style={styles.statCard}>
+                        <MaterialCommunityIcons
+                            name="fire"
+                            size={24}
+                            color={GlassColors.semantic.warning}
+                        />
+                        <View>
+                            <Text style={styles.statNumber}>0</Text>
+                            <Text style={styles.statLabel}>Streak</Text>
+                        </View>
+                    </GlassView>
+                </View>
+
+                {/* Barre de recherche - Isolée pour éviter les re-renders */}
+                <GlassView style={styles.searchContainer}>
+                    <MaterialIcons
+                        name="search"
+                        size={22}
+                        color={GlassColors.text.tertiary}
+                    />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Rechercher un sujet..."
+                        placeholderTextColor={GlassColors.text.tertiary}
+                        value={logic.searchText}
+                        onChangeText={logic.setSearchText}
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        returnKeyType="search"
+                    />
+                    {logic.searchText.length > 0 && (
+                        <Pressable
+                            onPress={() => logic.setSearchText('')}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <MaterialIcons
+                                name="close"
+                                size={20}
+                                color={GlassColors.text.tertiary}
+                            />
+                        </Pressable>
+                    )}
+                </GlassView>
+
+                {/* Catégories */}
+                <CategoryFilter
+                    selectedCategory={logic.selectedCategory}
+                    onSelectCategory={logic.setSelectedCategory}
+                />
+            </View>
+
             {/* Liste */}
             <FlatList
                 data={logic.filteredTopics}
                 keyExtractor={keyExtractor}
                 renderItem={renderTopic}
-                ListHeaderComponent={renderHeader}
+                ListHeaderComponent={renderListHeader}
                 ListEmptyComponent={renderEmpty}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
