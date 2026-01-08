@@ -1,45 +1,51 @@
 /**
  * @file useResult.ts
  * @description Logic Controller pour l'écran de résultats
- *
- * MODIFICATIONS:
- * - icon (emoji) remplacé par iconName (nom d'icône MaterialIcons)
+ * Utilise des noms d'icônes Material au lieu d'emojis
  */
 
 import { useMemo, useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { AnalysisResult } from '@/types';
 import { GlassColors } from '@/theme';
-import type MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface ScoreData {
-    value: number;
-    label: string;
-    color: string;
+    readonly value: number;
+    readonly label: string;
+    readonly color: string;
+}
+
+export interface SummaryData {
+    readonly validCount: number;
+    readonly correctionsCount: number;
+    readonly missingCount: number;
+    readonly totalPoints: number;
 }
 
 export interface AnalysisSection {
-    id: string;
-    title: string;
-    iconName: keyof typeof MaterialIcons.glyphMap;
-    items: string[];
-    color: string;
-    glowColor: string;
+    readonly id: string;
+    readonly title: string;
+    /** Material Icon name */
+    readonly icon: string;
+    readonly items: readonly string[];
+    readonly color: string;
+    readonly glowColor: string;
 }
 
 export interface UseResultReturn {
     // Data
-    analysis: AnalysisResult;
-    score: ScoreData;
-    sections: AnalysisSection[];
+    readonly analysis: AnalysisResult;
+    readonly score: ScoreData;
+    readonly summary: SummaryData;
+    readonly sections: readonly AnalysisSection[];
 
     // Methods
-    handleClose: () => void;
-    handleRetry: () => void;
+    readonly handleClose: () => void;
+    readonly handleRetry: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -68,6 +74,15 @@ function calculateScore(analysis: AnalysisResult): ScoreData {
     return { value, label: 'À améliorer', color: GlassColors.semantic.error };
 }
 
+function calculateSummary(analysis: AnalysisResult): SummaryData {
+    return {
+        validCount: analysis.valid.length,
+        correctionsCount: analysis.corrections.length,
+        missingCount: analysis.missing.length,
+        totalPoints: analysis.valid.length + analysis.corrections.length + analysis.missing.length,
+    };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // HOOK
 // ═══════════════════════════════════════════════════════════════════════════
@@ -89,13 +104,16 @@ export function useResult(): UseResultReturn {
     // Calculate score
     const score = useMemo(() => calculateScore(analysis), [analysis]);
 
-    // Build sections - Icônes Material au lieu d'émojis
+    // Calculate summary
+    const summary = useMemo(() => calculateSummary(analysis), [analysis]);
+
+    // Build sections with Material Icon names (filter out empty ones)
     const sections = useMemo(
-        (): AnalysisSection[] => [
+        (): readonly AnalysisSection[] => [
             {
                 id: 'valid',
                 title: 'Points validés',
-                iconName: 'check-circle',
+                icon: 'check-circle',
                 items: analysis.valid,
                 color: GlassColors.semantic.success,
                 glowColor: GlassColors.semantic.successGlow,
@@ -103,7 +121,7 @@ export function useResult(): UseResultReturn {
             {
                 id: 'corrections',
                 title: 'À corriger',
-                iconName: 'warning',
+                icon: 'error',
                 items: analysis.corrections,
                 color: GlassColors.semantic.warning,
                 glowColor: GlassColors.semantic.warningGlow,
@@ -111,12 +129,12 @@ export function useResult(): UseResultReturn {
             {
                 id: 'missing',
                 title: 'Points manquants',
-                iconName: 'cancel',
+                icon: 'cancel',
                 items: analysis.missing,
                 color: GlassColors.semantic.error,
                 glowColor: GlassColors.semantic.errorGlow,
             },
-        ],
+        ].filter(section => section.items.length > 0),
         [analysis]
     );
 
@@ -134,6 +152,7 @@ export function useResult(): UseResultReturn {
         // Data
         analysis,
         score,
+        summary,
         sections,
 
         // Methods

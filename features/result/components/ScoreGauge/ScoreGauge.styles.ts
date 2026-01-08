@@ -1,90 +1,101 @@
 /**
  * @file ScoreGauge.styles.ts
- * @description Styles pour le composant ScoreGauge
+ * @description Styles pour le composant ScoreGauge - Version améliorée
  */
 
 import { StyleSheet } from 'react-native';
 import { GlassColors, Spacing, BorderRadius } from '@/theme';
 
+const CIRCLE_SIZE = 200;
+const CIRCLE_STROKE = 12;
+
 export const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.xl,
-  },
+    container: {
+        alignItems: 'center',
+        padding: Spacing.xl,
+        borderRadius: BorderRadius.xl,
+        marginBottom: Spacing.xl,
+    },
 
-  gaugeContainer: {
-    width: 180,
-    height: 90,
-    marginBottom: Spacing.lg,
-    position: 'relative',
-    overflow: 'hidden',
-  },
+    // Circle Container
+    circleContainer: {
+        width: CIRCLE_SIZE,
+        height: CIRCLE_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
 
-  gaugeBackground: {
-    position: 'absolute',
-    width: '100%',
-    height: '200%',
-    flexDirection: 'row',
-  },
+    // Background track
+    circleBackground: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
-  gaugeHalf: {
-    flex: 1,
-    backgroundColor: GlassColors.glass.background,
-    borderRadius: 90,
-  },
+    circleTrack: {
+        width: CIRCLE_SIZE - CIRCLE_STROKE,
+        height: CIRCLE_SIZE - CIRCLE_STROKE,
+        borderRadius: (CIRCLE_SIZE - CIRCLE_STROKE) / 2,
+        borderWidth: CIRCLE_STROKE,
+    },
 
-  gaugeLeft: {
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-  },
+    // Progress container for rotation
+    progressContainer: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
-  gaugeRight: {
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
-  },
+    progressArc: {
+        width: CIRCLE_SIZE - CIRCLE_STROKE,
+        height: CIRCLE_SIZE - CIRCLE_STROKE,
+        borderRadius: (CIRCLE_SIZE - CIRCLE_STROKE) / 2,
+        borderWidth: CIRCLE_STROKE,
+        borderLeftColor: 'transparent',
+        borderBottomColor: 'transparent',
+        transform: [{ rotate: '-45deg' }],
+    },
 
-  gaugeProgress: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-    width: '50%',
-    height: '200%',
-    transformOrigin: 'right center',
-  },
+    // Center content
+    centerContent: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
-  gaugeProgressInner: {
-    flex: 1,
-    borderTopLeftRadius: 90,
-    borderBottomLeftRadius: 90,
-  },
+    scoreRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
 
-  gaugeCenter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-  },
+    scoreValue: {
+        fontSize: 56,
+        fontWeight: '700',
+        letterSpacing: -2,
+    },
 
-  scoreValue: {
-    fontSize: 48,
-    fontWeight: '700',
-  },
+    scoreUnit: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginBottom: 8,
+        marginLeft: 2,
+    },
 
-  scoreUnit: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: GlassColors.text.secondary,
-    marginBottom: 6,
-    marginLeft: 2,
-  },
+    label: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginTop: Spacing.xs,
+        textAlign: 'center',
+    },
 
-  label: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+    // Glow effect
+    glowEffect: {
+        position: 'absolute',
+        bottom: 0,
+        left: '20%',
+        right: '20%',
+        height: 60,
+        borderRadius: BorderRadius.full,
+        opacity: 0.5,
+    },
 });
