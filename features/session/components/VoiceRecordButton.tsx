@@ -1,268 +1,69 @@
 /**
  * @file VoiceRecordButton.tsx
- * @description Bouton d'enregistrement vocal avec animation de vague circulaire
- * Les pics fluctuent de manière organique autour du cercle central
+ * @description Bouton d'enregistrement vocal style "Gemini Glow"
+ * Correction: Ajout du retour haptique + Centrage parfait de l'icône stop.
  */
 
-import React, { memo, useEffect, useRef, useMemo } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    Animated,
-    Easing,
-} from 'react-native';
+import React, { memo, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    Easing, // Import correct pour Reanimated
+    interpolate,
+    Extrapolation,
+    withSpring,
+} from 'react-native-reanimated';
+import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
-import { GlassColors, Shadows } from '@/theme';
+import * as Haptics from 'expo-haptics'; // Import pour les vibrations
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TYPES
+// TYPES & CONSTANTES
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface VoiceRecordButtonProps {
-    /** État d'enregistrement */
     isRecording: boolean;
-    /** Intensité sonore (0 à 1) */
-    audioLevel: number;
-    /** Action au clic */
+    audioLevel: number; // 0 à 1
     onPress: () => void;
-    /** Taille du bouton principal */
     size?: number;
-    /** Désactivé */
     disabled?: boolean;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CONSTANTES
-// ═══════════════════════════════════════════════════════════════════════════
-
-const WAVE_POINTS = 64; // Nombre de points pour la vague
-const BASE_AMPLITUDE = 15; // Amplitude de base des vagues
-const MAX_AMPLITUDE = 40; // Amplitude maximum avec audio
-const WAVE_SPEED = 2000; // Vitesse de rotation (ms)
-
-// Couleurs du gradient
-const GRADIENT_COLORS = {
-    light: '#FFFFFF',
+const GLOW_COLORS = {
+    core: '#FFFFFF',
     primary: '#00D4FF',
-    secondary: '#0EA5E9',
-    dark: '#0369A1',
-    darker: '#1E3A5F',
+    secondary: '#4285F4',
+    accent: '#7B2CBF',
 };
 
-const IDLE_BUTTON_COLORS = ['#00D4FF', '#0EA5E9'];
-const RECORDING_BUTTON_COLORS = ['#00D4FF', '#0EA5E9'];
-
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPOSANT WAVE VISUALIZER
+// SOUS-COMPOSANT : ORBE DE LUMIÈRE
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface WaveVisualizerProps {
-    size: number;
-    buttonSize: number;
-    isActive: boolean;
-    audioLevel: number;
-}
-
-const WaveVisualizer = memo(function WaveVisualizer({
-                                                        size,
-                                                        buttonSize,
-                                                        isActive,
-                                                        audioLevel,
-                                                    }: WaveVisualizerProps) {
-    // Animation de rotation
-    const rotationAnim = useRef(new Animated.Value(0)).current;
-    // Animation d'opacité pour l'apparition
-    const opacityAnim = useRef(new Animated.Value(0)).current;
-
-    // État pour forcer le re-render avec les nouvelles valeurs
-    const [waveValues, setWaveValues] = React.useState<number[]>(
-        Array(WAVE_POINTS).fill(0)
-    );
-
-    // Animation de rotation continue
-    useEffect(() => {
-        if (isActive) {
-            // Fade in
-            Animated.timing(opacityAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }).start();
-
-            // Rotation continue
-            const rotationLoop = Animated.loop(
-                Animated.timing(rotationAnim, {
-                    toValue: 1,
-                    duration: WAVE_SPEED * 3,
-                    easing: Easing.linear,
-                    useNativeDriver: true,
-                })
-            );
-            rotationLoop.start();
-
-            return () => rotationLoop.stop();
-        } else {
-            // Fade out
-            Animated.timing(opacityAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start();
-        }
-    }, [isActive, rotationAnim, opacityAnim]);
-
-    // Animation des fluctuations aléatoires
-    useEffect(() => {
-        if (!isActive) {
-            setWaveValues(Array(WAVE_POINTS).fill(0));
-            return;
-        }
-
-        let animationFrameId: number;
-        let lastTime = Date.now();
-
-        const animate = () => {
-            const currentTime = Date.now();
-            const deltaTime = currentTime - lastTime;
-
-            if (deltaTime > 50) { // ~20fps pour les fluctuations
-                lastTime = currentTime;
-
-                setWaveValues(prev => {
-                    return prev.map((val, i) => {
-                        // Variation sinusoïdale de base pour un mouvement fluide
-                        const baseWave = Math.sin((currentTime / 500) + (i * 0.3)) * 0.3;
-
-                        // Ajouter du bruit aléatoire
-                        const noise = (Math.random() - 0.5) * 0.4;
-
-                        // Facteur audio
-                        const audioFactor = audioLevel * 1.5;
-
-                        // Combiner le tout avec lissage
-                        const target = baseWave + noise + audioFactor;
-
-                        // Lissage pour éviter les sauts brusques
-                        return val * 0.7 + target * 0.3;
-                    });
-                });
-            }
-
-            animationFrameId = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-        };
-    }, [isActive, audioLevel]);
-
-    // Générer le path SVG pour la vague
-    const wavePath = useMemo(() => {
-        const centerX = size / 2;
-        const centerY = size / 2;
-        const baseRadius = buttonSize / 2 + 10; // Rayon de base (juste autour du bouton)
-
-        let path = '';
-
-        for (let i = 0; i <= WAVE_POINTS; i++) {
-            const index = i % WAVE_POINTS;
-            const angle = (index / WAVE_POINTS) * Math.PI * 2 - Math.PI / 2;
-
-            // Amplitude basée sur l'audio et les fluctuations
-            const waveValue = waveValues[index] || 0;
-            const amplitude = BASE_AMPLITUDE + (waveValue * MAX_AMPLITUDE);
-
-            const radius = baseRadius + amplitude;
-
-            const x = centerX + Math.cos(angle) * radius;
-            const y = centerY + Math.sin(angle) * radius;
-
-            if (i === 0) {
-                path += `M ${x} ${y}`;
-            } else {
-                // Utiliser des courbes pour un rendu plus fluide
-                const prevIndex = (i - 1) % WAVE_POINTS;
-                const prevAngle = (prevIndex / WAVE_POINTS) * Math.PI * 2 - Math.PI / 2;
-                const prevWaveValue = waveValues[prevIndex] || 0;
-                const prevAmplitude = BASE_AMPLITUDE + (prevWaveValue * MAX_AMPLITUDE);
-                const prevRadius = baseRadius + prevAmplitude;
-
-                const prevX = centerX + Math.cos(prevAngle) * prevRadius;
-                const prevY = centerY + Math.sin(prevAngle) * prevRadius;
-
-                // Points de contrôle pour la courbe de Bézier
-                const cpRadius = (radius + prevRadius) / 2;
-                const cpAngle = (angle + prevAngle) / 2;
-                const cpX = centerX + Math.cos(cpAngle) * cpRadius;
-                const cpY = centerY + Math.sin(cpAngle) * cpRadius;
-
-                path += ` Q ${cpX} ${cpY} ${x} ${y}`;
-            }
-        }
-
-        path += ' Z';
-
-        return path;
-    }, [size, buttonSize, waveValues]);
-
-    const rotation = rotationAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg'],
-    });
-
-    return (
-        <Animated.View
-            style={[
-                styles.waveContainer,
-                {
-                    width: size,
-                    height: size,
-                    opacity: opacityAnim,
-                    transform: [{ rotate: rotation }],
-                },
-            ]}
-            pointerEvents="none"
-        >
-            <Svg width={size} height={size}>
-                <Defs>
-                    <SvgGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor={GRADIENT_COLORS.light} stopOpacity="0.15" />
-                        <Stop offset="30%" stopColor={GRADIENT_COLORS.primary} stopOpacity="0.8" />
-                        <Stop offset="60%" stopColor={GRADIENT_COLORS.secondary} stopOpacity="0.9" />
-                        <Stop offset="85%" stopColor={GRADIENT_COLORS.dark} stopOpacity="0.95" />
-                        <Stop offset="100%" stopColor={GRADIENT_COLORS.darker} stopOpacity="1" />
-                    </SvgGradient>
-                    <SvgGradient id="waveGradient2" x1="100%" y1="0%" x2="0%" y2="100%">
-                        <Stop offset="0%" stopColor={GRADIENT_COLORS.primary} stopOpacity="0.6" />
-                        <Stop offset="50%" stopColor={GRADIENT_COLORS.secondary} stopOpacity="0.8" />
-                        <Stop offset="100%" stopColor={GRADIENT_COLORS.darker} stopOpacity="0.9" />
-                    </SvgGradient>
-                </Defs>
-
-                {/* Vague principale */}
-                <Path
-                    d={wavePath}
-                    fill="url(#waveGradient)"
-                />
-
-                {/* Vague secondaire légèrement décalée pour plus de profondeur */}
-                <Path
-                    d={wavePath}
-                    fill="url(#waveGradient2)"
-                    opacity={0.5}
-                    transform={`rotate(180 ${size/2} ${size/2})`}
-                />
-            </Svg>
-        </Animated.View>
-    );
-});
+const GlowingOrb = ({ color, size, opacity = 1 }: { color: string; size: number; opacity?: number }) => (
+    <Svg height={size} width={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+            <RadialGradient
+                id={`grad-${color}`}
+                cx="50%"
+                cy="50%"
+                rx="50%"
+                ry="50%"
+                fx="50%"
+                fy="50%"
+                gradientUnits="userSpaceOnUse"
+            >
+                <Stop offset="0%" stopColor={color} stopOpacity={opacity} />
+                <Stop offset="50%" stopColor={color} stopOpacity={opacity * 0.5} />
+                <Stop offset="100%" stopColor={color} stopOpacity={0} />
+            </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#grad-${color})`} />
+    </Svg>
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL
@@ -272,108 +73,113 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
                                                                      isRecording,
                                                                      audioLevel,
                                                                      onPress,
-                                                                     size = 120,
+                                                                     size = 100,
                                                                      disabled = false,
                                                                  }: VoiceRecordButtonProps) {
-    // Animation de respiration pour l'état idle
-    const breatheAnim = useRef(new Animated.Value(1)).current;
-    const pulseAnim = useRef(new Animated.Value(1)).current;
 
-    // Animation idle (respiration douce)
-    useEffect(() => {
-        if (!isRecording) {
-            const breatheLoop = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(breatheAnim, {
-                        toValue: 1.03,
-                        duration: 2000,
-                        easing: Easing.inOut(Easing.ease),
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(breatheAnim, {
-                        toValue: 1,
-                        duration: 2000,
-                        easing: Easing.inOut(Easing.ease),
-                        useNativeDriver: true,
-                    }),
-                ])
-            );
-            breatheLoop.start();
-            return () => breatheLoop.stop();
-        } else {
-            breatheAnim.setValue(1);
-        }
-    }, [isRecording, breatheAnim]);
+    // --- Valeurs partagées pour l'animation ---
+    const rotation = useSharedValue(0);
+    const pulse = useSharedValue(1);
+    const audioScale = useSharedValue(0);
 
-    // Réaction légère à l'audio
+    // --- Gestion du retour Haptique ---
     useEffect(() => {
         if (isRecording) {
-            const level = Math.min(1, Math.max(0, audioLevel));
-            Animated.spring(pulseAnim, {
-                toValue: 1 + level * 0.05,
-                friction: 10,
-                tension: 100,
-                useNativeDriver: true,
-            }).start();
+            // Vibration nette au début de l'enregistrement
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } else {
-            pulseAnim.setValue(1);
+            // Petite vibration de confirmation à la fin (facultatif, retire si trop verbeux)
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-    }, [audioLevel, isRecording, pulseAnim]);
+    }, [isRecording]);
 
-    // Taille du container pour la vague
-    const waveContainerSize = size * 2.5;
+    // --- Boucle d'animation continue ---
+    useEffect(() => {
+        rotation.value = withRepeat(
+            withTiming(360, { duration: 8000, easing: Easing.linear }),
+            -1
+        );
+
+        pulse.value = withRepeat(
+            withTiming(1.05, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+            -1,
+            true
+        );
+    }, []);
+
+    // --- Réaction à l'audio ---
+    useEffect(() => {
+        if (isRecording) {
+            audioScale.value = withSpring(audioLevel, {
+                damping: 10,
+                stiffness: 80,
+                mass: 0.5
+            });
+        } else {
+            audioScale.value = withSpring(0);
+        }
+    }, [audioLevel, isRecording]);
+
+    // --- Styles Animés ---
+    const styleOrbPrimary = useAnimatedStyle(() => {
+        const scale = interpolate(audioScale.value, [0, 1], [0.8, 1.8], Extrapolation.CLAMP);
+        return {
+            opacity: isRecording ? 0.8 : 0,
+            transform: [
+                { rotate: `${rotation.value}deg` },
+                { scale: withTiming(isRecording ? scale : 0, { duration: 300 }) }
+            ]
+        };
+    });
+
+    const styleOrbSecondary = useAnimatedStyle(() => {
+        const scale = interpolate(audioScale.value, [0, 1], [0.9, 2.2], Extrapolation.CLAMP);
+        return {
+            opacity: isRecording ? 0.6 : 0,
+            transform: [
+                { rotate: `-${rotation.value * 0.7}deg` },
+                { scale: withTiming(isRecording ? scale : 0, { duration: 400 }) }
+            ]
+        };
+    });
+
+    const styleButton = useAnimatedStyle(() => {
+        const baseScale = isRecording
+            ? interpolate(audioScale.value, [0, 1], [1, 1.15])
+            : pulse.value;
+        return { transform: [{ scale: baseScale }] };
+    });
+
+    const ORB_SIZE = size * 2;
 
     return (
-        <View style={[styles.container, { width: waveContainerSize, height: waveContainerSize }]}>
-            {/* Visualiseur de vague */}
-            <WaveVisualizer
-                size={waveContainerSize}
-                buttonSize={size}
-                isActive={isRecording}
-                audioLevel={audioLevel}
-            />
+        <View style={[styles.container, { width: size * 2.5, height: size * 2.5 }]}>
 
-            {/* Glow effect derrière le bouton */}
-            {isRecording && (
-                <View
-                    style={[
-                        styles.glowEffect,
-                        {
-                            width: size * 1.3,
-                            height: size * 1.3,
-                            borderRadius: size * 0.65,
-                            backgroundColor: GRADIENT_COLORS.primary,
-                            shadowColor: GRADIENT_COLORS.primary,
-                        }
-                    ]}
-                    pointerEvents="none"
-                />
-            )}
+            {/* GLOW BACKGROUND */}
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <View style={styles.centerAbsolute}>
+                    <Animated.View style={styleOrbSecondary}>
+                        <GlowingOrb color={GLOW_COLORS.secondary} size={ORB_SIZE} opacity={0.5} />
+                    </Animated.View>
+                </View>
 
-            {/* Bouton principal */}
-            <Animated.View
-                style={[
-                    styles.buttonWrapper,
-                    {
-                        transform: [{ scale: isRecording ? pulseAnim : breatheAnim }],
-                    },
-                ]}
-            >
+                <View style={styles.centerAbsolute}>
+                    <Animated.View style={styleOrbPrimary}>
+                        <GlowingOrb color={GLOW_COLORS.primary} size={ORB_SIZE} opacity={0.6} />
+                    </Animated.View>
+                </View>
+            </View>
+
+            {/* BUTTON */}
+            <Animated.View style={[styles.buttonWrapper, styleButton]}>
                 <TouchableOpacity
                     onPress={onPress}
-                    activeOpacity={0.8}
+                    activeOpacity={0.9}
                     disabled={disabled}
-                    style={[
-                        styles.touchable,
-                        {
-                            width: size,
-                            height: size,
-                            borderRadius: size / 2,
-                        },
-                    ]}
+                    style={{ width: size, height: size }}
                 >
                     <LinearGradient
-                        colors={isRecording ? RECORDING_BUTTON_COLORS : IDLE_BUTTON_COLORS}
+                        colors={isRecording ? [GLOW_COLORS.primary, GLOW_COLORS.secondary] : ['#ffffff', '#f0f0f0']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[
@@ -382,35 +188,28 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
                                 width: size,
                                 height: size,
                                 borderRadius: size / 2,
-                            },
-                            Shadows.glow(GRADIENT_COLORS.primary),
+                                shadowColor: isRecording ? GLOW_COLORS.primary : "#000",
+                                shadowOpacity: isRecording ? 0.5 : 0.1,
+                                shadowRadius: isRecording ? 20 : 10,
+                                elevation: 8,
+                            }
                         ]}
                     >
-                        {/* Inner highlight */}
-                        <View
-                            style={[
-                                styles.innerHighlight,
-                                {
-                                    width: size * 0.8,
-                                    height: size * 0.8,
-                                    borderRadius: size * 0.4,
-                                },
-                            ]}
-                        />
-                        {/* Inner circle */}
-                        <View
-                            style={[
-                                styles.innerCircle,
-                                {
-                                    width: size * 0.6,
-                                    height: size * 0.6,
-                                    borderRadius: size * 0.3,
-                                },
-                            ]}
-                        />
-                        <Text style={styles.buttonText}>
-                            {isRecording ? 'STOP' : 'PARLER'}
-                        </Text>
+                        <View style={[
+                            styles.innerRing,
+                            {
+                                borderRadius: size / 2,
+                                borderColor: isRecording ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.05)'
+                            }
+                        ]} />
+
+                        {/* Correction Centrage : Rendu Conditionnel Strict */}
+                        {isRecording ? (
+                            <View style={styles.stopIcon} />
+                        ) : (
+                            <Text style={styles.buttonText}>PARLER</Text>
+                        )}
+
                     </LinearGradient>
                 </TouchableOpacity>
             </Animated.View>
@@ -418,59 +217,42 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
     );
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════════════════════════════════
-
 const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
     },
-    waveContainer: {
+    centerAbsolute: {
         position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    glowEffect: {
-        position: 'absolute',
-        opacity: 0.3,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 30,
-        elevation: 15,
     },
     buttonWrapper: {
-        alignItems: 'center',
-        justifyContent: 'center',
         zIndex: 10,
-    },
-    touchable: {
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     button: {
         alignItems: 'center',
         justifyContent: 'center',
-        elevation: 10,
+        shadowOffset: { width: 0, height: 4 },
     },
-    innerHighlight: {
+    innerRing: {
         position: 'absolute',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    innerCircle: {
-        position: 'absolute',
-        backgroundColor: 'rgba(0, 150, 200, 0.3)',
+        top: 2, left: 2, right: 2, bottom: 2,
         borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
     },
     buttonText: {
-        color: GlassColors.text.primary,
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 16,
+        fontWeight: '700',
         letterSpacing: 1,
-        zIndex: 1,
+        color: '#333',
     },
+    stopIcon: {
+        width: 20, // Légèrement réduit pour l'élégance
+        height: 20,
+        backgroundColor: '#FFF',
+        borderRadius: 4,
+    }
 });
 
 export default VoiceRecordButton;
