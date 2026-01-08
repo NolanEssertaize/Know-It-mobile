@@ -3,7 +3,10 @@
  * @description Écran d'enregistrement vocal avec animation réactive
  * Version mise à jour avec VoiceRecordButton et useAudioRecording
  *
- * CORRECTION: GlassColors.neon.primary → GlassColors.accent.primary
+ * MODIFICATIONS:
+ * - Émojis remplacés par des icônes Material
+ * - Barre de niveau audio simplifiée (blanc uniquement)
+ * - Suppression des mots qui changent selon l'intensité
  */
 
 import React, { memo, useCallback } from 'react';
@@ -80,7 +83,6 @@ export const SessionScreen = memo(function SessionScreen() {
                         {/* État d'analyse */}
                         {logic.isAnalyzing ? (
                             <View style={styles.analyzingContainer}>
-                                {/* CORRECTION: GlassColors.neon.primary → GlassColors.accent.primary */}
                                 <ActivityIndicator size="large" color={GlassColors.accent.primary} />
                                 <Text style={styles.analyzingText}>Analyse en cours...</Text>
                                 <Text style={styles.analyzingHint}>
@@ -89,11 +91,21 @@ export const SessionScreen = memo(function SessionScreen() {
                             </View>
                         ) : (
                             <>
-                                {/* Status Text */}
+                                {/* Status Text - Icône Material au lieu d'émoji */}
                                 <View style={styles.statusContainer}>
-                                    <Text style={styles.statusText}>
-                                        {logic.isRecording ? '🔴 Enregistrement...' : 'Prêt à enregistrer'}
-                                    </Text>
+                                    <View style={styles.statusRow}>
+                                        {logic.isRecording && (
+                                            <MaterialIcons
+                                                name="fiber-manual-record"
+                                                size={16}
+                                                color={GlassColors.semantic.error}
+                                                style={styles.recordingIcon}
+                                            />
+                                        )}
+                                        <Text style={styles.statusText}>
+                                            {logic.isRecording ? 'Enregistrement...' : 'Prêt à enregistrer'}
+                                        </Text>
+                                    </View>
                                     <Text style={styles.statusHint}>
                                         {logic.isRecording
                                             ? 'Expliquez le sujet avec vos mots'
@@ -121,51 +133,26 @@ export const SessionScreen = memo(function SessionScreen() {
                                     />
                                 </View>
 
-                                {/* Audio Level Indicator - AMÉLIORÉ ET PLUS VISIBLE */}
+                                {/* Audio Level Indicator - SIMPLIFIÉ: Barre blanche uniquement */}
                                 {logic.isRecording && (
                                     <View style={styles.levelIndicatorContainer}>
                                         {/* Label */}
                                         <View style={styles.levelLabelRow}>
                                             <Text style={styles.levelLabel}>NIVEAU AUDIO</Text>
-                                            <Text style={[
-                                                styles.levelPercentage,
-                                                { color: logic.audioLevel < 0.3
-                                                        ? GlassColors.semantic.warning
-                                                        : GlassColors.semantic.success }
-                                            ]}>
+                                            <Text style={styles.levelPercentage}>
                                                 {Math.round(logic.audioLevel * 100)}%
                                             </Text>
                                         </View>
 
-                                        {/* Barre de progression */}
+                                        {/* Barre de progression blanche */}
                                         <View style={styles.levelBarBackground}>
-                                            <LinearGradient
-                                                colors={
-                                                    logic.audioLevel < 0.3
-                                                        ? [GlassColors.semantic.warning, GlassColors.semantic.warningGlow]
-                                                        : logic.audioLevel < 0.7
-                                                            ? [GlassColors.semantic.success, GlassColors.semantic.successGlow]
-                                                            : [GlassColors.semantic.error, GlassColors.semantic.errorGlow]
-                                                }
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 0 }}
+                                            <View
                                                 style={[
                                                     styles.levelBarFill,
-                                                    { width: `${Math.max(2, logic.audioLevel * 100)}%` }
+                                                    { width: `${Math.max(5, logic.audioLevel * 100)}%` }
                                                 ]}
                                             />
                                         </View>
-
-                                        {/* Feedback textuel */}
-                                        <Text style={styles.levelFeedback}>
-                                            {logic.audioLevel < 0.1
-                                                ? '🔇 Parlez plus fort'
-                                                : logic.audioLevel < 0.3
-                                                    ? '🎤 Niveau faible'
-                                                    : logic.audioLevel < 0.7
-                                                        ? '✅ Bon niveau'
-                                                        : '🔊 Très fort'}
-                                        </Text>
                                     </View>
                                 )}
 
@@ -177,12 +164,20 @@ export const SessionScreen = memo(function SessionScreen() {
                                     </View>
                                 )}
 
-                                {/* Instructions */}
+                                {/* Instructions - Icône Material au lieu d'émoji */}
                                 {!logic.isRecording && (
                                     <View style={styles.instructionsContainer}>
-                                        <Text style={styles.instructionText}>
-                                            💡 Conseil: Parlez clairement et à un rythme normal
-                                        </Text>
+                                        <View style={styles.instructionRow}>
+                                            <MaterialIcons
+                                                name="lightbulb-outline"
+                                                size={18}
+                                                color={GlassColors.text.secondary}
+                                                style={styles.instructionIcon}
+                                            />
+                                            <Text style={styles.instructionText}>
+                                                Conseil: Parlez clairement et à un rythme normal
+                                            </Text>
+                                        </View>
                                     </View>
                                 )}
                             </>
@@ -241,11 +236,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: Spacing.lg,
     },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.xs,
+    },
+    recordingIcon: {
+        marginRight: Spacing.xs,
+    },
     statusText: {
         fontSize: 22,
         fontWeight: '700',
         color: GlassColors.text.primary,
-        marginBottom: Spacing.xs,
     },
     statusHint: {
         fontSize: 14,
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
         marginVertical: Spacing.xl,
     },
     // ═══════════════════════════════════════════════════════════════
-    // INDICATEUR DE NIVEAU AUDIO - STYLES AMÉLIORÉS
+    // INDICATEUR DE NIVEAU AUDIO - STYLES SIMPLIFIÉS (BLANC)
     // ═══════════════════════════════════════════════════════════════
     levelIndicatorContainer: {
         width: '100%',
@@ -297,9 +299,9 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     levelPercentage: {
-        fontSize: 28,
+        fontSize: 16,
         fontWeight: 'bold',
-        letterSpacing: -1,
+        color: GlassColors.text.primary,
     },
     levelBarBackground: {
         height: 16,
@@ -310,12 +312,7 @@ const styles = StyleSheet.create({
     levelBarFill: {
         height: '100%',
         borderRadius: 8,
-    },
-    levelFeedback: {
-        fontSize: 14,
-        color: GlassColors.text.secondary,
-        textAlign: 'center',
-        marginTop: Spacing.sm,
+        backgroundColor: '#FFFFFF', // Barre blanche uniquement
     },
     // ═══════════════════════════════════════════════════════════════
     analyzingContainer: {
@@ -351,6 +348,13 @@ const styles = StyleSheet.create({
     instructionsContainer: {
         marginTop: Spacing.xl,
         paddingHorizontal: Spacing.lg,
+    },
+    instructionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    instructionIcon: {
+        marginRight: Spacing.xs,
     },
     instructionText: {
         fontSize: 14,
