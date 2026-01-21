@@ -1,0 +1,543 @@
+/**
+ * @file ProfileScreen.tsx
+ * @description Écran de profil utilisateur avec onglets
+ * 
+ * Pattern: MVVM - Uses useProfile hook for business logic
+ * 
+ * Onglets:
+ * - Profile: Informations personnelles + changement mot de passe
+ * - Preferences: Paramètres de l'application
+ * - About: À propos + liens légaux
+ */
+
+import React, { memo, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Switch,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
+import { GlassColors } from '@/theme';
+
+import { useProfile, type ProfileTab } from '../hooks/useProfile';
+import { PasswordChangeModal } from '../components/PasswordChangeModal';
+import { DeleteAccountModal } from '../components/DeleteAccountModal';
+import { styles } from './ProfileScreen.styles';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface TabButtonProps {
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+}
+
+const TabButton = memo(function TabButton({ label, isActive, onPress }: TabButtonProps) {
+  return (
+    <TouchableOpacity
+      style={[styles.tab, isActive && styles.tabActive]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const ProfileScreen = memo(function ProfileScreen() {
+  const router = useRouter();
+  const logic = useProfile();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // HANDLERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleSaveProfile = useCallback(async () => {
+    const result = await logic.handleUpdateProfile();
+    if (result.success) {
+      Alert.alert('Succès', 'Profil mis à jour avec succès');
+    } else if (result.error) {
+      Alert.alert('Erreur', result.error);
+    }
+  }, [logic]);
+
+  const handleExportData = useCallback(async () => {
+    Alert.alert(
+      'Exporter mes données',
+      'Voulez-vous recevoir un export de toutes vos données par email ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Exporter', 
+          onPress: async () => {
+            await logic.handleExportData();
+            Alert.alert('Succès', 'Vos données vous seront envoyées par email');
+          }
+        },
+      ]
+    );
+  }, [logic]);
+
+  const handleLogout = useCallback(async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Déconnexion', 
+          style: 'destructive',
+          onPress: async () => {
+            await logic.handleLogout();
+            router.replace('/(auth)/login');
+          }
+        },
+      ]
+    );
+  }, [logic, router]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER PROFILE TAB
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const renderProfileTab = () => (
+    <>
+      {/* Personal Information */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Informations personnelles</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          {/* Full Name */}
+          <View style={styles.inputItem}>
+            <Text style={styles.inputLabel}>Nom complet</Text>
+            <TextInput
+              style={styles.input}
+              value={logic.fullName}
+              onChangeText={logic.setFullName}
+              placeholder="Votre nom"
+              placeholderTextColor={GlassColors.text.tertiary}
+            />
+          </View>
+          
+          {/* Email (read-only) */}
+          <View style={[styles.inputItem, styles.listItemLast]}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <Text style={styles.input}>{logic.user.email}</Text>
+          </View>
+        </GlassView>
+
+        <GlassButton
+          title="Enregistrer les modifications"
+          variant="primary"
+          onPress={handleSaveProfile}
+          disabled={logic.isLoading}
+          fullWidth
+          style={styles.saveButton}
+        />
+      </View>
+
+      {/* Security */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Sécurité</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <TouchableOpacity 
+            style={styles.listItem}
+            onPress={logic.showPasswordModal}
+            activeOpacity={0.7}
+          >
+            <View style={styles.listItemIcon}>
+              <MaterialIcons name="lock" size={20} color={GlassColors.accent.primary} />
+            </View>
+            <View style={styles.listItemContent}>
+              <Text style={styles.listItemLabel}>Changer le mot de passe</Text>
+              <Text style={styles.listItemValue}>Dernière modification il y a 30 jours</Text>
+            </View>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={GlassColors.text.tertiary}
+              style={styles.listItemChevron}
+            />
+          </TouchableOpacity>
+
+          {/* Google Link */}
+          <View style={[styles.listItem, styles.listItemLast]}>
+            <View style={styles.listItemIcon}>
+              <MaterialIcons name="link" size={20} color={GlassColors.accent.secondary} />
+            </View>
+            <View style={styles.listItemContent}>
+              <Text style={styles.listItemLabel}>Compte Google</Text>
+              <Text style={styles.listItemValue}>
+                {logic.user.isGoogleLinked ? 'Connecté' : 'Non connecté'}
+              </Text>
+            </View>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={GlassColors.text.tertiary}
+              style={styles.listItemChevron}
+            />
+          </View>
+        </GlassView>
+      </View>
+
+      {/* RGPD / Data */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Mes données (RGPD)</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <TouchableOpacity 
+            style={styles.listItem}
+            onPress={handleExportData}
+            activeOpacity={0.7}
+          >
+            <View style={styles.listItemIcon}>
+              <MaterialIcons name="download" size={20} color={GlassColors.accent.tertiary} />
+            </View>
+            <View style={styles.listItemContent}>
+              <Text style={styles.listItemLabel}>Exporter mes données</Text>
+              <Text style={styles.listItemValue}>Télécharger toutes vos données</Text>
+            </View>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={GlassColors.text.tertiary}
+              style={styles.listItemChevron}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.dangerItem, styles.listItemLast]}
+            onPress={logic.showDeleteModal}
+            activeOpacity={0.7}
+          >
+            <View style={styles.dangerIcon}>
+              <MaterialIcons name="delete-forever" size={20} color={GlassColors.semantic.error} />
+            </View>
+            <Text style={styles.dangerText}>Supprimer mon compte</Text>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={GlassColors.semantic.error}
+              style={styles.listItemChevron}
+            />
+          </TouchableOpacity>
+        </GlassView>
+      </View>
+    </>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER PREFERENCES TAB
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const renderPreferencesTab = () => (
+    <>
+      {/* Notifications */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <View style={[styles.switchItem, styles.listItemLast]}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.switchTitle}>Notifications push</Text>
+              <Text style={styles.switchDescription}>Recevoir des rappels d'étude</Text>
+            </View>
+            <Switch
+              value={logic.preferences.notifications}
+              onValueChange={logic.toggleNotifications}
+              trackColor={{ 
+                false: GlassColors.glass.background, 
+                true: GlassColors.accent.primary 
+              }}
+              thumbColor={GlassColors.text.primary}
+            />
+          </View>
+        </GlassView>
+      </View>
+
+      {/* Appearance */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Apparence</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <View style={[styles.switchItem, styles.listItemLast]}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.switchTitle}>Mode sombre</Text>
+              <Text style={styles.switchDescription}>Thème sombre pour l'application</Text>
+            </View>
+            <Switch
+              value={logic.preferences.darkMode}
+              onValueChange={logic.toggleDarkMode}
+              trackColor={{ 
+                false: GlassColors.glass.background, 
+                true: GlassColors.accent.primary 
+              }}
+              thumbColor={GlassColors.text.primary}
+            />
+          </View>
+        </GlassView>
+      </View>
+
+      {/* Language */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Langue</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <View style={[styles.inputItem, styles.listItemLast]}>
+            <Text style={styles.inputLabel}>Langue de l'interface</Text>
+            <View style={styles.languageSelector}>
+              <TouchableOpacity
+                style={[
+                  styles.languageOption,
+                  logic.preferences.language === 'fr' && styles.languageOptionActive,
+                ]}
+                onPress={() => logic.setLanguage('fr')}
+              >
+                <Text style={[
+                  styles.languageText,
+                  logic.preferences.language === 'fr' && styles.languageTextActive,
+                ]}>
+                  🇫🇷 Français
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.languageOption,
+                  logic.preferences.language === 'en' && styles.languageOptionActive,
+                ]}
+                onPress={() => logic.setLanguage('en')}
+              >
+                <Text style={[
+                  styles.languageText,
+                  logic.preferences.language === 'en' && styles.languageTextActive,
+                ]}>
+                  🇬🇧 English
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </GlassView>
+      </View>
+
+      {/* Data & Storage */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Données & Stockage</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <View style={styles.switchItem}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.switchTitle}>Sauvegarde automatique</Text>
+              <Text style={styles.switchDescription}>Sauvegarder vos sessions en temps réel</Text>
+            </View>
+            <Switch
+              value={logic.preferences.autoSave}
+              onValueChange={logic.toggleAutoSave}
+              trackColor={{ 
+                false: GlassColors.glass.background, 
+                true: GlassColors.accent.primary 
+              }}
+              thumbColor={GlassColors.text.primary}
+            />
+          </View>
+          <View style={[styles.switchItem, styles.listItemLast]}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.switchTitle}>Analytiques</Text>
+              <Text style={styles.switchDescription}>Aider à améliorer l'application</Text>
+            </View>
+            <Switch
+              value={logic.preferences.analyticsEnabled}
+              onValueChange={logic.toggleAnalytics}
+              trackColor={{ 
+                false: GlassColors.glass.background, 
+                true: GlassColors.accent.primary 
+              }}
+              thumbColor={GlassColors.text.primary}
+            />
+          </View>
+        </GlassView>
+      </View>
+    </>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER ABOUT TAB
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const renderAboutTab = () => (
+    <>
+      {/* App Info */}
+      <View style={styles.aboutHeader}>
+        <View style={styles.aboutLogo}>
+          <Text style={styles.aboutLogoText}>K</Text>
+        </View>
+        <Text style={styles.aboutAppName}>KnowIt</Text>
+        <Text style={styles.aboutVersion}>Version 1.0.0</Text>
+      </View>
+
+      <Text style={styles.aboutDescription}>
+        KnowIt est votre compagnon d'apprentissage intelligent. 
+        Enregistrez vos connaissances, recevez des analyses détaillées 
+        et progressez à votre rythme.
+      </Text>
+
+      {/* Links */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Informations légales</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <TouchableOpacity style={styles.aboutLink} activeOpacity={0.7}>
+            <MaterialIcons name="description" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Conditions d'utilisation</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.aboutLink} activeOpacity={0.7}>
+            <MaterialIcons name="privacy-tip" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Politique de confidentialité</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.aboutLink, styles.listItemLast]} activeOpacity={0.7}>
+            <MaterialIcons name="gavel" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Licences open source</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+        </GlassView>
+      </View>
+
+      {/* Support */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Support</Text>
+        <GlassView variant="default" style={styles.sectionCard}>
+          <TouchableOpacity style={styles.aboutLink} activeOpacity={0.7}>
+            <MaterialIcons name="help-outline" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Centre d'aide</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.aboutLink} activeOpacity={0.7}>
+            <MaterialIcons name="email" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Nous contacter</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.aboutLink, styles.listItemLast]} activeOpacity={0.7}>
+            <MaterialIcons name="star-outline" size={24} color={GlassColors.text.secondary} />
+            <Text style={styles.aboutLinkText}>Noter l'application</Text>
+            <MaterialIcons name="chevron-right" size={24} color={GlassColors.text.tertiary} />
+          </TouchableOpacity>
+        </GlassView>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Made with ❤️ in France</Text>
+        <Text style={styles.footerText}>© 2025 KnowIt. Tous droits réservés.</Text>
+      </View>
+    </>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────
+
+  return (
+    <ScreenWrapper>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <MaterialIcons name="arrow-back" size={24} color={GlassColors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Mon Profil</Text>
+      </View>
+
+      {/* Profile Header */}
+      <View style={styles.profileHeader}>
+        <View style={styles.avatarContainer}>
+          <Text style={styles.avatarText}>
+            {logic.user.fullName.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.userName}>{logic.user.fullName}</Text>
+        <Text style={styles.userEmail}>{logic.user.email}</Text>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TabButton
+          label="Profil"
+          isActive={logic.activeTab === 'profile'}
+          onPress={() => logic.setActiveTab('profile')}
+        />
+        <TabButton
+          label="Préférences"
+          isActive={logic.activeTab === 'preferences'}
+          onPress={() => logic.setActiveTab('preferences')}
+        />
+        <TabButton
+          label="À propos"
+          isActive={logic.activeTab === 'about'}
+          onPress={() => logic.setActiveTab('about')}
+        />
+      </View>
+
+      {/* Content */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {logic.activeTab === 'profile' && renderProfileTab()}
+        {logic.activeTab === 'preferences' && renderPreferencesTab()}
+        {logic.activeTab === 'about' && renderAboutTab()}
+
+        {/* Logout Button (visible on all tabs) */}
+        <GlassButton
+          title="Se déconnecter"
+          variant="outline"
+          onPress={handleLogout}
+          fullWidth
+          style={styles.logoutButton}
+          leftIcon={
+            <MaterialIcons name="logout" size={20} color={GlassColors.text.primary} />
+          }
+        />
+      </ScrollView>
+
+      {/* Modals */}
+      <PasswordChangeModal
+        visible={logic.isPasswordModalVisible}
+        onClose={logic.hidePasswordModal}
+        currentPassword={logic.passwordData.currentPassword}
+        newPassword={logic.passwordData.newPassword}
+        confirmPassword={logic.passwordData.confirmPassword}
+        onCurrentPasswordChange={logic.setCurrentPassword}
+        onNewPasswordChange={logic.setNewPassword}
+        onConfirmPasswordChange={logic.setConfirmPassword}
+        onSubmit={logic.handleChangePassword}
+        errors={logic.passwordErrors}
+        isLoading={logic.isLoading}
+      />
+
+      <DeleteAccountModal
+        visible={logic.isDeleteModalVisible}
+        onClose={logic.hideDeleteModal}
+        onConfirm={logic.handleDeleteAccount}
+        isLoading={logic.isLoading}
+      />
+    </ScreenWrapper>
+  );
+});

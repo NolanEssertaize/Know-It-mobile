@@ -10,6 +10,8 @@ import { View, Text, TextInput, FlatList, Pressable, RefreshControl, ActivityInd
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { ProfileButton } from '@/features/profile';
+
 
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
 import { GlassColors } from '@/theme';
@@ -192,6 +194,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                             />
                         </View>
                         <Text style={styles.subtitle}>Prêt à réviser ?</Text>
+                        <ProfileButton initials="Me" />
                     </View>
                 </View>
 
@@ -295,7 +298,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             <AddTopicModal
                 visible={logic.showAddModal}
                 onClose={() => logic.setShowAddModal(false)}
-                onAdd={logic.handleAddTopic}
+                onSubmit={logic.handleAddTopic}
                 value={logic.newTopicText}
                 onChangeText={logic.setNewTopicText}
             />
