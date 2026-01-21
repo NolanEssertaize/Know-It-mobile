@@ -14,7 +14,7 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '@/store';
 import { api } from '@/shared/api';
 import { GlassColors } from '@/theme';
@@ -143,35 +143,37 @@ function AuthNavigator({ children }: { children: React.ReactNode }) {
  */
 export default function RootLayout() {
   return (
-    <ConnectionGate>
-      <AuthNavigator>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: GlassColors.gradient.end,
-            },
-            animation: 'fade',
-          }}
-        >
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="index" />
-          <Stack.Screen
-            name="[topicId]/index"
-            options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="[topicId]/session"
-            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-          />
-          <Stack.Screen
-            name="[topicId]/result"
-            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-          />
-        </Stack>
-      </AuthNavigator>
-    </ConnectionGate>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ConnectionGate>
+          <AuthNavigator>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: {
+                  backgroundColor: GlassColors.gradient.end,
+                },
+                animation: 'fade',
+              }}
+            >
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="index" />
+              <Stack.Screen
+                name="[topicId]/index"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="[topicId]/session"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="[topicId]/result"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+            </Stack>
+          </AuthNavigator>
+        </ConnectionGate>
+      </GestureHandlerRootView>
   );
 }
 
