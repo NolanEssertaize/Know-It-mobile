@@ -1,6 +1,6 @@
 /**
  * @file DeleteAccountModal.styles.ts
- * @description Styles pour le modal de suppression de compte
+ * @description Styles pour le modal de suppression de compte avec vérification en deux étapes
  */
 
 import { StyleSheet } from 'react-native';
@@ -16,32 +16,81 @@ export const styles = StyleSheet.create({
     },
 
     content: {
-        backgroundColor: GlassColors.gradient.middle,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xl,
         width: '100%',
-        maxWidth: 400,
-        borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.3)',
+        maxWidth: 360,
     },
 
+    card: {
+        padding: Spacing.xl,
+        borderRadius: BorderRadius.xl,
+        alignItems: 'center',
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STEP INDICATOR
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    stepIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+    },
+
+    stepDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: GlassColors.glass.background,
+        borderWidth: 1,
+        borderColor: GlassColors.glass.border,
+    },
+
+    stepDotActive: {
+        backgroundColor: GlassColors.semantic.error,
+        borderColor: GlassColors.semantic.error,
+    },
+
+    stepLine: {
+        width: 40,
+        height: 2,
+        backgroundColor: GlassColors.glass.border,
+        marginHorizontal: Spacing.xs,
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ICON
+    // ═══════════════════════════════════════════════════════════════════════════
+
     iconContainer: {
-        alignSelf: 'center',
         width: 80,
         height: 80,
-        borderRadius: 40,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(239, 68, 68, 0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: Spacing.lg,
     },
 
+    iconContainerDanger: {
+        width: 80,
+        height: 80,
+        borderRadius: BorderRadius.full,
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.lg,
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEXT
+    // ═══════════════════════════════════════════════════════════════════════════
+
     title: {
-        fontSize: FontSize['2xl'],
+        fontSize: FontSize.xl,
         fontWeight: FontWeight.bold,
         color: GlassColors.text.primary,
         textAlign: 'center',
-        marginBottom: Spacing.md,
+        marginBottom: Spacing.sm,
     },
 
     description: {
@@ -52,79 +101,77 @@ export const styles = StyleSheet.create({
         marginBottom: Spacing.lg,
     },
 
-    dataList: {
-        backgroundColor: GlassColors.glass.background,
-        borderRadius: BorderRadius.md,
-        padding: Spacing.md,
-        marginBottom: Spacing.xl,
-        gap: Spacing.sm,
-    },
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INPUT
+    // ═══════════════════════════════════════════════════════════════════════════
 
-    dataItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.sm,
-    },
-
-    dataItemText: {
-        fontSize: FontSize.sm,
-        color: GlassColors.text.secondary,
-    },
-
-    confirmSection: {
+    inputSection: {
+        width: '100%',
         marginBottom: Spacing.lg,
     },
 
-    confirmLabel: {
+    inputLabel: {
         fontSize: FontSize.sm,
         color: GlassColors.text.secondary,
         marginBottom: Spacing.sm,
         textAlign: 'center',
     },
 
-    confirmHighlight: {
-        color: GlassColors.semantic.error,
+    confirmationWord: {
         fontWeight: FontWeight.bold,
+        color: GlassColors.semantic.error,
     },
 
     inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.sm,
         borderRadius: BorderRadius.md,
     },
 
     input: {
+        flex: 1,
         fontSize: FontSize.md,
         color: GlassColors.text.primary,
+        paddingVertical: Spacing.md,
         textAlign: 'center',
-        letterSpacing: 2,
     },
 
-    buttonContainer: {
+    eyeButton: {
+        padding: Spacing.xs,
+    },
+
+    errorText: {
+        fontSize: FontSize.sm,
+        color: GlassColors.semantic.error,
+        textAlign: 'center',
+        marginTop: Spacing.sm,
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUTTONS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    buttonsContainer: {
         flexDirection: 'row',
         gap: Spacing.md,
+        width: '100%',
     },
 
     cancelButton: {
         flex: 1,
     },
 
+    confirmButton: {
+        flex: 1,
+    },
+
     deleteButton: {
         flex: 1,
         backgroundColor: GlassColors.semantic.error,
-        borderRadius: BorderRadius.md,
-        paddingVertical: Spacing.md,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 
-    deleteButtonDisabled: {
-        backgroundColor: 'rgba(239, 68, 68, 0.3)',
-    },
-
-    deleteButtonText: {
-        fontSize: FontSize.md,
-        fontWeight: FontWeight.semibold,
-        color: GlassColors.text.primary,
+    buttonDisabled: {
+        opacity: 0.5,
     },
 });
