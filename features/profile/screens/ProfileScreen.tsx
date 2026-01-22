@@ -1,11 +1,12 @@
 /**
  * @file ProfileScreen.tsx
- * @description Écran de profil - Bottom Sheet Modal Style - Monochrome Theme
+ * @description Écran de profil - Bottom Sheet Modal Style - Theme Aware
  *
- * FIXES:
- * - "Enregistrer les modifications" button: HIGH CONTRAST (white bg, black text)
- * - Logout properly calls AuthService.logout() via useAuthStore
- * - All buttons visible with proper contrast
+ * FIXED:
+ * - Added ThemeSelector component (Light/Dark/System)
+ * - All colors now use useTheme() hook
+ * - Removed hardcoded colors
+ * - StatusBar adapts to theme
  */
 
 import React, { memo, useCallback, useRef, useEffect } from 'react';
@@ -30,7 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { GlassView } from '@/shared/components';
-import { Spacing, BorderRadius } from '@/theme';
+import { Spacing, BorderRadius, useTheme, ThemeSelector } from '@/theme';
 
 import { useProfile, type ProfileTab } from '../hooks/useProfile';
 import { PasswordChangeModal } from '../components/PasswordChangeModal';
@@ -40,7 +41,7 @@ import { LogoutConfirmationModal } from '../components/LogoutConfirmationModal';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB BUTTON COMPONENT
+// TAB BUTTON COMPONENT - THEME AWARE
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface TabButtonProps {
@@ -51,18 +52,30 @@ interface TabButtonProps {
 }
 
 const TabButton = memo(function TabButton({ label, icon, isActive, onPress }: TabButtonProps) {
+    const { colors, isDark } = useTheme();
+    
     return (
         <TouchableOpacity
-            style={[styles.tab, isActive && styles.tabActive]}
+            style={[
+                styles.tab,
+                isActive && {
+                    backgroundColor: colors.text.primary,
+                },
+            ]}
             onPress={onPress}
             activeOpacity={0.7}
         >
             <MaterialIcons
                 name={icon}
                 size={20}
-                color={isActive ? '#000000' : 'rgba(255,255,255,0.6)'}
+                color={isActive ? colors.text.inverse : colors.text.muted}
             />
-            <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+            <Text
+                style={[
+                    styles.tabText,
+                    { color: isActive ? colors.text.inverse : colors.text.muted },
+                ]}
+            >
                 {label}
             </Text>
         </TouchableOpacity>
@@ -70,7 +83,7 @@ const TabButton = memo(function TabButton({ label, icon, isActive, onPress }: Ta
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRIMARY BUTTON COMPONENT - HIGH CONTRAST
+// PRIMARY BUTTON COMPONENT - THEME AWARE
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface PrimaryButtonProps {
@@ -81,57 +94,32 @@ interface PrimaryButtonProps {
 }
 
 const PrimaryButton = memo(function PrimaryButton({
-                                                      title,
-                                                      onPress,
-                                                      disabled = false,
-                                                      loading = false,
-                                                  }: PrimaryButtonProps) {
+    title,
+    onPress,
+    disabled = false,
+    loading = false,
+}: PrimaryButtonProps) {
+    const { colors } = useTheme();
+    
     return (
-        <Pressable
-            style={({ pressed }) => [
+        <TouchableOpacity
+            style={[
                 styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
-                disabled && styles.primaryButtonDisabled,
+                { backgroundColor: colors.text.primary },
+                disabled && { opacity: 0.5 },
             ]}
             onPress={onPress}
             disabled={disabled || loading}
+            activeOpacity={0.8}
         >
             {loading ? (
-                <ActivityIndicator size="small" color="#000000" />
+                <ActivityIndicator size="small" color={colors.text.inverse} />
             ) : (
-                <Text style={styles.primaryButtonText}>{title}</Text>
+                <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>
+                    {title}
+                </Text>
             )}
-        </Pressable>
-    );
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// OUTLINE BUTTON COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface OutlineButtonProps {
-    title: string;
-    onPress: () => void;
-    disabled?: boolean;
-}
-
-const OutlineButton = memo(function OutlineButton({
-                                                      title,
-                                                      onPress,
-                                                      disabled = false,
-                                                  }: OutlineButtonProps) {
-    return (
-        <Pressable
-            style={({ pressed }) => [
-                styles.outlineButton,
-                pressed && styles.outlineButtonPressed,
-                disabled && styles.outlineButtonDisabled,
-            ]}
-            onPress={onPress}
-            disabled={disabled}
-        >
-            <Text style={styles.outlineButtonText}>{title}</Text>
-        </Pressable>
+        </TouchableOpacity>
     );
 });
 
@@ -139,30 +127,24 @@ const OutlineButton = memo(function OutlineButton({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const ProfileScreen = memo(function ProfileScreen() {
+function ProfileScreenComponent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const logic = useProfile();
+    
+    // Get theme
+    const { colors, isDark } = useTheme();
 
-    // Animation for slide-up effect
+    // Animation
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-    const overlayAnim = useRef(new Animated.Value(0)).current;
 
-    // Animate in on mount
     useEffect(() => {
-        Animated.parallel([
-            Animated.spring(slideAnim, {
-                toValue: 0,
-                tension: 65,
-                friction: 11,
-                useNativeDriver: true,
-            }),
-            Animated.timing(overlayAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-        ]).start();
+        Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+        }).start();
     }, []);
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -170,35 +152,19 @@ export const ProfileScreen = memo(function ProfileScreen() {
     // ─────────────────────────────────────────────────────────────────────────
 
     const handleClose = useCallback(() => {
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: SCREEN_HEIGHT,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-            Animated.timing(overlayAnim, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }),
-        ]).start(() => {
+        Animated.timing(slideAnim, {
+            toValue: SCREEN_HEIGHT,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => {
             router.back();
         });
-    }, [router, slideAnim, overlayAnim]);
+    }, [slideAnim, router]);
 
-    const handleSaveProfile = useCallback(async () => {
-        const result = await logic.handleUpdateProfile();
-        if (result.success) {
-            Alert.alert('Succès', 'Profil mis à jour avec succès');
-        } else if (result.error) {
-            Alert.alert('Erreur', result.error);
-        }
-    }, [logic]);
-
-    const handleExportData = useCallback(async () => {
+    const handleExportData = useCallback(() => {
         Alert.alert(
             'Exporter mes données',
-            'Voulez-vous recevoir un export de toutes vos données par email ?',
+            'Voulez-vous recevoir une copie de toutes vos données par email ?',
             [
                 { text: 'Annuler', style: 'cancel' },
                 {
@@ -212,27 +178,18 @@ export const ProfileScreen = memo(function ProfileScreen() {
         );
     }, [logic]);
 
-    // LOGOUT HANDLER - Properly calls the API
     const handleLogoutConfirm = useCallback(async () => {
-        console.log('[ProfileScreen] Logout requested');
-
         try {
             const result = await logic.handleLogout();
-
             if (result.success) {
-                console.log('[ProfileScreen] Logout successful, redirecting...');
-                // Close the modal first, then navigate
                 handleClose();
-                // Use setTimeout to ensure modal is closed before navigation
                 setTimeout(() => {
                     router.replace('/(auth)/login');
                 }, 300);
             } else if (result.error) {
-                console.error('[ProfileScreen] Logout failed:', result.error);
                 Alert.alert('Erreur', result.error);
             }
         } catch (error) {
-            console.error('[ProfileScreen] Logout error:', error);
             Alert.alert('Erreur', 'Une erreur est survenue lors de la déconnexion');
         }
     }, [logic, router, handleClose]);
@@ -255,9 +212,14 @@ export const ProfileScreen = memo(function ProfileScreen() {
 
     if (!logic.user) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text style={styles.loadingText}>Chargement...</Text>
+            <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.text.primary} />
+                    <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                        Chargement...
+                    </Text>
+                </View>
             </View>
         );
     }
@@ -270,72 +232,101 @@ export const ProfileScreen = memo(function ProfileScreen() {
         <>
             {/* Personal Information */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Informations personnelles</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Informations personnelles
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
-                    <View style={styles.inputItem}>
-                        <Text style={styles.inputLabel}>Nom complet</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={logic.fullName}
-                            onChangeText={logic.setFullName}
-                            placeholder="Votre nom"
-                            placeholderTextColor="rgba(255,255,255,0.4)"
-                        />
+                    {/* Email */}
+                    <View style={styles.listItem}>
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="email" size={20} color={colors.text.primary} />
+                        </View>
+                        <View style={styles.listItemContent}>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Email
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                {logic.user?.email}
+                            </Text>
+                        </View>
                     </View>
 
-                    <View style={[styles.inputItem, styles.listItemLast]}>
-                        <Text style={styles.inputLabel}>Email</Text>
-                        <Text style={styles.inputReadOnly}>{logic.user.email}</Text>
+                    {/* Full Name */}
+                    <View style={[styles.listItem, styles.listItemLast]}>
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="person" size={20} color={colors.text.primary} />
+                        </View>
+                        <View style={styles.listItemContent}>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Nom complet
+                            </Text>
+                            <TextInput
+                                style={[styles.listItemInput, { color: colors.text.primary }]}
+                                value={logic.fullName}
+                                onChangeText={logic.setFullName}
+                                placeholder="Entrez votre nom"
+                                placeholderTextColor={colors.text.muted}
+                            />
+                        </View>
                     </View>
                 </GlassView>
 
-                {/* SAVE BUTTON - HIGH CONTRAST */}
+                {/* Save Button */}
                 <PrimaryButton
                     title="Enregistrer les modifications"
-                    onPress={handleSaveProfile}
-                    disabled={logic.isLoading}
+                    onPress={logic.handleUpdateProfile}
+                    disabled={logic.fullName === logic.user?.fullName}
                     loading={logic.isLoading}
                 />
             </View>
 
             {/* Security */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Sécurité</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Sécurité
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity
                         style={[styles.listItem, styles.listItemLast]}
                         onPress={logic.showPasswordModal}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="lock" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="lock" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Modifier le mot de passe</Text>
-                            <Text style={styles.listItemValue}>••••••••</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Mot de passe
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                Modifier le mot de passe
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
                 </GlassView>
             </View>
 
-            {/* Data Management */}
+            {/* RGPD Actions */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Mes données</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Données personnelles (RGPD)
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity
                         style={styles.listItem}
                         onPress={handleExportData}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="download" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="download" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Exporter mes données</Text>
-                            <Text style={styles.listItemValue}>Recevoir une copie de vos données</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Exporter mes données
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -343,13 +334,15 @@ export const ProfileScreen = memo(function ProfileScreen() {
                         onPress={logic.showDeleteModal}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="delete-forever" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="delete-forever" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Supprimer mon compte</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Supprimer mon compte
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
                 </GlassView>
             </View>
@@ -357,76 +350,101 @@ export const ProfileScreen = memo(function ProfileScreen() {
     );
 
     // ─────────────────────────────────────────────────────────────────────────
-    // RENDER PREFERENCES TAB
+    // RENDER PREFERENCES TAB - WITH THEME SELECTOR
     // ─────────────────────────────────────────────────────────────────────────
 
     const renderPreferencesTab = () => (
         <>
             {/* Notifications */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Notifications</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Notifications
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={[styles.switchItem, styles.listItemLast]}>
                         <View style={styles.switchLabel}>
-                            <Text style={styles.switchTitle}>Notifications push</Text>
-                            <Text style={styles.switchDescription}>Recevoir des rappels d'étude</Text>
+                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                                Notifications push
+                            </Text>
+                            <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                                Recevoir des rappels d'étude
+                            </Text>
                         </View>
                         <Switch
                             value={logic.preferences.notifications}
                             onValueChange={logic.toggleNotifications}
                             trackColor={{
-                                false: 'rgba(255,255,255,0.2)',
-                                true: '#FFFFFF',
+                                false: colors.surface.glass,
+                                true: colors.text.primary,
                             }}
-                            thumbColor={logic.preferences.notifications ? '#000000' : '#FFFFFF'}
-                            ios_backgroundColor="rgba(255,255,255,0.2)"
+                            thumbColor={
+                                logic.preferences.notifications
+                                    ? colors.background.primary
+                                    : colors.text.primary
+                            }
+                            ios_backgroundColor={colors.surface.glass}
                         />
                     </View>
                 </GlassView>
             </View>
 
-            {/* Appearance */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* THEME SELECTOR - NEW SECTION */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Apparence</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Apparence
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
-                    <View style={[styles.switchItem, styles.listItemLast]}>
-                        <View style={styles.switchLabel}>
-                            <Text style={styles.switchTitle}>Mode sombre</Text>
-                            <Text style={styles.switchDescription}>Thème sombre pour l'application</Text>
+                    <View style={styles.themeSection}>
+                        <View style={styles.themeSectionHeader}>
+                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                                Thème
+                            </Text>
+                            <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                                Choisissez l'apparence de l'application
+                            </Text>
                         </View>
-                        <Switch
-                            value={logic.preferences.darkMode}
-                            onValueChange={logic.toggleDarkMode}
-                            trackColor={{
-                                false: 'rgba(255,255,255,0.2)',
-                                true: '#FFFFFF',
-                            }}
-                            thumbColor={logic.preferences.darkMode ? '#000000' : '#FFFFFF'}
-                            ios_backgroundColor="rgba(255,255,255,0.2)"
-                        />
+                        <View style={styles.themeSelectorContainer}>
+                            <ThemeSelector language="fr" />
+                        </View>
                     </View>
                 </GlassView>
             </View>
 
             {/* Language */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Langue</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Langue
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={[styles.switchItem, styles.listItemLast]}>
                         <View style={styles.switchLabel}>
-                            <Text style={styles.switchTitle}>Langue de l'interface</Text>
+                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                                Langue de l'interface
+                            </Text>
                             <View style={styles.languageSelector}>
                                 <TouchableOpacity
                                     style={[
                                         styles.languageOption,
-                                        logic.preferences.language === 'fr' && styles.languageOptionActive,
+                                        { 
+                                            backgroundColor: colors.surface.glass,
+                                            borderColor: colors.glass.border,
+                                        },
+                                        logic.preferences.language === 'fr' && {
+                                            backgroundColor: colors.text.primary,
+                                            borderColor: colors.text.primary,
+                                        },
                                     ]}
                                     onPress={() => logic.setLanguage('fr')}
                                 >
                                     <Text
                                         style={[
                                             styles.languageText,
-                                            logic.preferences.language === 'fr' && styles.languageTextActive,
+                                            { color: colors.text.secondary },
+                                            logic.preferences.language === 'fr' && {
+                                                color: colors.text.inverse,
+                                            },
                                         ]}
                                     >
                                         Français
@@ -435,14 +453,24 @@ export const ProfileScreen = memo(function ProfileScreen() {
                                 <TouchableOpacity
                                     style={[
                                         styles.languageOption,
-                                        logic.preferences.language === 'en' && styles.languageOptionActive,
+                                        { 
+                                            backgroundColor: colors.surface.glass,
+                                            borderColor: colors.glass.border,
+                                        },
+                                        logic.preferences.language === 'en' && {
+                                            backgroundColor: colors.text.primary,
+                                            borderColor: colors.text.primary,
+                                        },
                                     ]}
                                     onPress={() => logic.setLanguage('en')}
                                 >
                                     <Text
                                         style={[
                                             styles.languageText,
-                                            logic.preferences.language === 'en' && styles.languageTextActive,
+                                            { color: colors.text.secondary },
+                                            logic.preferences.language === 'en' && {
+                                                color: colors.text.inverse,
+                                            },
                                         ]}
                                     >
                                         English
@@ -456,39 +484,57 @@ export const ProfileScreen = memo(function ProfileScreen() {
 
             {/* Data & Storage */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Données & Stockage</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Données & Stockage
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={styles.switchItem}>
                         <View style={styles.switchLabel}>
-                            <Text style={styles.switchTitle}>Sauvegarde automatique</Text>
-                            <Text style={styles.switchDescription}>Sauvegarder vos sessions en ligne</Text>
+                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                                Sauvegarde automatique
+                            </Text>
+                            <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                                Sauvegarder vos sessions en ligne
+                            </Text>
                         </View>
                         <Switch
                             value={logic.preferences.autoSave}
                             onValueChange={logic.toggleAutoSave}
                             trackColor={{
-                                false: 'rgba(255,255,255,0.2)',
-                                true: '#FFFFFF',
+                                false: colors.surface.glass,
+                                true: colors.text.primary,
                             }}
-                            thumbColor={logic.preferences.autoSave ? '#000000' : '#FFFFFF'}
-                            ios_backgroundColor="rgba(255,255,255,0.2)"
+                            thumbColor={
+                                logic.preferences.autoSave
+                                    ? colors.background.primary
+                                    : colors.text.primary
+                            }
+                            ios_backgroundColor={colors.surface.glass}
                         />
                     </View>
 
                     <View style={[styles.switchItem, styles.listItemLast]}>
                         <View style={styles.switchLabel}>
-                            <Text style={styles.switchTitle}>Analytiques</Text>
-                            <Text style={styles.switchDescription}>Aider à améliorer l'application</Text>
+                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                                Analytiques
+                            </Text>
+                            <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                                Aider à améliorer l'application
+                            </Text>
                         </View>
                         <Switch
                             value={logic.preferences.analyticsEnabled}
                             onValueChange={logic.toggleAnalytics}
                             trackColor={{
-                                false: 'rgba(255,255,255,0.2)',
-                                true: '#FFFFFF',
+                                false: colors.surface.glass,
+                                true: colors.text.primary,
                             }}
-                            thumbColor={logic.preferences.analyticsEnabled ? '#000000' : '#FFFFFF'}
-                            ios_backgroundColor="rgba(255,255,255,0.2)"
+                            thumbColor={
+                                logic.preferences.analyticsEnabled
+                                    ? colors.background.primary
+                                    : colors.text.primary
+                            }
+                            ios_backgroundColor={colors.surface.glass}
                         />
                     </View>
                 </GlassView>
@@ -504,72 +550,111 @@ export const ProfileScreen = memo(function ProfileScreen() {
         <>
             {/* App Info */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Application</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Application
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={styles.listItem}>
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="info" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="info" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Version</Text>
-                            <Text style={styles.listItemValue}>1.0.0 (Build 1)</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Version
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                1.0.0 (Build 1)
+                            </Text>
                         </View>
                     </View>
 
                     <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="star" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="star" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Noter l'application</Text>
-                            <Text style={styles.listItemValue}>Laissez-nous un avis</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Noter l'application
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                Laissez-nous un avis
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={[styles.listItem, styles.listItemLast]} activeOpacity={0.7}>
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="share" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="share" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Partager KnowIt</Text>
-                            <Text style={styles.listItemValue}>Invitez vos amis</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Partager KnowIt
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                Invitez vos amis
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
                 </GlassView>
             </View>
 
             {/* Legal */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Légal</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    Légal
+                </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="description" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="description" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Conditions d'utilisation</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Conditions d'utilisation
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="privacy-tip" size={20} color={colors.text.primary} />
+                        </View>
+                        <View style={styles.listItemContent}>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Politique de confidentialité
+                            </Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={[styles.listItem, styles.listItemLast]} activeOpacity={0.7}>
-                        <View style={styles.listItemIcon}>
-                            <MaterialIcons name="privacy-tip" size={20} color="#FFFFFF" />
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="email" size={20} color={colors.text.primary} />
                         </View>
                         <View style={styles.listItemContent}>
-                            <Text style={styles.listItemLabel}>Politique de confidentialité</Text>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                Nous contacter
+                            </Text>
+                            <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                support@knowit.app
+                            </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
                 </GlassView>
             </View>
 
             {/* Copyright */}
             <View style={styles.copyright}>
-                <Text style={styles.copyrightText}>© 2026 KnowIt.</Text>
-                <Text style={styles.copyrightText}>Tous droits réservés.</Text>
+                <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
+                    © 2024 KnowIt.
+                </Text>
+                <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
+                    Tous droits réservés.
+                </Text>
             </View>
         </>
     );
@@ -579,50 +664,40 @@ export const ProfileScreen = memo(function ProfileScreen() {
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+        <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-            {/* Grey overlay background */}
-            <Animated.View
-                style={[
-                    styles.overlay,
-                    {
-                        opacity: overlayAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0, 0.6],
-                        }),
-                    },
-                ]}
-            >
-                <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
-            </Animated.View>
+            {/* Backdrop */}
+            <Pressable style={styles.backdrop} onPress={handleClose} />
 
-            {/* Bottom Sheet Modal */}
+            {/* Sheet */}
             <Animated.View
                 style={[
                     styles.sheet,
-                    {
-                        transform: [{ translateY: slideAnim }],
+                    { 
+                        backgroundColor: colors.background.primary,
                         paddingBottom: insets.bottom,
+                        transform: [{ translateY: slideAnim }],
                     },
                 ]}
             >
-                {/* Drag Handle */}
-                <View style={styles.dragHandleContainer}>
-                    <View style={styles.dragHandle} />
+                {/* Handle */}
+                <View style={styles.handleContainer}>
+                    <View style={[styles.handle, { backgroundColor: colors.text.muted }]} />
                 </View>
 
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                        <MaterialIcons name="close" size={24} color="#FFFFFF" />
+                    <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
+                        Mon Profil
+                    </Text>
+                    <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Mon Profil</Text>
-                    <View style={styles.headerSpacer} />
                 </View>
 
                 {/* Tabs */}
-                <View style={styles.tabsContainer}>
+                <View style={[styles.tabsContainer, { backgroundColor: colors.surface.glass }]}>
                     <TabButton
                         label="Profil"
                         icon="person"
@@ -645,7 +720,7 @@ export const ProfileScreen = memo(function ProfileScreen() {
 
                 {/* Content */}
                 <ScrollView
-                    style={styles.content}
+                    style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
@@ -653,11 +728,25 @@ export const ProfileScreen = memo(function ProfileScreen() {
                     {logic.activeTab === 'preferences' && renderPreferencesTab()}
                     {logic.activeTab === 'about' && renderAboutTab()}
 
-                    {/* Logout Button - Outline style */}
-                    <OutlineButton
-                        title="Se déconnecter"
-                        onPress={logic.showLogoutModal}
-                    />
+                    {/* Logout Button */}
+                    <View style={styles.logoutSection}>
+                        <TouchableOpacity
+                            style={[
+                                styles.logoutButton,
+                                { 
+                                    backgroundColor: colors.surface.glass,
+                                    borderColor: colors.glass.border,
+                                },
+                            ]}
+                            onPress={logic.showLogoutModal}
+                            activeOpacity={0.7}
+                        >
+                            <MaterialIcons name="logout" size={20} color={colors.text.primary} />
+                            <Text style={[styles.logoutText, { color: colors.text.primary }]}>
+                                Déconnexion
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </ScrollView>
             </Animated.View>
 
@@ -665,21 +754,12 @@ export const ProfileScreen = memo(function ProfileScreen() {
             <PasswordChangeModal
                 visible={logic.isPasswordModalVisible}
                 onClose={logic.hidePasswordModal}
-                currentPassword={logic.currentPassword}
-                newPassword={logic.newPassword}
-                confirmPassword={logic.confirmPassword}
+                onSubmit={logic.handleChangePassword}
+                passwordData={logic.passwordData}
                 onCurrentPasswordChange={logic.setCurrentPassword}
                 onNewPasswordChange={logic.setNewPassword}
                 onConfirmPasswordChange={logic.setConfirmPassword}
-                onSubmit={logic.handlePasswordChange}
                 errors={logic.passwordErrors}
-                isLoading={logic.isLoading}
-            />
-
-            <LogoutConfirmationModal
-                visible={logic.isLogoutModalVisible}
-                onClose={logic.hideLogoutModal}
-                onConfirm={handleLogoutConfirm}
                 isLoading={logic.isLoading}
             />
 
@@ -689,367 +769,244 @@ export const ProfileScreen = memo(function ProfileScreen() {
                 onConfirm={handleDeleteConfirm}
                 isLoading={logic.isLoading}
             />
+
+            <LogoutConfirmationModal
+                visible={logic.isLogoutModalVisible}
+                onClose={logic.hideLogoutModal}
+                onConfirm={handleLogoutConfirm}
+                isLoading={logic.isLoading}
+            />
         </View>
     );
-});
+}
+
+export const ProfileScreen = memo(ProfileScreenComponent);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// STYLES (Static - colors applied inline with useTheme)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-
-    overlay: {
+    backdrop: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: '#000000',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-
     sheet: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: SCREEN_HEIGHT * 0.9,
-        backgroundColor: '#0A0A0A',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        overflow: 'hidden',
+        maxHeight: SCREEN_HEIGHT * 0.9,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 16,
+            },
+        }),
     },
-
-    dragHandleContainer: {
+    handleContainer: {
         alignItems: 'center',
-        paddingTop: Spacing.sm,
-        paddingBottom: Spacing.xs,
+        paddingVertical: 12,
     },
-
-    dragHandle: {
-        width: 36,
+    handle: {
+        width: 40,
         height: 4,
         borderRadius: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
     },
-
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.sm,
         paddingBottom: Spacing.md,
     },
-
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+    },
     closeButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-
-    headerTitle: {
-        flex: 1,
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#FFFFFF',
-        textAlign: 'center',
-    },
-
-    headerSpacer: {
-        width: 40,
-    },
-
-    // Tabs
     tabsContainer: {
         flexDirection: 'row',
         marginHorizontal: Spacing.lg,
-        marginBottom: Spacing.lg,
         borderRadius: BorderRadius.lg,
         padding: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        marginBottom: Spacing.md,
     },
-
     tab: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.xs,
-        paddingVertical: Spacing.sm,
+        paddingVertical: 10,
         borderRadius: BorderRadius.md,
+        gap: 6,
     },
-
-    tabActive: {
-        backgroundColor: '#FFFFFF',
-    },
-
     tabText: {
         fontSize: 13,
-        fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.6)',
-    },
-
-    tabTextActive: {
-        color: '#000000',
         fontWeight: '600',
     },
-
-    // Content
-    content: {
+    scrollView: {
         flex: 1,
-        paddingHorizontal: Spacing.lg,
     },
-
     scrollContent: {
-        paddingBottom: Spacing.xxl + 100,
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.xxl,
     },
-
-    // Section
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: Spacing.md,
+    },
+    loadingText: {
+        fontSize: 16,
+    },
     section: {
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.lg,
     },
-
     sectionTitle: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '600',
-        color: 'rgba(255, 255, 255, 0.5)',
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
         marginBottom: Spacing.sm,
-        marginLeft: Spacing.xs,
+        marginLeft: 4,
     },
-
     sectionCard: {
         borderRadius: BorderRadius.lg,
         overflow: 'hidden',
+        marginBottom: Spacing.sm,
     },
-
-    // List items
     listItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     },
-
     listItemLast: {
         borderBottomWidth: 0,
     },
-
     listItemIcon: {
         width: 40,
         height: 40,
-        borderRadius: BorderRadius.md,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: Spacing.md,
     },
-
     listItemContent: {
         flex: 1,
     },
-
     listItemLabel: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#FFFFFF',
+        fontSize: 12,
         marginBottom: 2,
     },
-
     listItemValue: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.6)',
-    },
-
-    // Input
-    inputItem: {
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-    },
-
-    inputLabel: {
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginBottom: Spacing.xs,
     },
-
-    input: {
+    listItemInput: {
         fontSize: 16,
-        color: '#FFFFFF',
-        paddingVertical: Spacing.xs,
+        fontWeight: '500',
+        padding: 0,
     },
-
-    inputReadOnly: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.4)',
-        paddingVertical: Spacing.xs,
-    },
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // PRIMARY BUTTON - HIGH CONTRAST (White bg, Black text)
-    // ═══════════════════════════════════════════════════════════════════════
     primaryButton: {
-        marginTop: Spacing.md,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: BorderRadius.lg,
-        backgroundColor: '#FFFFFF',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#FFFFFF',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
     },
-
-    primaryButtonPressed: {
-        opacity: 0.9,
-        transform: [{ scale: 0.98 }],
-    },
-
-    primaryButtonDisabled: {
-        opacity: 0.5,
-    },
-
     primaryButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#000000',
     },
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // OUTLINE BUTTON (Glass bg, White text)
-    // ═══════════════════════════════════════════════════════════════════════
-    outlineButton: {
-        marginTop: Spacing.lg,
-        marginBottom: Spacing.xl,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: BorderRadius.lg,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    outlineButtonPressed: {
-        opacity: 0.7,
-    },
-
-    outlineButtonDisabled: {
-        opacity: 0.5,
-    },
-
-    outlineButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-
-    // Switch
     switchItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     },
-
     switchLabel: {
         flex: 1,
         marginRight: Spacing.md,
     },
-
     switchTitle: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#FFFFFF',
         marginBottom: 2,
     },
-
     switchDescription: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 13,
     },
-
-    // Language
+    themeSection: {
+        padding: Spacing.md,
+    },
+    themeSectionHeader: {
+        marginBottom: Spacing.md,
+    },
+    themeSelectorContainer: {
+        marginTop: Spacing.sm,
+    },
     languageSelector: {
         flexDirection: 'row',
         gap: Spacing.sm,
-        marginTop: Spacing.sm,
+        marginTop: Spacing.xs,
     },
-
     languageOption: {
         flex: 1,
         paddingVertical: Spacing.sm,
         paddingHorizontal: Spacing.md,
         borderRadius: BorderRadius.md,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',
     },
-
-    languageOptionActive: {
-        backgroundColor: '#FFFFFF',
-        borderColor: '#FFFFFF',
-    },
-
     languageText: {
         fontSize: 14,
         fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.6)',
     },
-
-    languageTextActive: {
-        color: '#000000',
-        fontWeight: '600',
-    },
-
-    // Copyright
     copyright: {
         alignItems: 'center',
         paddingVertical: Spacing.xl,
+    },
+    copyrightText: {
+        fontSize: 12,
+    },
+    logoutSection: {
         marginTop: Spacing.lg,
     },
-
-    copyrightText: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.4)',
-    },
-
-    // Loading
-    loadingContainer: {
-        flex: 1,
+    logoutButton: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#000000',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        gap: Spacing.sm,
     },
-
-    loadingText: {
+    logoutText: {
         fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginTop: Spacing.md,
+        fontWeight: '500',
     },
 });
 

@@ -1,12 +1,8 @@
 /**
  * @file TopicsListScreen.tsx
- * @description Écran principal - Liste des sujets - Monochrome Theme
+ * @description Écran principal - Liste des sujets - Theme Aware
  *
- * FIXES:
- * - Stats values: WHITE text (was black on black)
- * - FAB button: SOLID WHITE background + BLACK icon
- * - Removed all LinearGradient usage
- * - All icons and text use explicit colors
+ * FIXED: All colors now use useTheme() hook
  */
 
 import React, { memo, useCallback } from 'react';
@@ -26,13 +22,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
-import { Spacing, BorderRadius } from '@/theme';
+import { Spacing, BorderRadius, useTheme } from '@/theme';
 
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
 import { AddTopicModal } from '../components/AddTopicModal';
 import { CategoryFilter } from '../components/CategoryFilter';
-import { styles } from './TopicsListScreen.styles';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPOSANT
@@ -40,6 +35,7 @@ import { styles } from './TopicsListScreen.styles';
 
 export const TopicsListScreen = memo(function TopicsListScreen() {
     const logic = useTopicsList();
+    const { colors, isDark } = useTheme();
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER HELPERS
@@ -50,134 +46,154 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             <View style={styles.listHeader}>
                 {/* Titre de section */}
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Mes Sujets</Text>
-                    <Text style={styles.sectionCount}>
+                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+                        Mes Sujets
+                    </Text>
+                    <Text style={[styles.sectionCount, { color: colors.text.muted }]}>
                         {logic.filteredTopics.length} sujets
                     </Text>
                 </View>
 
                 {/* Indication de swipe */}
                 <View style={styles.swipeHintContainer}>
-                    <MaterialIcons name="swipe" size={14} color="rgba(255,255,255,0.4)" />
-                    <Text style={styles.swipeHint}>Glissez pour plus d'options</Text>
+                    <MaterialIcons name="swipe" size={14} color={colors.text.muted} />
+                    <Text style={[styles.swipeHint, { color: colors.text.muted }]}>
+                        Glissez pour plus d'options
+                    </Text>
                 </View>
 
                 {/* Indicateur de filtres actifs */}
                 {logic.hasActiveFilters && (
-                    <Pressable onPress={logic.resetFilters} style={styles.activeFiltersBar}>
-                        <Text style={styles.activeFiltersText}>Filtres actifs</Text>
-                        <MaterialCommunityIcons name="close-circle" size={16} color="#FFFFFF" />
+                    <Pressable 
+                        onPress={logic.resetFilters} 
+                        style={[styles.activeFiltersBar, { backgroundColor: colors.surface.glass }]}
+                    >
+                        <Text style={[styles.activeFiltersText, { color: colors.text.primary }]}>
+                            Filtres actifs
+                        </Text>
+                        <MaterialCommunityIcons name="close-circle" size={16} color={colors.text.primary} />
                     </Pressable>
                 )}
             </View>
         ),
-        [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters]
+        [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters, colors]
     );
 
-    const renderTopicCard = useCallback(
+    const renderItem = useCallback(
         ({ item }: { item: TopicItemData }) => (
             <TopicCard
                 data={item}
-                onPress={() => logic.handleCardPress(item.topic.id)}
-                onEdit={() => logic.handleEdit(item.topic.id)}
-                onShare={() => logic.handleShare(item.topic.id)}
-                onDelete={() => logic.handleDelete(item.topic.id)}
-                registerRef={(ref) => logic.registerSwipeableRef(item.topic.id, ref)}
-                unregisterRef={() => logic.unregisterSwipeableRef(item.topic.id)}
+                onPress={() => logic.handleTopicPress(item.id)}
+                onEdit={() => logic.handleEditTopic(item.id)}
+                onShare={() => logic.handleShareTopic(item.id)}
+                onDelete={() => logic.handleDeleteTopic(item.id)}
             />
         ),
-        [logic.handleCardPress, logic.handleEdit, logic.handleShare, logic.handleDelete]
+        [logic.handleTopicPress, logic.handleEditTopic, logic.handleShareTopic, logic.handleDeleteTopic]
     );
 
     const renderEmptyState = useCallback(
         () => (
             <View style={styles.emptyContainer}>
-                <GlassView style={styles.emptyIcon}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface.glass }]}>
                     <MaterialCommunityIcons
-                        name="book-plus-outline"
-                        size={64}
-                        color="rgba(255,255,255,0.5)"
+                        name="book-plus"
+                        size={48}
+                        color={colors.text.primary}
                     />
-                </GlassView>
-                <Text style={styles.emptyTitle}>
-                    {logic.hasActiveFilters ? 'Aucun résultat' : 'Aucun sujet'}
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
+                    Aucun sujet trouvé
                 </Text>
-                <Text style={styles.emptySubtitle}>
+                <Text style={[styles.emptyDescription, { color: colors.text.secondary }]}>
                     {logic.hasActiveFilters
                         ? 'Essayez de modifier vos filtres'
-                        : 'Créez votre premier sujet pour commencer à réviser'}
+                        : 'Créez votre premier sujet pour commencer'}
                 </Text>
+                {!logic.hasActiveFilters && (
+                    <Pressable
+                        style={[styles.emptyButton, { backgroundColor: colors.text.primary }]}
+                        onPress={logic.openAddModal}
+                    >
+                        <MaterialIcons name="add" size={20} color={colors.text.inverse} />
+                        <Text style={[styles.emptyButtonText, { color: colors.text.inverse }]}>
+                            Créer un sujet
+                        </Text>
+                    </Pressable>
+                )}
             </View>
         ),
-        [logic.hasActiveFilters]
+        [logic.hasActiveFilters, logic.openAddModal, colors]
     );
 
-    const keyExtractor = useCallback((item: TopicItemData) => item.topic.id, []);
+    const keyExtractor = useCallback((item: TopicItemData) => item.id, []);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <ScreenWrapper useSafeArea padding={0}>
-            {/* Header fixe */}
-            <View style={styles.fixedHeader}>
-                {/* Top Row: Greeting + Profile Button */}
-                <View style={styles.topRow}>
-                    <View style={styles.greetingSection}>
-                        <View style={styles.greetingRow}>
-                            <Text style={styles.greeting}>{logic.greeting}</Text>
-                            {/* Hand wave - WHITE icon */}
-                            <MaterialCommunityIcons name="hand-wave" size={28} color="#FFFFFF" />
-                        </View>
-                        <Text style={styles.subtitle}>Prêt à réviser ?</Text>
-                    </View>
-                    <ProfileButton initials="Me" size="md" />
+        <ScreenWrapper scrollable={false} padding={0}>
+            {/* Header */}
+            <View style={styles.header}>
+                <View>
+                    <Text style={[styles.greeting, { color: colors.text.secondary }]}>
+                        Bonjour 👋
+                    </Text>
+                    <Text style={[styles.title, { color: colors.text.primary }]}>
+                        Prêt à apprendre ?
+                    </Text>
                 </View>
+                <ProfileButton />
+            </View>
 
-                {/* Stats Row - FIX: All values WHITE */}
+            {/* Stats Cards */}
+            <View style={styles.statsContainer}>
                 <View style={styles.statsRow}>
-                    <GlassView style={styles.statCard}>
-                        <View style={styles.statIconContainer}>
-                            <MaterialCommunityIcons name="book-multiple" size={22} color="#FFFFFF" />
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="book-multiple" size={22} color={colors.text.primary} />
                         </View>
-                        {/* FIX: Explicit WHITE text */}
-                        <Text style={styles.statValue}>{logic.topicsCount}</Text>
-                        <Text style={styles.statLabel}>Sujets</Text>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {logic.topicsCount}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sujets</Text>
                     </GlassView>
 
-                    <GlassView style={styles.statCard}>
-                        <View style={styles.statIconContainer}>
-                            <MaterialCommunityIcons name="microphone" size={22} color="#FFFFFF" />
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="microphone" size={22} color={colors.text.primary} />
                         </View>
-                        {/* FIX: Explicit WHITE text */}
-                        <Text style={styles.statValue}>{logic.totalSessions}</Text>
-                        <Text style={styles.statLabel}>Sessions</Text>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {logic.totalSessions}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sessions</Text>
                     </GlassView>
 
-                    <GlassView style={styles.statCard}>
-                        <View style={styles.statIconContainer}>
-                            <MaterialCommunityIcons name="fire" size={22} color="#FFFFFF" />
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="fire" size={22} color={colors.text.primary} />
                         </View>
-                        {/* FIX: Explicit WHITE text */}
-                        <Text style={styles.statValue}>{logic.streak}</Text>
-                        <Text style={styles.statLabel}>Streak</Text>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {logic.streak}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Streak</Text>
                     </GlassView>
                 </View>
 
                 {/* Recherche */}
                 <GlassView style={styles.searchContainer}>
-                    <MaterialCommunityIcons name="magnify" size={22} color="rgba(255,255,255,0.5)" />
+                    <MaterialCommunityIcons name="magnify" size={22} color={colors.text.muted} />
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { color: colors.text.primary }]}
                         placeholder="Rechercher un sujet..."
-                        placeholderTextColor="rgba(255,255,255,0.4)"
+                        placeholderTextColor={colors.text.muted}
                         value={logic.searchText}
                         onChangeText={logic.setSearchText}
                     />
                     {logic.searchText.length > 0 && (
                         <Pressable onPress={() => logic.setSearchText('')}>
-                            <MaterialCommunityIcons name="close-circle" size={20} color="rgba(255,255,255,0.5)" />
+                            <MaterialCommunityIcons name="close-circle" size={20} color={colors.text.muted} />
                         </Pressable>
                     )}
                 </GlassView>
@@ -192,78 +208,217 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             {/* Loading State */}
             {logic.isLoading && logic.filteredTopics.length === 0 ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#FFFFFF" />
-                    <Text style={styles.loadingText}>Chargement...</Text>
+                    <ActivityIndicator size="large" color={colors.text.primary} />
                 </View>
             ) : (
                 <FlatList
                     data={logic.filteredTopics}
+                    renderItem={renderItem}
                     keyExtractor={keyExtractor}
-                    renderItem={renderTopicCard}
+                    contentContainerStyle={styles.listContent}
                     ListHeaderComponent={renderListHeader}
                     ListEmptyComponent={renderEmptyState}
-                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
-                            refreshing={logic.isLoading}
-                            onRefresh={logic.refreshTopics}
-                            tintColor="#FFFFFF"
-                            colors={['#FFFFFF']}
+                            refreshing={logic.isRefreshing}
+                            onRefresh={logic.refresh}
+                            tintColor={colors.text.primary}
+                            colors={[colors.text.primary]}
                         />
                     }
                 />
             )}
 
-            {/* ═══════════════════════════════════════════════════════════════════
-          FAB - HIGH CONTRAST FIX
-          Solid WHITE background + BLACK icon
-      ═══════════════════════════════════════════════════════════════════ */}
-            <Pressable
-                style={({ pressed }) => [
-                    localStyles.fabContainer,
-                    pressed && localStyles.fabPressed,
-                ]}
-                onPress={() => logic.setShowAddModal(true)}
-            >
-                <View style={localStyles.fab}>
-                    {/* BLACK icon on WHITE background = VISIBLE */}
-                    <MaterialCommunityIcons name="plus" size={28} color="#000000" />
-                </View>
-            </Pressable>
+            {/* FAB - Theme Aware */}
+            <View style={styles.fabContainer}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.fab,
+                        { backgroundColor: colors.text.primary },
+                        pressed && styles.fabPressed,
+                    ]}
+                    onPress={logic.openAddModal}
+                >
+                    <MaterialIcons name="add" size={28} color={colors.text.inverse} />
+                </Pressable>
+            </View>
 
-            {/* Modal d'ajout de topic */}
+            {/* Add Topic Modal */}
             <AddTopicModal
-                visible={logic.showAddModal}
-                value={logic.newTopicText}
-                onChangeText={logic.setNewTopicText}
-                onSubmit={logic.handleAddTopic}
-                onClose={() => logic.setShowAddModal(false)}
+                visible={logic.isAddModalVisible}
+                onClose={logic.closeAddModal}
+                onSubmit={logic.handleCreateTopic}
             />
         </ScreenWrapper>
     );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LOCAL STYLES - FAB specific (override any problematic styles)
+// STYLES (Static - colors applied inline with useTheme)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.sm,
+    },
+    greeting: {
+        fontSize: 14,
+        marginBottom: 4,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: '700',
+    },
+    statsContainer: {
+        paddingHorizontal: Spacing.lg,
+        marginBottom: Spacing.md,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+        marginBottom: Spacing.lg,
+    },
+    statCard: {
+        flex: 1,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.lg,
+        alignItems: 'center',
+        gap: Spacing.xs,
+        borderWidth: 1,
+    },
+    statIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    statLabel: {
+        fontSize: 10,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.lg,
+        gap: Spacing.sm,
+        marginBottom: Spacing.sm,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        paddingVertical: Spacing.xs,
+    },
+    listHeader: {
+        marginBottom: Spacing.md,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.sm,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    sectionCount: {
+        fontSize: 12,
+    },
+    swipeHintContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: Spacing.sm,
+    },
+    swipeHint: {
+        fontSize: 12,
+    },
+    activeFiltersBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.full,
+        gap: Spacing.xs,
+        alignSelf: 'flex-start',
+    },
+    activeFiltersText: {
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    listContent: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: 100,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingVertical: Spacing.xxl,
+    },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.lg,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: Spacing.sm,
+    },
+    emptyDescription: {
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: Spacing.lg,
+        paddingHorizontal: Spacing.xl,
+    },
+    emptyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.full,
+        gap: Spacing.xs,
+    },
+    emptyButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
     fabContainer: {
         position: 'absolute',
         bottom: 24,
         right: 16,
     },
-
     fab: {
         width: 56,
         height: 56,
         borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        // HIGH CONTRAST: Solid WHITE background
-        backgroundColor: '#FFFFFF',
-        // Shadow for depth
         ...Platform.select({
             ios: {
                 shadowColor: '#000000',
@@ -276,7 +431,6 @@ const localStyles = StyleSheet.create({
             },
         }),
     },
-
     fabPressed: {
         opacity: 0.8,
         transform: [{ scale: 0.95 }],

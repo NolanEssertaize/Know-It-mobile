@@ -1,13 +1,14 @@
 /**
  * @file GlassView.tsx
- * @description Composant conteneur avec effet Glassmorphism
+ * @description Composant conteneur avec effet Glassmorphism - Theme Aware
+ * 
+ * UPDATED: Now uses useTheme() for dynamic colors
  */
 
 import React, { memo, type ReactNode } from 'react';
-import { View, type ViewProps, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type ViewProps, type StyleProp, type ViewStyle, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { GlassColors, BorderRadius, Shadows } from '@/theme';
-import { styles, VARIANT_STYLES, INTENSITY_MAP } from './GlassView.styles';
+import { useTheme, BorderRadius, Shadows } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -29,6 +30,16 @@ export interface GlassViewProps extends ViewProps {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const INTENSITY_MAP = {
+  subtle: 20,
+  medium: 40,
+  strong: 60,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -41,18 +52,35 @@ export const GlassView = memo(function GlassView({
   showBorder = true,
   containerStyle,
   glow = false,
-  glowColor = GlassColors.accent.glow,
+  glowColor,
   style,
   ...props
 }: GlassViewProps) {
+  // Get theme colors dynamically
+  const { colors, isDark } = useTheme();
+
   const resolvedBorderRadius =
     typeof borderRadius === 'number' ? borderRadius : BorderRadius[borderRadius];
 
+  // Get variant-specific background
+  const getVariantStyle = (): ViewStyle => {
+    switch (variant) {
+      case 'light':
+        return { backgroundColor: colors.glass.backgroundLight };
+      case 'dark':
+        return { backgroundColor: colors.glass.backgroundDark };
+      case 'accent':
+        return { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' };
+      default:
+        return { backgroundColor: colors.glass.background };
+    }
+  };
+
   const glowStyle: ViewStyle | undefined = glow
     ? {
-        shadowColor: glowColor,
+        shadowColor: glowColor || colors.text.primary,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.2,
         shadowRadius: 16,
         elevation: 8,
       }
@@ -61,10 +89,9 @@ export const GlassView = memo(function GlassView({
   const borderStyle: ViewStyle | undefined = showBorder
     ? {
         borderWidth: 1,
-        borderColor:
-          variant === 'accent'
-            ? 'rgba(0, 212, 255, 0.3)'
-            : GlassColors.glass.border,
+        borderColor: variant === 'accent'
+          ? (isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)')
+          : colors.glass.border,
       }
     : undefined;
 
@@ -80,7 +107,7 @@ export const GlassView = memo(function GlassView({
       >
         <BlurView
           intensity={INTENSITY_MAP[intensity]}
-          tint="dark"
+          tint={isDark ? 'dark' : 'light'}
           style={[
             styles.blurContainer,
             { borderRadius: resolvedBorderRadius },
@@ -89,7 +116,7 @@ export const GlassView = memo(function GlassView({
           ]}
           {...props}
         >
-          <View style={[styles.innerOverlay, VARIANT_STYLES[variant]]}>
+          <View style={[styles.innerOverlay, getVariantStyle()]}>
             {children}
           </View>
         </BlurView>
@@ -101,7 +128,7 @@ export const GlassView = memo(function GlassView({
     <View
       style={[
         styles.container,
-        VARIANT_STYLES[variant],
+        getVariantStyle(),
         { borderRadius: resolvedBorderRadius },
         borderStyle,
         Shadows.glassLight,
@@ -137,15 +164,74 @@ export const GlassInputContainer = memo(function GlassInputContainer({
   style,
   ...props
 }: GlassViewProps & { focused?: boolean }) {
+  const { colors } = useTheme();
+  
   return (
     <GlassView
       variant={focused ? 'light' : 'default'}
       borderRadius="md"
       showBorder
-      style={[styles.inputContainer, focused && styles.inputFocused, style]}
+      style={[
+        styles.inputContainer, 
+        focused && { borderColor: colors.glass.borderLight },
+        style
+      ]}
       {...props}
     >
       {children}
     </GlassView>
   );
 });
+
+export const GlassButton = memo(function GlassButton({
+  children,
+  variant = 'default',
+  style,
+  ...props
+}: GlassViewProps) {
+  return (
+    <GlassView
+      variant={variant}
+      borderRadius="md"
+      showBorder
+      style={[styles.button, style]}
+      {...props}
+    >
+      {children}
+    </GlassView>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+const styles = StyleSheet.create({
+  outerContainer: {
+    overflow: 'hidden',
+  },
+  blurContainer: {
+    overflow: 'hidden',
+  },
+  innerOverlay: {
+    flex: 1,
+  },
+  container: {
+    overflow: 'hidden',
+  },
+  card: {
+    padding: 16,
+  },
+  inputContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  button: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+export default GlassView;

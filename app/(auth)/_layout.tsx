@@ -1,18 +1,20 @@
 /**
  * @file _layout.tsx
- * @description Auth group layout (Expo Router)
+ * @description Auth group layout (Expo Router) - Theme Aware
  * 
- * This layout wraps all auth screens (login, register)
- * and provides shared configuration.
+ * FIXED: StatusBar now adapts to theme
  */
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '@/theme';
 
 export default function AuthLayout() {
+  const { isDark } = useTheme();
+
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
