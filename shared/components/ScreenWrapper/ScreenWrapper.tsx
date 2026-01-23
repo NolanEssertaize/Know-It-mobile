@@ -1,8 +1,8 @@
 /**
  * @file ScreenWrapper.tsx
- * @description Wrapper global avec LinearGradient de fond - Theme Aware
+ * @description Wrapper global avec fond adaptatif - Theme Aware
  *
- * UPDATED: Now uses useTheme() for dynamic theme colors
+ * FIXED: Uses useTheme() for dynamic colors
  */
 
 import React, { memo, type ReactNode } from 'react';
@@ -12,13 +12,12 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StyleSheet,
     type ViewStyle,
     type StyleProp,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@/theme';
-import { styles } from './ScreenWrapper.styles';
+import { useTheme, Spacing } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -31,7 +30,6 @@ export interface ScreenWrapperProps {
     style?: StyleProp<ViewStyle>;
     scrollable?: boolean;
     keyboardAvoiding?: boolean;
-    gradientColors?: readonly [string, string, ...string[]];
     /** Override status bar style (defaults to theme-aware) */
     statusBarStyle?: 'light-content' | 'dark-content';
     centered?: boolean;
@@ -42,28 +40,19 @@ export interface ScreenWrapperProps {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const ScreenWrapper = memo(function ScreenWrapper({
-                                                             children,
-                                                             useSafeArea = true,
-                                                             padding = 20,
-                                                             style,
-                                                             scrollable = false,
-                                                             keyboardAvoiding = true,
-                                                             gradientColors,
-                                                             statusBarStyle,
-                                                             centered = false,
-                                                         }: ScreenWrapperProps) {
+    children,
+    useSafeArea = true,
+    padding = 20,
+    style,
+    scrollable = false,
+    keyboardAvoiding = true,
+    statusBarStyle,
+    centered = false,
+}: ScreenWrapperProps) {
     const insets = useSafeAreaInsets();
-
-    // Get theme colors dynamically
     const { colors, isDark } = useTheme();
 
-    // Theme-aware gradient
-    const defaultGradient: readonly [string, string, string] = [
-        colors.gradient.start,
-        colors.gradient.middle,
-        colors.gradient.end,
-    ];
-
+    // Safe area padding
     const safeAreaStyle: ViewStyle = useSafeArea
         ? {
             paddingTop: insets.top,
@@ -73,6 +62,7 @@ export const ScreenWrapper = memo(function ScreenWrapper({
         }
         : {};
 
+    // Content style
     const contentStyle: ViewStyle = {
         flex: 1,
         padding,
@@ -82,60 +72,50 @@ export const ScreenWrapper = memo(function ScreenWrapper({
         }),
     };
 
-    const renderContent = () => {
-        if (scrollable) {
-            return (
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={[
-                        styles.scrollContent,
-                        { padding },
-                        centered && styles.centeredContent,
-                        style,
-                    ]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {children}
-                </ScrollView>
-            );
-        }
-
-        return <View style={[contentStyle, style]}>{children}</View>;
-    };
-
-    // Determine status bar style (theme-aware by default)
-    const resolvedStatusBarStyle = statusBarStyle ?? (isDark ? 'light-content' : 'dark-content');
-
-    const content = (
-        <LinearGradient
-            colors={gradientColors ?? defaultGradient}
-            style={styles.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+    // Render content
+    const content = scrollable ? (
+        <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+                styles.scrollContent,
+                contentStyle,
+                centered && styles.centeredContent,
+                style,
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
         >
-            <StatusBar
-                barStyle={resolvedStatusBarStyle}
-                backgroundColor="transparent"
-                translucent
-            />
-            <View style={[styles.container, safeAreaStyle]}>{renderContent()}</View>
-        </LinearGradient>
+            {children}
+        </ScrollView>
+    ) : (
+        <View style={[contentStyle, style]}>
+            {children}
+        </View>
     );
 
-    if (keyboardAvoiding && Platform.OS !== 'web') {
-        return (
-            <KeyboardAvoidingView
-                style={styles.flex}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={0}
-            >
-                {content}
-            </KeyboardAvoidingView>
-        );
-    }
+    // Wrap with keyboard avoiding if needed
+    const wrappedContent = keyboardAvoiding ? (
+        <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+        >
+            {content}
+        </KeyboardAvoidingView>
+    ) : content;
 
-    return content;
+    return (
+        <View style={[
+            styles.container, 
+            safeAreaStyle, 
+            { backgroundColor: colors.background.primary }
+        ]}>
+            <StatusBar 
+                barStyle={statusBarStyle ?? (isDark ? 'light-content' : 'dark-content')} 
+            />
+            {wrappedContent}
+        </View>
+    );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -143,9 +123,9 @@ export const ScreenWrapper = memo(function ScreenWrapper({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const CenteredScreen = memo(function CenteredScreen({
-                                                               children,
-                                                               ...props
-                                                           }: Omit<ScreenWrapperProps, 'centered'>) {
+    children,
+    ...props
+}: Omit<ScreenWrapperProps, 'centered'>) {
     return (
         <ScreenWrapper centered {...props}>
             {children}
@@ -154,9 +134,9 @@ export const CenteredScreen = memo(function CenteredScreen({
 });
 
 export const ScrollableScreen = memo(function ScrollableScreen({
-                                                                   children,
-                                                                   ...props
-                                                               }: Omit<ScreenWrapperProps, 'scrollable'>) {
+    children,
+    ...props
+}: Omit<ScreenWrapperProps, 'scrollable'>) {
     return (
         <ScreenWrapper scrollable {...props}>
             {children}
@@ -165,10 +145,10 @@ export const ScrollableScreen = memo(function ScrollableScreen({
 });
 
 export const ModalScreen = memo(function ModalScreen({
-                                                         children,
-                                                         style,
-                                                         ...props
-                                                     }: Omit<ScreenWrapperProps, 'useSafeArea'>) {
+    children,
+    style,
+    ...props
+}: Omit<ScreenWrapperProps, 'useSafeArea'>) {
     const insets = useSafeAreaInsets();
 
     return (
@@ -181,3 +161,28 @@ export const ModalScreen = memo(function ModalScreen({
         </ScreenWrapper>
     );
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+const styles = StyleSheet.create({
+    flex: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    centeredContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});
+
+export default ScreenWrapper;

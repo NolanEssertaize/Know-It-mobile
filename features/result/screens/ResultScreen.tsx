@@ -1,12 +1,8 @@
 /**
  * @file ResultScreen.tsx
- * @description Écran de résultats d'analyse - Monochrome Theme
+ * @description Écran de résultats d'analyse - Theme Aware
  *
- * FIXES:
- * - "Réessayer" button: Glass/outline style (visible)
- * - "Terminer" button: Solid WHITE bg + BLACK text (high contrast)
- * - Removed all colored gradients
- * - All stat badges use monochrome
+ * FIXED: All colors now use useTheme() hook
  */
 
 import React, { memo, useMemo } from 'react';
@@ -23,14 +19,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { GlassView } from '@/shared/components';
-import { Spacing, BorderRadius } from '@/theme';
+import { useTheme, Spacing, BorderRadius } from '@/theme';
 
 import { useResult } from '../hooks/useResult';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { AnalysisSection } from '../components/AnalysisSection';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STAT BADGE COMPONENT - Monochrome
+// STAT BADGE COMPONENT - Theme Aware
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface StatBadgeProps {
@@ -40,15 +36,15 @@ interface StatBadgeProps {
 }
 
 const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps) {
+    const { colors } = useTheme();
+    
     return (
         <View style={styles.statBadge}>
-            <View style={styles.statIconContainer}>
-                {/* Monochrome: WHITE icon */}
-                <MaterialIcons name={icon} size={24} color="#FFFFFF" />
+            <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                <MaterialIcons name={icon} size={24} color={colors.text.primary} />
             </View>
-            {/* Monochrome: WHITE count */}
-            <Text style={styles.statCount}>{count}</Text>
-            <Text style={styles.statLabel}>{label}</Text>
+            <Text style={[styles.statCount, { color: colors.text.primary }]}>{count}</Text>
+            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{label}</Text>
         </View>
     );
 });
@@ -59,28 +55,31 @@ const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps
 
 function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
+    const { colors, isDark } = useTheme();
     const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
 
-    // Monochrome sections (remove colored variants)
-    const monochromeSection = useMemo(() => {
+    // Theme-aware sections
+    const themedSections = useMemo(() => {
         return sections.map(section => ({
             ...section,
-            color: '#FFFFFF',
+            color: colors.text.primary,
             glowColor: undefined,
         }));
-    }, [sections]);
+    }, [sections, colors.text.primary]);
 
     if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text style={styles.loadingText}>Chargement des résultats...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
+                <ActivityIndicator size="large" color={colors.text.primary} />
+                <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                    Chargement des résultats...
+                </Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={[
@@ -91,28 +90,43 @@ function ResultScreenComponent(): React.JSX.Element {
             >
                 {/* Header avec bouton fermer */}
                 <View style={styles.header}>
-                    <Pressable style={styles.closeButton} onPress={handleClose}>
-                        <MaterialIcons name="close" size={24} color="#FFFFFF" />
+                    <Pressable 
+                        style={[
+                            styles.closeButton, 
+                            { 
+                                backgroundColor: colors.surface.glass,
+                                borderColor: colors.glass.borderLight,
+                            }
+                        ]} 
+                        onPress={handleClose}
+                    >
+                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
                     </Pressable>
                     <View style={styles.headerTextContainer}>
-                        <Text style={styles.title}>Session terminée</Text>
-                        <Text style={styles.subtitle}>Voici votre analyse détaillée</Text>
+                        <Text style={[styles.title, { color: colors.text.primary }]}>
+                            Session terminée
+                        </Text>
+                        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+                            Voici votre analyse détaillée
+                        </Text>
                     </View>
                 </View>
 
                 {/* Séparateur visuel */}
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.glass.border }]} />
 
                 {/* Score Gauge */}
                 <ScoreGauge
                     value={score.value}
                     label={score.label}
-                    color="#FFFFFF"
+                    color={colors.text.primary}
                 />
 
-                {/* Quick Summary - Monochrome */}
+                {/* Quick Summary */}
                 <GlassView variant="default" style={styles.summaryContainer}>
-                    <Text style={styles.summaryTitle}>Résumé rapide</Text>
+                    <Text style={[styles.summaryTitle, { color: colors.text.primary }]}>
+                        Résumé rapide
+                    </Text>
                     <View style={styles.statsRow}>
                         <StatBadge
                             icon="check-circle"
@@ -130,22 +144,24 @@ function ResultScreenComponent(): React.JSX.Element {
                             label="Manquants"
                         />
                     </View>
-                    <View style={styles.summaryDivider} />
-                    <Text style={styles.summaryText}>
+                    <View style={[styles.summaryDivider, { backgroundColor: colors.glass.border }]} />
+                    <Text style={[styles.summaryText, { color: colors.text.secondary }]}>
                         {summary.totalPoints} points évalués au total
                     </Text>
                 </GlassView>
 
                 {/* Sections d'analyse détaillées */}
                 <View style={styles.sectionsContainer}>
-                    <Text style={styles.sectionHeader}>Détails de l'analyse</Text>
-                    {monochromeSection.map((section) => (
+                    <Text style={[styles.sectionHeader, { color: colors.text.secondary }]}>
+                        Détails de l'analyse
+                    </Text>
+                    {themedSections.map((section) => (
                         <AnalysisSection
                             key={section.id}
                             title={section.title}
                             icon={section.icon}
                             items={section.items}
-                            color="#FFFFFF"
+                            color={colors.text.primary}
                             glowColor={undefined}
                         />
                     ))}
@@ -157,26 +173,35 @@ function ResultScreenComponent(): React.JSX.Element {
                     <Pressable
                         style={({ pressed }) => [
                             styles.buttonOutline,
+                            { 
+                                backgroundColor: colors.surface.glass,
+                                borderColor: colors.glass.borderLight,
+                            },
                             pressed && styles.buttonPressed,
                         ]}
                         onPress={handleRetry}
                     >
-                        <MaterialIcons name="refresh" size={20} color="#FFFFFF" />
-                        <Text style={styles.buttonOutlineText}>Réessayer</Text>
+                        <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
+                        <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
+                            Réessayer
+                        </Text>
                     </Pressable>
 
                     <View style={styles.actionSpacer} />
 
-                    {/* "Terminer" - SOLID WHITE (HIGH CONTRAST) */}
+                    {/* "Terminer" - HIGH CONTRAST */}
                     <Pressable
                         style={({ pressed }) => [
                             styles.buttonPrimary,
+                            { backgroundColor: colors.text.primary },
                             pressed && styles.buttonPrimaryPressed,
                         ]}
                         onPress={handleClose}
                     >
-                        <MaterialIcons name="done" size={20} color="#000000" />
-                        <Text style={styles.buttonPrimaryText}>Terminer</Text>
+                        <MaterialIcons name="done" size={20} color={colors.text.inverse} />
+                        <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
+                            Terminer
+                        </Text>
                     </Pressable>
                 </View>
             </ScrollView>
@@ -188,13 +213,12 @@ export const ResultScreen = memo(ResultScreenComponent);
 export default ResultScreen;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES - Monochrome Theme
+// STYLES (Static - colors applied inline)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
     },
 
     scrollView: {
@@ -209,14 +233,12 @@ const styles = StyleSheet.create({
     // Loading
     loadingContainer: {
         flex: 1,
-        backgroundColor: '#000000',
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     loadingText: {
         fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.6)',
         marginTop: Spacing.md,
     },
 
@@ -231,9 +253,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: Spacing.md,
@@ -245,157 +265,128 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: '700',
-        color: '#FFFFFF',
         marginBottom: Spacing.xs,
     },
 
     subtitle: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.6)',
-        lineHeight: 22,
+        fontSize: 14,
     },
 
     divider: {
         height: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.lg,
     },
 
     // Summary
     summaryContainer: {
+        marginBottom: Spacing.lg,
         padding: Spacing.lg,
-        borderRadius: BorderRadius.xl,
-        marginBottom: Spacing.xl,
     },
 
     summaryTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
-        textAlign: 'center',
-        marginBottom: Spacing.lg,
+        marginBottom: Spacing.md,
     },
 
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        alignItems: 'flex-start',
+        marginBottom: Spacing.md,
     },
 
-    // Stat Badge - Monochrome
     statBadge: {
         alignItems: 'center',
-        flex: 1,
     },
 
     statIconContainer: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
 
     statCount: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
-        color: '#FFFFFF', // FIX: Explicit WHITE
         marginBottom: 2,
     },
 
     statLabel: {
         fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.6)',
     },
 
     summaryDivider: {
         height: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        marginVertical: Spacing.md,
+        marginBottom: Spacing.md,
     },
 
     summaryText: {
         fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.6)',
         textAlign: 'center',
     },
 
     // Sections
     sectionsContainer: {
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.lg,
     },
 
     sectionHeader: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '600',
-        color: 'rgba(255, 255, 255, 0.5)',
-        textTransform: 'uppercase',
         letterSpacing: 1,
+        textTransform: 'uppercase',
         marginBottom: Spacing.md,
     },
 
-    // Actions Container
+    // Actions
     actionsContainer: {
         flexDirection: 'row',
-        gap: Spacing.md,
+        marginTop: Spacing.md,
+    },
+
+    buttonOutline: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        gap: Spacing.xs,
+    },
+
+    buttonOutlineText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    buttonPressed: {
+        opacity: 0.8,
     },
 
     actionSpacer: {
         width: Spacing.md,
     },
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // BUTTON STYLES - HIGH CONTRAST
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // Outline button ("Réessayer") - Glass style, visible border
-    buttonOutline: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: Spacing.sm,
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: BorderRadius.xl,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-
-    buttonOutlineText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-
-    buttonPressed: {
-        opacity: 0.7,
-        transform: [{ scale: 0.98 }],
-    },
-
-    // Primary button ("Terminer") - SOLID WHITE, HIGH CONTRAST
     buttonPrimary: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.sm,
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: BorderRadius.xl,
-        // HIGH CONTRAST: Solid WHITE background
-        backgroundColor: '#FFFFFF',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        gap: Spacing.xs,
         ...Platform.select({
             ios: {
-                shadowColor: '#FFFFFF',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
             },
             android: {
                 elevation: 4,
@@ -406,8 +397,6 @@ const styles = StyleSheet.create({
     buttonPrimaryText: {
         fontSize: 16,
         fontWeight: '600',
-        // HIGH CONTRAST: BLACK text on WHITE button
-        color: '#000000',
     },
 
     buttonPrimaryPressed: {

@@ -2,7 +2,12 @@
  * @file TopicsListScreen.tsx
  * @description Écran principal - Liste des sujets - Theme Aware
  *
- * FIXED: All colors now use useTheme() hook
+ * FIXED: 
+ * - All colors now use useTheme() hook
+ * - Correct prop names for AddTopicModal (value, onChangeText, etc.)
+ * - Correct prop names for TopicCard (registerRef, unregisterRef)
+ * - Correct method names from hook (handleCardPress, handleEdit, etc.)
+ * - Correct keyExtractor using item.topic.id
  */
 
 import React, { memo, useCallback } from 'react';
@@ -79,17 +84,27 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
         [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters, colors]
     );
 
+    // FIX: Use correct method names and pass registerRef/unregisterRef
     const renderItem = useCallback(
         ({ item }: { item: TopicItemData }) => (
             <TopicCard
                 data={item}
-                onPress={() => logic.handleTopicPress(item.id)}
-                onEdit={() => logic.handleEditTopic(item.id)}
-                onShare={() => logic.handleShareTopic(item.id)}
-                onDelete={() => logic.handleDeleteTopic(item.id)}
+                onPress={() => logic.handleCardPress(item.topic.id)}
+                onEdit={() => logic.handleEdit(item.topic.id)}
+                onShare={() => logic.handleShare(item.topic.id)}
+                onDelete={() => logic.handleDelete(item.topic.id)}
+                registerRef={(ref) => logic.registerSwipeableRef(item.topic.id, ref)}
+                unregisterRef={() => logic.unregisterSwipeableRef(item.topic.id)}
             />
         ),
-        [logic.handleTopicPress, logic.handleEditTopic, logic.handleShareTopic, logic.handleDeleteTopic]
+        [
+            logic.handleCardPress, 
+            logic.handleEdit, 
+            logic.handleShare, 
+            logic.handleDelete, 
+            logic.registerSwipeableRef, 
+            logic.unregisterSwipeableRef
+        ]
     );
 
     const renderEmptyState = useCallback(
@@ -113,7 +128,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 {!logic.hasActiveFilters && (
                     <Pressable
                         style={[styles.emptyButton, { backgroundColor: colors.text.primary }]}
-                        onPress={logic.openAddModal}
+                        onPress={() => logic.setShowAddModal(true)}
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.inverse} />
                         <Text style={[styles.emptyButtonText, { color: colors.text.inverse }]}>
@@ -123,10 +138,11 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 )}
             </View>
         ),
-        [logic.hasActiveFilters, logic.openAddModal, colors]
+        [logic.hasActiveFilters, logic.setShowAddModal, colors]
     );
 
-    const keyExtractor = useCallback((item: TopicItemData) => item.id, []);
+    // FIX: Use item.topic.id for unique key
+    const keyExtractor = useCallback((item: TopicItemData) => item.topic.id, []);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER
@@ -138,7 +154,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             <View style={styles.header}>
                 <View>
                     <Text style={[styles.greeting, { color: colors.text.secondary }]}>
-                        Bonjour 👋
+                        {logic.greeting}
                     </Text>
                     <Text style={[styles.title, { color: colors.text.primary }]}>
                         Prêt à apprendre ?
@@ -221,8 +237,8 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
-                            refreshing={logic.isRefreshing}
-                            onRefresh={logic.refresh}
+                            refreshing={logic.isLoading}
+                            onRefresh={logic.refreshTopics}
                             tintColor={colors.text.primary}
                             colors={[colors.text.primary]}
                         />
@@ -238,17 +254,19 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         { backgroundColor: colors.text.primary },
                         pressed && styles.fabPressed,
                     ]}
-                    onPress={logic.openAddModal}
+                    onPress={() => logic.setShowAddModal(true)}
                 >
                     <MaterialIcons name="add" size={28} color={colors.text.inverse} />
                 </Pressable>
             </View>
 
-            {/* Add Topic Modal */}
+            {/* Add Topic Modal - CORRECT PROPS matching AddTopicModal interface */}
             <AddTopicModal
-                visible={logic.isAddModalVisible}
-                onClose={logic.closeAddModal}
-                onSubmit={logic.handleCreateTopic}
+                visible={logic.showAddModal}
+                value={logic.newTopicText}
+                onChangeText={logic.setNewTopicText}
+                onSubmit={logic.handleAddTopic}
+                onClose={() => logic.setShowAddModal(false)}
             />
         </ScreenWrapper>
     );

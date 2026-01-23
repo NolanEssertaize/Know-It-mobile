@@ -1,13 +1,15 @@
 /**
  * @file ScoreGauge.tsx
- * @description Composant d'affichage du score avec cercle et animation fonctionnelle
+ * @description Composant d'affichage du score - Theme Aware
+ *
+ * FIXED: Now accepts color prop from parent (which uses useTheme)
  */
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { GlassView } from '@/shared/components';
-import { GlassColors, Spacing, BorderRadius } from '@/theme';
+import { Spacing, BorderRadius } from '@/theme';
 import { useScoreGaugeAnimation } from '@/features/result/hooks/useScoreGauge';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -26,7 +28,7 @@ export interface ScoreGaugeProps {
     readonly value: number;
     /** Label to display */
     readonly label: string;
-    /** Color for the score */
+    /** Color for the score (passed from parent using useTheme) */
     readonly color: string;
 }
 
@@ -141,3 +143,5 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
+
+export default ScoreGauge;

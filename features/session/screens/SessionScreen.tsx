@@ -1,23 +1,18 @@
 /**
  * @file SessionScreen.tsx
- * @description Écran d'enregistrement vocal avec animation réactive
- * Version mise à jour avec VoiceRecordButton et useAudioRecording
+ * @description Écran d'enregistrement vocal - Theme Aware
  *
- * FIXES:
- * - Added close button to "Topic introuvable" error state
- * - Uses currentTopic from store instead of selectTopicById
- * - Added useSafeAreaInsets for proper header spacing
+ * FIXED: All colors now use useTheme() hook
  */
 
 import React, { memo, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { ScreenWrapper } from '@/shared/components';
-import { GlassColors, Spacing, BorderRadius } from '@/theme';
+import { GlassView } from '@/shared/components';
+import { useTheme, Spacing, BorderRadius } from '@/theme';
 
 import { VoiceRecordButton } from '../components/VoiceRecordButton';
 import { useSessionWithAudio } from '../hooks/useSessionWithAudio';
@@ -27,10 +22,10 @@ import { useSessionWithAudio } from '../hooks/useSessionWithAudio';
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const SessionScreen = memo(function SessionScreen() {
-    // Setup Hook - Logic Controller
     const logic = useSessionWithAudio();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { colors, isDark } = useTheme();
 
     // ─────────────────────────────────────────────────────────────────────────
     // HELPERS
@@ -47,202 +42,194 @@ export const SessionScreen = memo(function SessionScreen() {
     }, [router]);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // GUARD: Topic not found - FIX: Added close button
+    // GUARD: Topic not found
     // ─────────────────────────────────────────────────────────────────────────
 
     if (!logic.topic) {
         return (
-            <ScreenWrapper useSafeArea={false} padding={0}>
-                <LinearGradient
-                    colors={[GlassColors.gradient.start, GlassColors.gradient.middle, GlassColors.gradient.end]}
-                    style={styles.gradient}
-                >
-                    {/* Header with close button */}
-                    <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
-                        <Pressable style={styles.closeButton} onPress={handleClose}>
-                            <MaterialIcons name="close" size={24} color={GlassColors.text.primary} />
-                        </Pressable>
-                        <Text style={styles.topicTitle}>Session</Text>
-                        <View style={styles.headerSpacer} />
-                    </View>
-
-                    {/* Error content */}
-                    <View style={styles.errorContainer}>
-                        <MaterialIcons
-                            name="error-outline"
-                            size={64}
-                            color={GlassColors.text.tertiary}
-                        />
-                        <Text style={styles.errorText}>Topic introuvable</Text>
-                        <Text style={styles.errorHint}>
-                            Le sujet n'a pas pu être chargé. Veuillez réessayer.
+            <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+                <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
+                    <Text style={[styles.errorText, { color: colors.text.secondary }]}>
+                        Topic introuvable
+                    </Text>
+                    <Pressable
+                        style={[styles.closeButtonLarge, { backgroundColor: colors.text.primary }]}
+                        onPress={handleClose}
+                    >
+                        <Text style={[styles.closeButtonText, { color: colors.text.inverse }]}>
+                            Retour
                         </Text>
-                    </View>
-                </LinearGradient>
-            </ScreenWrapper>
+                    </Pressable>
+                </View>
+            </View>
         );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // RENDER
+    // ANALYZING STATE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    if (logic.isAnalyzing) {
+        return (
+            <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+                <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
+                    <View style={styles.analyzingContainer}>
+                        <ActivityIndicator size="large" color={colors.text.primary} />
+                        <Text style={[styles.analyzingText, { color: colors.text.primary }]}>
+                            Analyse en cours...
+                        </Text>
+                        <Text style={[styles.analyzingHint, { color: colors.text.secondary }]}>
+                            Votre explication est en train d'être analysée
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MAIN RENDER
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <ScreenWrapper useSafeArea={false} padding={0}>
-            <LinearGradient
-                colors={[GlassColors.gradient.start, GlassColors.gradient.middle, GlassColors.gradient.end]}
-                style={styles.gradient}
-            >
-                <View style={[styles.container, { paddingTop: insets.top }]}>
-                    {/* Header avec bouton fermer */}
-                    <View style={styles.header}>
-                        <Pressable style={styles.closeButton} onPress={logic.handleClose}>
-                            <MaterialIcons name="close" size={24} color={GlassColors.text.primary} />
-                        </Pressable>
-                        <Text style={styles.topicTitle} numberOfLines={1}>
+        <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+                {/* Header */}
+                <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+                    <Pressable
+                        style={[styles.closeButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.borderLight }]}
+                        onPress={handleClose}
+                    >
+                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                    </Pressable>
+                    <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
+                        Session
+                    </Text>
+                    <View style={styles.placeholder} />
+                </View>
+
+                {/* Content */}
+                <View style={styles.content}>
+                    {/* Topic Badge */}
+                    <GlassView style={styles.topicBadge}>
+                        <Text style={[styles.topicTitle, { color: colors.text.primary }]}>
                             {logic.topic.title}
                         </Text>
-                        <View style={styles.headerSpacer} />
+                    </GlassView>
+
+                    {/* Status */}
+                    <View style={styles.statusContainer}>
+                        <View style={styles.statusRow}>
+                            {logic.isRecording && (
+                                <View style={[styles.recordingDot, { backgroundColor: colors.text.primary }]} />
+                            )}
+                            <Text style={[styles.statusText, { color: colors.text.primary }]}>
+                                {logic.isRecording ? 'Enregistrement...' : 'Prêt à enregistrer'}
+                            </Text>
+                        </View>
+                        <Text style={[styles.statusHint, { color: colors.text.secondary }]}>
+                            {logic.isRecording
+                                ? 'Expliquez le sujet avec vos mots'
+                                : 'Appuyez sur le bouton pour commencer'}
+                        </Text>
                     </View>
 
-                    {/* Contenu principal */}
-                    <View style={styles.content}>
-                        {logic.isAnalyzing ? (
-                            // État d'analyse
-                            <View style={styles.analyzingContainer}>
-                                <ActivityIndicator size="large" color={GlassColors.accent.primary} />
-                                <Text style={styles.analyzingText}>Analyse en cours...</Text>
-                                <Text style={styles.analyzingHint}>
-                                    Veuillez patienter pendant que nous analysons votre réponse
+                    {/* Duration Timer */}
+                    {logic.isRecording && (
+                        <View style={styles.timerContainer}>
+                            <View style={[styles.timerDot, { backgroundColor: colors.text.primary }]} />
+                            <Text style={[styles.timerText, { color: colors.text.primary }]}>
+                                {formatDuration(logic.duration)}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Voice Record Button */}
+                    <View style={styles.recordButtonContainer}>
+                        <VoiceRecordButton
+                            isRecording={logic.isRecording}
+                            audioLevel={logic.audioLevel}
+                            onPress={logic.toggleRecording}
+                            size={120}
+                        />
+                    </View>
+
+                    {/* Audio Level Indicator */}
+                    {logic.isRecording && (
+                        <View style={styles.levelIndicatorContainer}>
+                            <View style={styles.levelLabelRow}>
+                                <Text style={[styles.levelLabel, { color: colors.text.secondary }]}>
+                                    NIVEAU AUDIO
+                                </Text>
+                                <Text style={[styles.levelPercentage, { color: colors.text.primary }]}>
+                                    {Math.round(logic.audioLevel * 100)}%
                                 </Text>
                             </View>
-                        ) : (
-                            <>
-                                {/* Status */}
-                                <View style={styles.statusContainer}>
-                                    <View style={styles.statusRow}>
-                                        <MaterialIcons
-                                            name={logic.isRecording ? 'mic' : 'mic-none'}
-                                            size={24}
-                                            color={
-                                                logic.isRecording
-                                                    ? GlassColors.semantic.error
-                                                    : GlassColors.text.secondary
-                                            }
-                                        />
-                                        <Text style={styles.statusText}>
-                                            {logic.isRecording ? 'Enregistrement...' : 'Prêt à enregistrer'}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.statusHint}>
-                                        {logic.isRecording
-                                            ? 'Expliquez le sujet avec vos mots'
-                                            : 'Appuyez sur le bouton pour commencer'}
-                                    </Text>
-                                </View>
+                            <View style={[styles.levelBarBackground, { backgroundColor: colors.surface.glass }]}>
+                                <View
+                                    style={[
+                                        styles.levelBarFill,
+                                        {
+                                            width: `${Math.min(logic.audioLevel * 100, 100)}%`,
+                                            backgroundColor: colors.text.primary,
+                                        },
+                                    ]}
+                                />
+                            </View>
+                        </View>
+                    )}
 
-                                {/* Duration Timer */}
-                                {logic.isRecording && (
-                                    <View style={styles.timerContainer}>
-                                        <View style={styles.timerDot} />
-                                        <Text style={styles.timerText}>
-                                            {formatDuration(logic.duration)}
-                                        </Text>
-                                    </View>
-                                )}
-
-                                {/* Voice Record Button avec Animation */}
-                                <View style={styles.recordButtonContainer}>
-                                    <VoiceRecordButton
-                                        isRecording={logic.isRecording}
-                                        audioLevel={logic.audioLevel}
-                                        onPress={logic.toggleRecording}
-                                        size={120}
-                                    />
-                                </View>
-
-                                {/* Audio Level Indicator - SIMPLIFIÉ: Barre blanche uniquement */}
-                                {logic.isRecording && (
-                                    <View style={styles.levelIndicatorContainer}>
-                                        {/* Label */}
-                                        <View style={styles.levelLabelRow}>
-                                            <Text style={styles.levelLabel}>NIVEAU AUDIO</Text>
-                                            <Text style={styles.levelPercentage}>
-                                                {Math.round(logic.audioLevel * 100)}%
-                                            </Text>
-                                        </View>
-                                        {/* Barre de niveau */}
-                                        <View style={styles.levelBarBackground}>
-                                            <View
-                                                style={[
-                                                    styles.levelBarFill,
-                                                    { width: `${logic.audioLevel * 100}%` },
-                                                ]}
-                                            />
-                                        </View>
-                                    </View>
-                                )}
-
-                                {/* Instructions (only when not recording) */}
-                                {!logic.isRecording && (
-                                    <View style={styles.instructionsContainer}>
-                                        <View style={styles.instructionRow}>
-                                            <MaterialIcons
-                                                name="lightbulb-outline"
-                                                size={18}
-                                                color={GlassColors.text.secondary}
-                                                style={styles.instructionIcon}
-                                            />
-                                            <Text style={styles.instructionText}>
-                                                Conseil: Parlez clairement et à un rythme normal
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
-                            </>
-                        )}
-                    </View>
+                    {/* Instructions */}
+                    {!logic.isRecording && (
+                        <View style={styles.instructionsContainer}>
+                            <View style={styles.instructionRow}>
+                                <MaterialIcons 
+                                    name="info-outline" 
+                                    size={16} 
+                                    color={colors.text.muted} 
+                                    style={styles.instructionIcon} 
+                                />
+                                <Text style={[styles.instructionText, { color: colors.text.muted }]}>
+                                    Parlez clairement et expliquez le sujet comme si vous l'enseigniez à quelqu'un
+                                </Text>
+                            </View>
+                        </View>
+                    )}
                 </View>
-            </LinearGradient>
-        </ScreenWrapper>
+            </View>
     );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// STYLES (Static - colors applied inline)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-    gradient: {
-        flex: 1,
-    },
     container: {
         flex: 1,
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.md,
+        paddingBottom: Spacing.md,
     },
     closeButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: GlassColors.glass.background,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
     },
-    topicTitle: {
-        flex: 1,
+    headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: GlassColors.text.primary,
-        textAlign: 'center',
-        marginHorizontal: Spacing.md,
     },
-    headerSpacer: {
+    placeholder: {
         width: 40,
     },
     content: {
@@ -251,26 +238,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: Spacing.xl,
     },
-    // Error state styles - NEW
-    errorContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: Spacing.xl,
+    topicBadge: {
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.sm,
+        marginBottom: Spacing.xl,
     },
-    errorText: {
-        fontSize: 18,
+    topicTitle: {
+        fontSize: 16,
         fontWeight: '600',
-        color: GlassColors.text.primary,
-        marginTop: Spacing.lg,
     },
-    errorHint: {
-        fontSize: 14,
-        color: GlassColors.text.secondary,
-        marginTop: Spacing.sm,
-        textAlign: 'center',
-    },
-    // Status styles
     statusContainer: {
         alignItems: 'center',
         marginBottom: Spacing.xxl,
@@ -278,43 +254,41 @@ const styles = StyleSheet.create({
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.sm,
-        marginBottom: Spacing.xs,
+        marginBottom: Spacing.sm,
+    },
+    recordingDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: Spacing.sm,
     },
     statusText: {
         fontSize: 24,
         fontWeight: '700',
-        color: GlassColors.text.primary,
     },
     statusHint: {
         fontSize: 14,
-        color: GlassColors.text.secondary,
         textAlign: 'center',
     },
-    // Timer styles
     timerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: Spacing.lg,
-        gap: Spacing.sm,
     },
     timerDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: GlassColors.semantic.error,
+        marginRight: Spacing.sm,
     },
     timerText: {
         fontSize: 32,
         fontWeight: '700',
-        color: GlassColors.text.primary,
         fontVariant: ['tabular-nums'],
     },
-    // Record button
     recordButtonContainer: {
         marginBottom: Spacing.xxl,
     },
-    // Level indicator
     levelIndicatorContainer: {
         width: '100%',
         maxWidth: 280,
@@ -329,26 +303,21 @@ const styles = StyleSheet.create({
     levelLabel: {
         fontSize: 12,
         fontWeight: '600',
-        color: GlassColors.text.secondary,
         letterSpacing: 1,
     },
     levelPercentage: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: GlassColors.text.primary,
     },
     levelBarBackground: {
         height: 16,
-        backgroundColor: GlassColors.glass.background,
         borderRadius: 8,
         overflow: 'hidden',
     },
     levelBarFill: {
         height: '100%',
         borderRadius: 8,
-        backgroundColor: '#FFFFFF',
     },
-    // Analyzing state
     analyzingContainer: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -356,16 +325,13 @@ const styles = StyleSheet.create({
     analyzingText: {
         fontSize: 20,
         fontWeight: '600',
-        color: GlassColors.text.primary,
         marginTop: Spacing.lg,
     },
     analyzingHint: {
         fontSize: 14,
-        color: GlassColors.text.secondary,
         marginTop: Spacing.sm,
         textAlign: 'center',
     },
-    // Instructions
     instructionsContainer: {
         marginTop: Spacing.xl,
         paddingHorizontal: Spacing.lg,
@@ -379,8 +345,21 @@ const styles = StyleSheet.create({
     },
     instructionText: {
         fontSize: 14,
-        color: GlassColors.text.secondary,
         textAlign: 'center',
+        flex: 1,
+    },
+    errorText: {
+        fontSize: 16,
+        marginBottom: Spacing.lg,
+    },
+    closeButtonLarge: {
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: BorderRadius.md,
+    },
+    closeButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

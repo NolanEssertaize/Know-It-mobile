@@ -1,6 +1,2 @@
-/**
- * @file index.ts
- * @description GlassInput component exports
- */
-
-export { GlassInput, type GlassInputProps } from './GlassInput';
+export { GlassInput } from './GlassInput';
+export type { GlassInputProps } from './GlassInput';

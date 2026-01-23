@@ -1,11 +1,8 @@
 /**
  * @file VoiceRecordButton.tsx
- * @description Bouton d'enregistrement vocal - Monochrome "AI Driver" Theme
+ * @description Bouton d'enregistrement vocal - Theme Aware
  *
- * REWORK:
- * - Removed colored glow rings (Cyan, Violet, Rose, Green)
- * - Single white/black pulse animation
- * - Clean minimalist aesthetic
+ * FIXED: All colors now use useTheme() hook
  */
 
 import React, { memo, useEffect } from 'react';
@@ -16,12 +13,10 @@ import Animated, {
     withRepeat,
     withTiming,
     Easing,
-    interpolate,
-    Extrapolation,
     withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { GlassColors, Shadows } from '@/theme';
+import { useTheme } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES & CONSTANTS
@@ -35,41 +30,30 @@ interface VoiceRecordButtonProps {
     disabled?: boolean;
 }
 
-// Monochrome pulse configuration (single ring, no colors)
-const PULSE_CONFIG = {
-    color: GlassColors.text.primary, // White in dark mode
-    maxScale: 2.5,
-    minOpacity: 0,
-    maxOpacity: 0.3,
-};
-
 // ═══════════════════════════════════════════════════════════════════════════
-// PULSE RING COMPONENT (Monochrome)
+// PULSE RING COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface PulseRingProps {
     size: number;
     audioLevel: number;
     isActive: boolean;
-    delay?: number;
+    color: string;
 }
 
 const PulseRing = memo(function PulseRing({
-                                              size,
-                                              audioLevel,
-                                              isActive,
-                                              delay = 0,
-                                          }: PulseRingProps) {
+    size,
+    audioLevel,
+    isActive,
+    color,
+}: PulseRingProps) {
     const scale = useSharedValue(1);
     const opacity = useSharedValue(0);
 
     useEffect(() => {
         if (isActive) {
-            // Fade in
-            opacity.value = withTiming(PULSE_CONFIG.maxOpacity, { duration: 300 });
-
-            // Pulse animation based on audio level
-            const targetScale = 1 + (audioLevel * (PULSE_CONFIG.maxScale - 1));
+            opacity.value = withTiming(0.3, { duration: 300 });
+            const targetScale = 1 + (audioLevel * 1.5);
             scale.value = withSpring(targetScale, {
                 damping: 10,
                 stiffness: 80,
@@ -94,7 +78,7 @@ const PulseRing = memo(function PulseRing({
                     width: size,
                     height: size,
                     borderRadius: size / 2,
-                    borderColor: PULSE_CONFIG.color,
+                    borderColor: color,
                 },
                 animatedStyle,
             ]}
@@ -107,12 +91,14 @@ const PulseRing = memo(function PulseRing({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const VoiceRecordButton = memo(function VoiceRecordButton({
-                                                                     isRecording,
-                                                                     audioLevel,
-                                                                     onPress,
-                                                                     size = 100,
-                                                                     disabled = false,
-                                                                 }: VoiceRecordButtonProps) {
+    isRecording,
+    audioLevel,
+    onPress,
+    size = 100,
+    disabled = false,
+}: VoiceRecordButtonProps) {
+    const { colors } = useTheme();
+    
     // Animation values
     const buttonScale = useSharedValue(1);
     const breathe = useSharedValue(1);
@@ -158,36 +144,30 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
 
     // Determine button appearance based on state
     const buttonBackground = isRecording
-        ? GlassColors.text.primary // Solid white when recording
-        : GlassColors.glass.background; // Glass when idle
+        ? colors.text.primary
+        : colors.surface.glass;
 
     const buttonBorder = isRecording
-        ? GlassColors.text.primary
-        : GlassColors.glass.borderLight;
+        ? colors.text.primary
+        : colors.glass.borderLight;
 
     const textColor = isRecording
-        ? (GlassColors.glass.background === 'rgba(255, 255, 255, 0.06)' ? '#000000' : '#FFFFFF')
-        : GlassColors.text.primary;
+        ? colors.text.inverse
+        : colors.text.primary;
 
     return (
         <View style={[styles.container, { width: size * 2.5, height: size * 2.5 }]}>
-            {/* Pulse Rings (Monochrome - only visible when recording) */}
+            {/* Pulse ring */}
             <View style={styles.pulseContainer}>
                 <PulseRing
                     size={size}
                     audioLevel={audioLevel}
                     isActive={isRecording}
-                />
-                {/* Second ring with offset for depth */}
-                <PulseRing
-                    size={size * 1.2}
-                    audioLevel={audioLevel * 0.7}
-                    isActive={isRecording}
-                    delay={100}
+                    color={colors.text.primary}
                 />
             </View>
 
-            {/* Main Button */}
+            {/* Main button */}
             <Animated.View style={[styles.buttonWrapper, buttonAnimatedStyle]}>
                 <TouchableOpacity
                     onPress={onPress}
@@ -202,23 +182,22 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
                             height: size,
                             borderRadius: size / 2,
                             backgroundColor: buttonBackground,
-                            borderWidth: 2,
+                            borderWidth: isRecording ? 0 : 2,
                             borderColor: buttonBorder,
                         },
-                        Shadows.glass,
                     ]}
                 >
-                    {/* Inner Ring */}
+                    {/* Inner ring for visual depth */}
                     <View
                         style={[
                             styles.innerRing,
                             {
-                                width: size - 8,
-                                height: size - 8,
-                                borderRadius: (size - 8) / 2,
+                                width: size * 0.85,
+                                height: size * 0.85,
+                                borderRadius: size * 0.425,
                                 borderColor: isRecording
-                                    ? 'rgba(0, 0, 0, 0.1)'
-                                    : 'rgba(255, 255, 255, 0.1)',
+                                    ? colors.text.inverse + '20'
+                                    : colors.text.primary + '20',
                             },
                         ]}
                     />
@@ -228,9 +207,7 @@ export const VoiceRecordButton = memo(function VoiceRecordButton({
                         <View
                             style={[
                                 styles.stopIcon,
-                                {
-                                    backgroundColor: textColor,
-                                },
+                                { backgroundColor: textColor },
                             ]}
                         />
                     ) : (

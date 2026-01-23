@@ -35,19 +35,19 @@ export const MonochromeColors = {
       inverse: '#FFFFFF',      // White (for dark backgrounds)
     },
     border: {
-      default: 'rgba(0, 0, 0, 0.08)',   // Very subtle
-      strong: 'rgba(0, 0, 0, 0.15)',    // More visible
-      focus: 'rgba(0, 0, 0, 0.25)',     // Focus state
-      divider: 'rgba(0, 0, 0, 0.06)',   // Thin dividers
+      default: 'rgba(0, 0, 0, 0.12)',   // More visible border
+      strong: 'rgba(0, 0, 0, 0.20)',    // More visible
+      focus: 'rgba(0, 0, 0, 0.30)',     // Focus state
+      divider: 'rgba(0, 0, 0, 0.08)',   // Thin dividers
     },
     surface: {
-      glass: 'rgba(255, 255, 255, 0.85)',      // Glass effect (light)
-      glassLight: 'rgba(255, 255, 255, 0.92)', // Lighter glass
-      glassDark: 'rgba(0, 0, 0, 0.03)',        // Subtle dark overlay
+      glass: 'rgba(245, 245, 245, 0.95)',     // Light gray glass - VISIBLE!
+      glassLight: 'rgba(250, 250, 250, 0.98)', // Lighter glass
+      glassDark: 'rgba(0, 0, 0, 0.05)',        // Subtle dark overlay
       elevated: 'rgba(255, 255, 255, 0.98)',   // Elevated cards
-      pressed: 'rgba(0, 0, 0, 0.05)',          // Pressed state
-      disabled: 'rgba(0, 0, 0, 0.02)',         // Disabled state
-      hover: 'rgba(0, 0, 0, 0.04)',            // Hover state
+      pressed: 'rgba(0, 0, 0, 0.08)',          // Pressed state
+      disabled: 'rgba(0, 0, 0, 0.04)',         // Disabled state
+      hover: 'rgba(0, 0, 0, 0.06)',            // Hover state
       input: '#FFFFFF',                         // Input background
       inputHover: '#FAFAFA',                    // Input hover
     },

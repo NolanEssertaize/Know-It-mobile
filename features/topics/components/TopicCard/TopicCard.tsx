@@ -1,11 +1,10 @@
 /**
  * @file TopicCard.tsx
- * @description Carte de topic avec swipe actions - Monochrome Theme
+ * @description Carte de topic avec swipe actions - Theme Aware
  *
- * FIXES:
- * - Swipe action buttons use HIGH CONTRAST colors
- * - Delete button: White bg + Black icon
- * - Edit/Share buttons: Glass bg + White icon with visible border
+ * FIXED:
+ * - All colors now use useTheme() hook
+ * - Swipe action buttons adaptive to theme
  */
 
 import React, { memo, useEffect, useRef, useCallback, useState } from 'react';
@@ -20,8 +19,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTheme, Spacing, BorderRadius } from '@/theme';
 import type { TopicItemData } from '../../hooks/useTopicsList';
-import { Spacing, BorderRadius } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -38,7 +37,7 @@ interface TopicCardProps {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SWIPE ACTIONS - HIGH CONTRAST
+// SWIPE ACTIONS - Theme Aware
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface RightActionsProps {
@@ -49,11 +48,13 @@ interface RightActionsProps {
 }
 
 const RightActions = memo(function RightActions({
-                                                    progress,
-                                                    onEdit,
-                                                    onShare,
-                                                    onDelete,
-                                                }: RightActionsProps) {
+    progress,
+    onEdit,
+    onShare,
+    onDelete,
+}: RightActionsProps) {
+    const { colors } = useTheme();
+    
     const animatedStyle = useAnimatedStyle(() => ({
         opacity: interpolate(progress.value, [0, 1], [0, 1]),
         transform: [
@@ -65,40 +66,48 @@ const RightActions = memo(function RightActions({
 
     return (
         <Reanimated.View style={[styles.actionsContainer, animatedStyle]}>
-            {/* Edit Button - Glass style */}
+            {/* Edit Button */}
             <Pressable
                 style={({ pressed }) => [
                     styles.actionButton,
-                    styles.editButton,
+                    { 
+                        backgroundColor: colors.surface.glass,
+                        borderWidth: 1,
+                        borderColor: colors.glass.borderLight,
+                    },
                     pressed && styles.actionButtonPressed,
                 ]}
                 onPress={onEdit}
             >
-                <MaterialIcons name="edit" size={20} color="#FFFFFF" />
+                <MaterialIcons name="edit" size={20} color={colors.text.primary} />
             </Pressable>
 
-            {/* Share Button - Glass style */}
+            {/* Share Button */}
             <Pressable
                 style={({ pressed }) => [
                     styles.actionButton,
-                    styles.shareButton,
+                    { 
+                        backgroundColor: colors.surface.glass,
+                        borderWidth: 1,
+                        borderColor: colors.glass.borderLight,
+                    },
                     pressed && styles.actionButtonPressed,
                 ]}
                 onPress={onShare}
             >
-                <MaterialIcons name="share" size={20} color="#FFFFFF" />
+                <MaterialIcons name="share" size={20} color={colors.text.primary} />
             </Pressable>
 
-            {/* Delete Button - HIGH CONTRAST (White bg, Black icon) */}
+            {/* Delete Button - HIGH CONTRAST */}
             <Pressable
                 style={({ pressed }) => [
                     styles.actionButton,
-                    styles.deleteButton,
+                    { backgroundColor: colors.text.primary },
                     pressed && styles.actionButtonPressed,
                 ]}
                 onPress={onDelete}
             >
-                <MaterialIcons name="delete" size={20} color="#000000" />
+                <MaterialIcons name="delete" size={20} color={colors.text.inverse} />
             </Pressable>
         </Reanimated.View>
     );
@@ -109,16 +118,17 @@ const RightActions = memo(function RightActions({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const TopicCard = memo(function TopicCard({
-                                                     data,
-                                                     onPress,
-                                                     onEdit,
-                                                     onShare,
-                                                     onDelete,
-                                                     registerRef,
-                                                     unregisterRef,
-                                                 }: TopicCardProps) {
+    data,
+    onPress,
+    onEdit,
+    onShare,
+    onDelete,
+    registerRef,
+    unregisterRef,
+}: TopicCardProps) {
     const swipeableRef = useRef<SwipeableMethods>(null);
     const { topic, theme, lastSessionDate } = data;
+    const { colors } = useTheme();
 
     const [isSwipeOpen, setIsSwipeOpen] = useState(false);
     const isSwipingRef = useRef(false);
@@ -203,22 +213,26 @@ export const TopicCard = memo(function TopicCard({
                 <Pressable
                     style={({ pressed }) => [
                         styles.card,
+                        { 
+                            backgroundColor: colors.surface.glass,
+                            borderColor: colors.glass.border,
+                        },
                         pressed && styles.cardPressed,
                     ]}
                     onPress={handleCardPress}
                 >
                     {/* Topic Icon Container */}
-                    <View style={styles.iconContainer}>
+                    <View style={[styles.iconContainer, { backgroundColor: colors.surface.glassLight }]}>
                         <MaterialCommunityIcons
                             name={theme.icon as keyof typeof MaterialCommunityIcons.glyphMap}
                             size={26}
-                            color="#FFFFFF"
+                            color={colors.text.primary}
                         />
                     </View>
 
                     {/* Topic Info */}
                     <View style={styles.topicInfo}>
-                        <Text style={styles.topicTitle} numberOfLines={1}>
+                        <Text style={[styles.topicTitle, { color: colors.text.primary }]} numberOfLines={1}>
                             {topic.title}
                         </Text>
                         <View style={styles.topicMeta}>
@@ -226,27 +240,29 @@ export const TopicCard = memo(function TopicCard({
                                 <MaterialCommunityIcons
                                     name="text-box-outline"
                                     size={14}
-                                    color="rgba(255,255,255,0.6)"
+                                    color={colors.text.secondary}
                                 />
-                                <Text style={styles.metaText}>
+                                <Text style={[styles.metaText, { color: colors.text.secondary }]}>
                                     {topic.sessions.length} session{topic.sessions.length !== 1 ? 's' : ''}
                                 </Text>
                             </View>
-                            <View style={styles.metaDot} />
+                            <View style={[styles.metaDot, { backgroundColor: colors.text.muted }]} />
                             <View style={styles.metaItem}>
                                 <MaterialCommunityIcons
                                     name="clock-outline"
                                     size={14}
-                                    color="rgba(255,255,255,0.6)"
+                                    color={colors.text.secondary}
                                 />
-                                <Text style={styles.metaText}>{lastSessionDate}</Text>
+                                <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+                                    {lastSessionDate}
+                                </Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Chevron */}
                     <View style={styles.chevronContainer}>
-                        <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.4)" />
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </View>
                 </Pressable>
             </ReanimatedSwipeable>
@@ -255,7 +271,7 @@ export const TopicCard = memo(function TopicCard({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES - Monochrome Theme
+// STYLES (Static - colors applied inline)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
@@ -268,9 +284,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: Spacing.md,
         borderRadius: BorderRadius.lg,
-        backgroundColor: 'rgba(255, 255, 255, 0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
 
     cardPressed: {
@@ -284,7 +298,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: Spacing.md,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
 
     topicInfo: {
@@ -294,7 +307,6 @@ const styles = StyleSheet.create({
     topicTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
         marginBottom: Spacing.xs,
     },
 
@@ -311,14 +323,12 @@ const styles = StyleSheet.create({
 
     metaText: {
         fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.6)',
     },
 
     metaDot: {
         width: 4,
         height: 4,
         borderRadius: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
         marginHorizontal: Spacing.sm,
     },
 
@@ -326,9 +336,7 @@ const styles = StyleSheet.create({
         padding: Spacing.xs,
     },
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SWIPE ACTIONS - HIGH CONTRAST
-    // ═══════════════════════════════════════════════════════════════════════
+    // Swipe Actions
     actionsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -347,36 +355,6 @@ const styles = StyleSheet.create({
     actionButtonPressed: {
         opacity: 0.7,
         transform: [{ scale: 0.95 }],
-    },
-
-    // Edit button - Glass style with border
-    editButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-
-    // Share button - Glass style with border
-    shareButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-
-    // Delete button - HIGH CONTRAST (White bg, Black icon)
-    deleteButton: {
-        backgroundColor: '#FFFFFF',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
     },
 });
 
