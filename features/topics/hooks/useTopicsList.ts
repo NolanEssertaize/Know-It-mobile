@@ -3,9 +3,11 @@
  * @description Logic Controller pour l'écran de liste des topics
  *
  * FIXES:
+ * - Removed emoji from greeting (no emoji policy)
  * - Added safety filters to prevent crashes on undefined topics
  * - Added useEffect to load topics on mount for synchronization
  * - Added streak property for tracking consecutive days of study
+ * - Uses corrected formatDateRelative from dateUtils for proper Today/Yesterday
  */
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
@@ -28,7 +30,6 @@ export const TOPIC_THEMES: TopicTheme[] = [
     { icon: 'flask', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
     { icon: 'book-open-variant', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
 ];
-
 
 export const CATEGORIES: TopicCategory[] = [
     { id: 'all', label: 'Tous', icon: 'view-grid' },
@@ -105,14 +106,11 @@ function useDebounce<T>(value: T, delay: number): T {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function calculateStreak(topics: Topic[]): number {
-    // SAFETY CHECK: Ensure topics array exists
     if (!topics || !Array.isArray(topics)) return 0;
 
-    // Get all session dates from all topics
     const allSessionDates: Date[] = [];
 
     topics.forEach(topic => {
-        // SAFETY CHECK: Ensure topic and sessions exist
         if (topic && topic.sessions && Array.isArray(topic.sessions)) {
             topic.sessions.forEach(session => {
                 if (session && session.date) {
@@ -124,45 +122,29 @@ function calculateStreak(topics: Topic[]): number {
 
     if (allSessionDates.length === 0) return 0;
 
-    // Sort dates descending (most recent first)
+    // Sort dates descending
     allSessionDates.sort((a, b) => b.getTime() - a.getTime());
 
-    // Get unique days (normalize to start of day)
+    // Calculate streak
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const uniqueDays = new Set<string>();
     allSessionDates.forEach(date => {
-        const dayKey = date.toISOString().split('T')[0];
+        const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         uniqueDays.add(dayKey);
     });
 
     const sortedDays = Array.from(uniqueDays).sort().reverse();
 
-    if (sortedDays.length === 0) return 0;
+    for (let i = 0; i < sortedDays.length; i++) {
+        const expectedDate = new Date(today);
+        expectedDate.setDate(today.getDate() - i);
+        const expectedKey = `${expectedDate.getFullYear()}-${expectedDate.getMonth()}-${expectedDate.getDate()}`;
 
-    // Check if today or yesterday has a session
-    const today = new Date();
-    const todayKey = today.toISOString().split('T')[0];
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayKey = yesterday.toISOString().split('T')[0];
-
-    // If no session today or yesterday, streak is 0
-    if (sortedDays[0] !== todayKey && sortedDays[0] !== yesterdayKey) {
-        return 0;
-    }
-
-    // Count consecutive days
-    let streak = 1;
-    let currentDate = new Date(sortedDays[0]);
-
-    for (let i = 1; i < sortedDays.length; i++) {
-        const prevDate = new Date(currentDate);
-        prevDate.setDate(prevDate.getDate() - 1);
-        const prevKey = prevDate.toISOString().split('T')[0];
-
-        if (sortedDays[i] === prevKey) {
+        if (sortedDays.includes(expectedKey)) {
             streak++;
-            currentDate = prevDate;
         } else {
             break;
         }
@@ -200,7 +182,7 @@ export function useTopicsList(): UseTopicsListReturn {
     const swipeableRefs = useRef<Map<string, SwipeableMethods>>(new Map());
 
     // ─────────────────────────────────────────────────────────────────────────
-    // EFFECTS
+    // EFFECTS - Load topics on mount
     // ─────────────────────────────────────────────────────────────────────────
     useEffect(() => {
         console.log('[useTopicsList] Loading topics on mount...');
@@ -215,6 +197,7 @@ export function useTopicsList(): UseTopicsListReturn {
         return debouncedSearchText.trim().length > 0 || selectedCategory !== 'all';
     }, [debouncedSearchText, selectedCategory]);
 
+    // FIXED: Greeting without emoji (no emoji policy)
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Bonjour';
@@ -224,11 +207,8 @@ export function useTopicsList(): UseTopicsListReturn {
 
     // Topics filtrés et enrichis
     const filteredTopics = useMemo((): TopicItemData[] => {
-        // SAFETY CHECK 1: Ensure topics exists
         if (!topics || !Array.isArray(topics)) return [];
 
-        // SAFETY CHECK 2: Filter out undefined/null topics immediately
-        // This is the main fix for "Cannot read property 'topic' of undefined"
         let result = topics.filter((t) => t && t.id);
 
         // Filtre par recherche
@@ -240,7 +220,6 @@ export function useTopicsList(): UseTopicsListReturn {
         // Tri par catégorie
         if (selectedCategory === 'recent') {
             result.sort((a, b) => {
-                // Safety check on sessions access
                 const dateA = (a.sessions && a.sessions[0]?.date) || '';
                 const dateB = (b.sessions && b.sessions[0]?.date) || '';
                 return new Date(dateB).getTime() - new Date(dateA).getTime();
@@ -251,7 +230,6 @@ export function useTopicsList(): UseTopicsListReturn {
         return result.map((topic, index) => ({
             topic,
             theme: TOPIC_THEMES[index % TOPIC_THEMES.length],
-            // Safety check on sessions access
             lastSessionDate: topic.sessions && topic.sessions[0]?.date
                 ? formatDateRelative(topic.sessions[0].date)
                 : 'Jamais',
@@ -329,7 +307,7 @@ export function useTopicsList(): UseTopicsListReturn {
         (topicId: string) => {
             console.log('Edit topic:', topicId);
             closeAllSwipeables();
-            // TODO: Implémenter l'édition
+            // TODO: Implement edit
         },
         [closeAllSwipeables]
     );
@@ -338,7 +316,7 @@ export function useTopicsList(): UseTopicsListReturn {
         (topicId: string) => {
             console.log('Share topic:', topicId);
             closeAllSwipeables();
-            // TODO: Implémenter le partage
+            // TODO: Implement share
         },
         [closeAllSwipeables]
     );

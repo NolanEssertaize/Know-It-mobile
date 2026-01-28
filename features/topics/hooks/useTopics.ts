@@ -140,14 +140,6 @@ export function useTopicsList(): UseTopicsListReturn {
         return debouncedSearchText.trim().length > 0 || selectedCategory !== 'all';
     }, [debouncedSearchText, selectedCategory]);
 
-    // Salutation selon l'heure
-    const greeting = useMemo(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Bonjour';
-        if (hour < 18) return 'Bon après-midi';
-        return 'Bonsoir';
-    }, []);
-
     // Topics filtrés et enrichis (utilise le texte debounced)
     const filteredTopics = useMemo((): TopicItemData[] => {
         let result = [...topics];

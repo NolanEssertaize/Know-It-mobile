@@ -153,9 +153,6 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View>
-                    <Text style={[styles.greeting, { color: colors.text.secondary }]}>
-                        {logic.greeting}
-                    </Text>
                     <Text style={[styles.title, { color: colors.text.primary }]}>
                         Prêt à apprendre ?
                     </Text>

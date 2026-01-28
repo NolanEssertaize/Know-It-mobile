@@ -1,11 +1,11 @@
 /**
  * @file LogoutConfirmationModal.tsx
- * @description Modal de confirmation pour la déconnexion avec style iOS Glassmorphism
+ * @description Modal de confirmation de déconnexion
  *
- * FIXES:
- * - ADDED useTheme() hook for dynamic colors
- * - Improved glassmorphism visibility (more opaque background)
- * - Text is now readable in both light and dark modes
+ * FIXED:
+ * - All colors now use useTheme() hook
+ * - Buttons are visible in both light and dark modes
+ * - Improved contrast for buttons
  */
 
 import React, { memo } from 'react';
@@ -16,10 +16,11 @@ import {
     Pressable,
     StyleSheet,
     Platform,
+    TouchableOpacity,
+    ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { GlassButton } from '@/shared/components';
+import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius, FontSize, FontWeight } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -29,7 +30,7 @@ import { useTheme, Spacing, BorderRadius, FontSize, FontWeight } from '@/theme';
 interface LogoutConfirmationModalProps {
     visible: boolean;
     onClose: () => void;
-    onConfirm: () => Promise<void>;
+    onConfirm: () => void;
     isLoading: boolean;
 }
 
@@ -54,49 +55,20 @@ export const LogoutConfirmationModal = memo(function LogoutConfirmationModal({
         >
             <Pressable style={styles.overlay} onPress={onClose}>
                 <Pressable style={styles.content} onPress={(e) => e.stopPropagation()}>
-                    {/* Card with improved glassmorphism - MORE OPAQUE */}
-                    <View
+                    <GlassView
+                        variant="elevated"
                         style={[
                             styles.card,
                             {
-                                // More opaque background for better readability
                                 backgroundColor: isDark
-                                    ? 'rgba(30, 30, 30, 0.95)'
-                                    : 'rgba(255, 255, 255, 0.95)',
-                                borderColor: isDark
-                                    ? 'rgba(255, 255, 255, 0.15)'
-                                    : 'rgba(0, 0, 0, 0.1)',
-                                borderWidth: 1,
-                                ...Platform.select({
-                                    ios: {
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 8 },
-                                        shadowOpacity: 0.3,
-                                        shadowRadius: 16,
-                                    },
-                                    android: {
-                                        elevation: 16,
-                                    },
-                                }),
+                                    ? 'rgba(30, 30, 30, 0.98)'
+                                    : 'rgba(255, 255, 255, 0.98)',
                             },
                         ]}
                     >
                         {/* Icon */}
-                        <View
-                            style={[
-                                styles.iconContainer,
-                                {
-                                    backgroundColor: isDark
-                                        ? 'rgba(255, 255, 255, 0.1)'
-                                        : 'rgba(0, 0, 0, 0.05)'
-                                }
-                            ]}
-                        >
-                            <MaterialIcons
-                                name="logout"
-                                size={48}
-                                color={colors.text.primary}
-                            />
+                        <View style={[styles.iconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="logout" size={48} color={colors.text.primary} />
                         </View>
 
                         {/* Title */}
@@ -106,30 +78,50 @@ export const LogoutConfirmationModal = memo(function LogoutConfirmationModal({
 
                         {/* Description */}
                         <Text style={[styles.description, { color: colors.text.secondary }]}>
-                            Vous êtes sur le point de vous déconnecter de votre compte.
-                            Vous pourrez vous reconnecter à tout moment.
+                            Vous devrez vous reconnecter pour accéder à vos données.
                         </Text>
 
                         {/* Buttons */}
                         <View style={styles.buttonsContainer}>
-                            <GlassButton
-                                title="Annuler"
-                                variant="glass"
+                            {/* Cancel Button - Secondary/Glass style */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    {
+                                        backgroundColor: colors.surface.glass,
+                                        borderWidth: 1,
+                                        borderColor: colors.glass.border,
+                                    },
+                                ]}
                                 onPress={onClose}
                                 disabled={isLoading}
-                                style={styles.cancelButton}
-                            />
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.buttonText, { color: colors.text.primary }]}>
+                                    Annuler
+                                </Text>
+                            </TouchableOpacity>
 
-                            <GlassButton
-                                title={isLoading ? "Déconnexion..." : "Se déconnecter"}
-                                variant="primary"
+                            {/* Confirm Button - Primary style (high contrast) */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    { backgroundColor: colors.text.primary },
+                                ]}
                                 onPress={onConfirm}
                                 disabled={isLoading}
-                                loading={isLoading}
-                                style={styles.confirmButton}
-                            />
+                                activeOpacity={0.7}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color={colors.text.inverse} />
+                                ) : (
+                                    <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
+                                        Se déconnecter
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                    </View>
+                    </GlassView>
                 </Pressable>
             </Pressable>
         </Modal>
@@ -158,12 +150,23 @@ const styles = StyleSheet.create({
         padding: Spacing.xl,
         borderRadius: BorderRadius.xl,
         alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.2,
+                shadowRadius: 24,
+            },
+            android: {
+                elevation: 16,
+            },
+        }),
     },
 
     iconContainer: {
         width: 80,
         height: 80,
-        borderRadius: BorderRadius.full,
+        borderRadius: 40,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: Spacing.lg,
@@ -189,12 +192,18 @@ const styles = StyleSheet.create({
         width: '100%',
     },
 
-    cancelButton: {
+    button: {
         flex: 1,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 48,
     },
 
-    confirmButton: {
-        flex: 1,
+    buttonText: {
+        fontSize: FontSize.md,
+        fontWeight: FontWeight.semibold,
     },
 });
 

@@ -650,7 +650,7 @@ function ProfileScreenComponent() {
             {/* Copyright */}
             <View style={styles.copyright}>
                 <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
-                    © 2024 KnowIt.
+                    © 2026 KnowIt.
                 </Text>
                 <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
                     Tous droits réservés.

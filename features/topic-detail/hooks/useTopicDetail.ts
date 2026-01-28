@@ -4,8 +4,9 @@
  *
  * Pattern: MVVM - This hook serves as the ViewModel for topic detail view
  *
- * FIX:
+ * FIXES:
  * - Sessions are now transformed to SessionItemData with formattedDate
+ * - Uses corrected formatSessionHistoryDate for proper Today/Yesterday display
  * - Added refreshSessions method
  * - Added handleSessionPress for navigation
  */
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { useStore, selectCurrentTopic, selectIsLoading, selectError } from '@/store';
 import type { Topic, Session } from '@/store';
+import { formatSessionHistoryDate } from '@/shared/utils/dateUtils';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -30,7 +32,7 @@ export interface SessionItemData {
 interface UseTopicDetailReturn {
     // State
     topic: Topic | null;
-    sessions: SessionItemData[]; // Changed from Session[] to SessionItemData[]
+    sessions: SessionItemData[];
     isLoading: boolean;
     error: string | null;
     isEditModalVisible: boolean;
@@ -48,31 +50,6 @@ interface UseTopicDetailReturn {
     showEditModal: () => void;
     hideEditModal: () => void;
     clearError: () => void;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Format date to relative or absolute string
- */
-function formatSessionDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-        // Today - show time
-        return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays === 1) {
-        return 'Hier';
-    } else if (diffDays < 7) {
-        return `Il y a ${diffDays} jours`;
-    } else {
-        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -98,7 +75,8 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
     } = useStore();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // FIX: Transform sessions to SessionItemData with formattedDate
+    // Transform sessions to SessionItemData with formattedDate
+    // Uses the corrected formatSessionHistoryDate from dateUtils
     // ═══════════════════════════════════════════════════════════════════════
     const sessions: SessionItemData[] = useMemo(() => {
         const rawSessions = topic?.sessions || [];
@@ -110,7 +88,8 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
             })
             .map((session) => ({
                 session,
-                formattedDate: formatSessionDate(session.date),
+                // Use the corrected date formatting function
+                formattedDate: formatSessionHistoryDate(session.date),
             }))
             .sort((a, b) => {
                 // Sort by date descending (newest first)
@@ -200,8 +179,6 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
     const handleSessionPress = useCallback((sessionId: string) => {
         if (topicId) {
             console.log('[useTopicDetail] Opening session:', sessionId);
-            // Navigate to result screen with session data
-            // You might need to adjust this based on your routing structure
             router.push(`/${topicId}/result?sessionId=${sessionId}`);
         }
     }, [topicId, router]);
@@ -232,7 +209,7 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
     return {
         // State
         topic,
-        sessions, // Now returns SessionItemData[]
+        sessions,
         isLoading,
         error,
         isEditModalVisible,
