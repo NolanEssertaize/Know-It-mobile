@@ -1,22 +1,27 @@
 /**
  * @file LogoutConfirmationModal.tsx
- * @description Logout Confirmation Modal - Theme Aware, Internationalized
+ * @description Modal de confirmation de déconnexion
+ *
+ * FIXED:
+ * - All colors now use useTheme() hook
+ * - Buttons are visible in both light and dark modes
+ * - Improved contrast for buttons
  */
 
 import React, { memo } from 'react';
 import {
+    Modal,
     View,
     Text,
-    Modal,
+    Pressable,
+    StyleSheet,
+    Platform,
     TouchableOpacity,
     ActivityIndicator,
-    StyleSheet,
-    Pressable,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useTranslation } from 'react-i18next';
-
-import { useTheme, Spacing, BorderRadius } from '@/theme';
+import { GlassView } from '@/shared/components';
+import { useTheme, Spacing, BorderRadius, FontSize, FontWeight } from '@/theme';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -25,7 +30,7 @@ import { useTheme, Spacing, BorderRadius } from '@/theme';
 interface LogoutConfirmationModalProps {
     visible: boolean;
     onClose: () => void;
-    onConfirm: () => Promise<void>;
+    onConfirm: () => void;
     isLoading: boolean;
 }
 
@@ -39,8 +44,7 @@ export const LogoutConfirmationModal = memo(function LogoutConfirmationModal({
                                                                                  onConfirm,
                                                                                  isLoading,
                                                                              }: LogoutConfirmationModalProps) {
-    const { colors } = useTheme();
-    const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
 
     return (
         <Modal
@@ -50,54 +54,74 @@ export const LogoutConfirmationModal = memo(function LogoutConfirmationModal({
             onRequestClose={onClose}
         >
             <Pressable style={styles.overlay} onPress={onClose}>
-                <Pressable
-                    style={[styles.content, { backgroundColor: colors.background.primary }]}
-                    onPress={(e) => e.stopPropagation()}
-                >
-                    {/* Icon */}
-                    <View style={styles.iconContainer}>
-                        <View style={[styles.icon, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialIcons name="logout" size={32} color={colors.text.primary} />
+                <Pressable style={styles.content} onPress={(e) => e.stopPropagation()}>
+                    <GlassView
+                        variant="elevated"
+                        style={[
+                            styles.card,
+                            {
+                                backgroundColor: isDark
+                                    ? 'rgba(30, 30, 30, 0.98)'
+                                    : 'rgba(255, 255, 255, 0.98)',
+                            },
+                        ]}
+                    >
+                        {/* Icon */}
+                        <View style={[styles.iconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="logout" size={48} color={colors.text.primary} />
                         </View>
-                    </View>
 
-                    {/* Title & Message */}
-                    <Text style={[styles.title, { color: colors.text.primary }]}>
-                        {t('logoutModal.title')}
-                    </Text>
-                    <Text style={[styles.message, { color: colors.text.secondary }]}>
-                        {t('logoutModal.message')}
-                    </Text>
+                        {/* Title */}
+                        <Text style={[styles.title, { color: colors.text.primary }]}>
+                            Se déconnecter ?
+                        </Text>
 
-                    {/* Buttons */}
-                    <View style={styles.buttons}>
-                        <TouchableOpacity
-                            style={[styles.cancelButton, { borderColor: colors.glass.border }]}
-                            onPress={onClose}
-                            disabled={isLoading}
-                        >
-                            <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>
-                                {t('logoutModal.cancel')}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.confirmButton,
-                                { backgroundColor: colors.text.primary },
-                                isLoading && styles.buttonDisabled,
-                            ]}
-                            onPress={onConfirm}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator size="small" color={colors.text.inverse} />
-                            ) : (
-                                <Text style={[styles.confirmButtonText, { color: colors.text.inverse }]}>
-                                    {t('logoutModal.confirm')}
+                        {/* Description */}
+                        <Text style={[styles.description, { color: colors.text.secondary }]}>
+                            Vous devrez vous reconnecter pour accéder à vos données.
+                        </Text>
+
+                        {/* Buttons */}
+                        <View style={styles.buttonsContainer}>
+                            {/* Cancel Button - Secondary/Glass style */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    {
+                                        backgroundColor: colors.surface.glass,
+                                        borderWidth: 1,
+                                        borderColor: colors.glass.border,
+                                    },
+                                ]}
+                                onPress={onClose}
+                                disabled={isLoading}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.buttonText, { color: colors.text.primary }]}>
+                                    Annuler
                                 </Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
+                            </TouchableOpacity>
+
+                            {/* Confirm Button - Primary style (high contrast) */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    { backgroundColor: colors.text.primary },
+                                ]}
+                                onPress={onConfirm}
+                                disabled={isLoading}
+                                activeOpacity={0.7}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color={colors.text.inverse} />
+                                ) : (
+                                    <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
+                                        Se déconnecter
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </GlassView>
                 </Pressable>
             </Pressable>
         </Modal>
@@ -111,70 +135,75 @@ export const LogoutConfirmationModal = memo(function LogoutConfirmationModal({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: Spacing.lg,
     },
+
     content: {
         width: '100%',
         maxWidth: 340,
+    },
+
+    card: {
+        padding: Spacing.xl,
         borderRadius: BorderRadius.xl,
-        padding: Spacing.lg,
         alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.2,
+                shadowRadius: 24,
+            },
+            android: {
+                elevation: 16,
+            },
+        }),
     },
+
     iconContainer: {
-        marginBottom: Spacing.md,
-    },
-    icon: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: Spacing.xs,
-        textAlign: 'center',
-    },
-    message: {
-        fontSize: 14,
-        textAlign: 'center',
         marginBottom: Spacing.lg,
-        lineHeight: 20,
     },
-    buttons: {
+
+    title: {
+        fontSize: FontSize.xl,
+        fontWeight: FontWeight.bold,
+        textAlign: 'center',
+        marginBottom: Spacing.sm,
+    },
+
+    description: {
+        fontSize: FontSize.md,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: Spacing.xl,
+    },
+
+    buttonsContainer: {
         flexDirection: 'row',
-        gap: Spacing.sm,
+        gap: Spacing.md,
         width: '100%',
     },
-    cancelButton: {
+
+    button: {
         flex: 1,
         paddingVertical: Spacing.md,
         borderRadius: BorderRadius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
+        minHeight: 48,
     },
-    cancelButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    confirmButton: {
-        flex: 1,
-        paddingVertical: Spacing.md,
-        borderRadius: BorderRadius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    confirmButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonDisabled: {
-        opacity: 0.7,
+
+    buttonText: {
+        fontSize: FontSize.md,
+        fontWeight: FontWeight.semibold,
     },
 });
 

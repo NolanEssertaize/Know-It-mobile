@@ -1,119 +1,128 @@
 /**
  * @file TopicDetailScreen.tsx
- * @description Topic Detail Screen - Theme Aware, Internationalized
+ * @description Écran de détail d'un topic - Theme Aware
  *
- * UPDATED: All hardcoded strings replaced with i18n translations
+ * FIXES:
+ * - ADDED useTheme() hook for dynamic colors (fixes white mode bug)
+ * - All colors now adapt to light/dark mode
+ * - FAB button adapts to theme
+ * - RefreshControl colors adapt to theme
  */
 
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    ActivityIndicator,
-    RefreshControl,
-    StyleSheet,
-    Alert,
-    Modal,
-    TextInput,
-    Pressable,
-    KeyboardAvoidingView,
-    Platform,
-    ListRenderItem,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import React, { memo, useCallback } from 'react';
+import { View, Text, FlatList, RefreshControl, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useTranslation } from 'react-i18next';
-
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
-import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage, formatDate, formatRelativeTime } from '@/i18n';
+import { Spacing, BorderRadius, useTheme } from '@/theme';
 
 import { useTopicDetail } from '../hooks/useTopicDetail';
-import { SessionCard } from '../../session/components/SessionCard';
-import type { Session } from '@/store';
+import type { SessionItemData } from '../hooks/useTopicDetail';
+import { SessionHistoryCard } from '../components/SessionHistoryCard';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TYPES
+// COMPOSANT
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface SessionItemData {
-    session: Session;
-    index: number;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-function TopicDetailScreenComponent() {
+export const TopicDetailScreen = memo(function TopicDetailScreen() {
+    // ─────────────────────────────────────────────────────────────────────────
+    // HOOKS - All hooks MUST be called before any conditional returns
+    // ─────────────────────────────────────────────────────────────────────────
+    const { topicId } = useLocalSearchParams<{ topicId: string }>();
     const router = useRouter();
-    const { colors } = useTheme();
-    const { t } = useTranslation();
-    const { language } = useLanguage();
+    const insets = useSafeAreaInsets();
+    const { colors, isDark } = useTheme();
 
-    const logic = useTopicDetail();
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // EFFECTS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    useEffect(() => {
-        logic.loadTopicDetail();
-    }, [logic.loadTopicDetail]);
+    const logic = useTopicDetail(topicId ?? '');
 
     // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS
+    // HANDLERS - Define ALL useCallback hooks BEFORE any returns
     // ─────────────────────────────────────────────────────────────────────────
 
     const handleBack = useCallback(() => {
         router.back();
     }, [router]);
 
-    const handleDelete = useCallback(() => {
-        Alert.alert(
-            t('common.delete'),
-            t('topicDetail.actions.confirmDelete'),
-            [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                    text: t('common.delete'),
-                    style: 'destructive',
-                    onPress: logic.handleDeleteTopic,
-                },
-            ]
-        );
-    }, [logic.handleDeleteTopic, t]);
-
-    const handleEditSave = useCallback(async () => {
-        await logic.handleUpdateTitle();
-        logic.hideEditModal();
-    }, [logic]);
+    const handleStartSession = useCallback(() => {
+        if (topicId) {
+            router.push(`/${topicId}/session`);
+        }
+    }, [router, topicId]);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // COMPUTED DATA
+    // RENDER HELPERS - Define ALL useCallback hooks BEFORE any returns
     // ─────────────────────────────────────────────────────────────────────────
 
-    const sessionsData: SessionItemData[] = useMemo(() => {
-        return (logic.sessions || []).map((session, index) => ({
-            session,
-            index,
-        }));
-    }, [logic.sessions]);
+    const renderHeader = useCallback(
+        () => (
+            <View>
+                {/* Navigation header */}
+                <View style={styles.navHeader}>
+                    <Pressable
+                        style={[
+                            styles.backButton,
+                            {
+                                backgroundColor: colors.surface.glass,
+                                borderColor: colors.glass.border,
+                                borderWidth: 1,
+                            }
+                        ]}
+                        onPress={handleBack}
+                    >
+                        <MaterialIcons
+                            name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
+                            size={24}
+                            color={colors.text.primary}
+                        />
+                    </Pressable>
+                    <Text style={[styles.navTitle, { color: colors.text.primary }]} numberOfLines={1}>
+                        {logic.topic?.title}
+                    </Text>
+                    <View style={styles.headerSpacer} />
+                </View>
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER FUNCTIONS
-    // ─────────────────────────────────────────────────────────────────────────
+                {/* Stats summary */}
+                <View style={styles.statsSummary}>
+                    <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>{logic.sessions.length}</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Sessions</Text>
+                    </View>
+                    <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {logic.sessions.length > 0
+                                ? Math.round(
+                                    logic.sessions.reduce((acc, s) => {
+                                        const valid = s.session.analysis?.valid?.length || 0;
+                                        const total = valid + (s.session.analysis?.corrections?.length || 0) + (s.session.analysis?.missing?.length || 0);
+                                        return acc + (total > 0 ? (valid / total) * 100 : 0);
+                                    }, 0) / logic.sessions.length
+                                )
+                                : 0}
+                            %
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Score Moyen</Text>
+                    </View>
+                </View>
 
-    const renderSessionItem: ListRenderItem<SessionItemData> = useCallback(
-        ({ item }) => (
-            <SessionCard
-                session={item.session}
-                index={item.index}
-                onPress={() => logic.handleSessionPress(item.session.id)}
-            />
+                {/* Section header */}
+                <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Historique</Text>
+                </View>
+            </View>
+        ),
+        [logic.topic, logic.sessions, handleBack, colors]
+    );
+
+    const renderSessionCard = useCallback(
+        ({ item }: { item: SessionItemData }) => (
+            <View style={styles.sessionCardWrapper}>
+                <SessionHistoryCard
+                    data={item}
+                    onPress={() => logic.handleSessionPress(item.session.id)}
+                />
+            </View>
         ),
         [logic.handleSessionPress]
     );
@@ -121,20 +130,20 @@ function TopicDetailScreenComponent() {
     const renderEmptyState = useCallback(
         () => (
             <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons
-                    name="microphone-off"
-                    size={48}
-                    color={colors.text.muted}
-                />
-                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
-                    {t('topicDetail.empty.title')}
-                </Text>
-                <Text style={[styles.emptyDescription, { color: colors.text.secondary }]}>
-                    {t('topicDetail.empty.description')}
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface.glass }]}>
+                    <MaterialCommunityIcons
+                        name="microphone-outline"
+                        size={40}
+                        color={colors.text.muted}
+                    />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>Aucune session</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.text.secondary }]}>
+                    Commencez à enregistrer vos explications pour ce sujet
                 </Text>
             </View>
         ),
-        [colors, t]
+        [colors]
     );
 
     const keyExtractor = useCallback((item: SessionItemData) => item.session.id, []);
@@ -149,7 +158,7 @@ function TopicDetailScreenComponent() {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.text.primary} />
                     <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                        {t('common.loading')}
+                        Chargement...
                     </Text>
                 </View>
             </ScreenWrapper>
@@ -170,12 +179,13 @@ function TopicDetailScreenComponent() {
                         color={colors.text.muted}
                     />
                     <Text style={[styles.errorText, { color: colors.text.secondary }]}>
-                        {t('topicDetail.notFound')}
+                        Topic introuvable
                     </Text>
                     <GlassButton
-                        title={t('common.back')}
+                        title="Retour"
+                        variant="primary"
                         onPress={handleBack}
-                        variant="secondary"
+                        style={styles.retryButton}
                     />
                 </View>
             </ScreenWrapper>
@@ -188,41 +198,13 @@ function TopicDetailScreenComponent() {
 
     return (
         <ScreenWrapper useSafeArea padding={0}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-
-                <View style={styles.headerTitleContainer}>
-                    <Text
-                        style={[styles.headerTitle, { color: colors.text.primary }]}
-                        numberOfLines={1}
-                    >
-                        {logic.topic.title}
-                    </Text>
-                    <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>
-                        {t('topicDetail.sessionsCount', { count: logic.sessions.length })}
-                    </Text>
-                </View>
-
-                <View style={styles.headerActions}>
-                    <TouchableOpacity onPress={logic.showEditModal} style={styles.headerButton}>
-                        <MaterialIcons name="edit" size={22} color={colors.text.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleDelete} style={styles.headerButton}>
-                        <MaterialIcons name="delete" size={22} color="#EF4444" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Sessions List */}
             <FlatList
-                data={sessionsData}
-                renderItem={renderSessionItem}
+                data={logic.sessions}
                 keyExtractor={keyExtractor}
-                contentContainerStyle={styles.listContent}
+                renderItem={renderSessionCard}
+                ListHeaderComponent={renderHeader}
                 ListEmptyComponent={renderEmptyState}
+                contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -234,226 +216,198 @@ function TopicDetailScreenComponent() {
                 }
             />
 
-            {/* Start Recording Button */}
-            <View style={styles.bottomContainer}>
-                <TouchableOpacity
-                    style={[styles.recordButton, { backgroundColor: colors.text.primary }]}
-                    onPress={logic.handleStartSession}
-                    activeOpacity={0.8}
+            {/* FAB - "Nouvelle Session" button - THEME AWARE */}
+            <View style={styles.fabContainer}>
+                <Pressable
+                    onPress={handleStartSession}
+                    style={({ pressed }) => [
+                        styles.fabButton,
+                        {
+                            backgroundColor: colors.text.primary,
+                            ...Platform.select({
+                                ios: {
+                                    shadowColor: isDark ? '#FFFFFF' : '#000000',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                },
+                                android: {
+                                    elevation: 8,
+                                },
+                            }),
+                        },
+                        pressed && styles.fabButtonPressed,
+                    ]}
                 >
                     <MaterialCommunityIcons name="microphone" size={24} color={colors.text.inverse} />
-                    <Text style={[styles.recordButtonText, { color: colors.text.inverse }]}>
-                        {t('topicDetail.startRecording')}
-                    </Text>
-                </TouchableOpacity>
+                    <Text style={[styles.fabText, { color: colors.text.inverse }]}>Nouvelle Session</Text>
+                </Pressable>
             </View>
-
-            {/* Edit Modal */}
-            <Modal
-                visible={logic.isEditModalVisible}
-                transparent
-                animationType="slide"
-                onRequestClose={logic.hideEditModal}
-            >
-                <KeyboardAvoidingView
-                    style={styles.modalOverlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                >
-                    <Pressable style={styles.modalOverlay} onPress={logic.hideEditModal}>
-                        <Pressable
-                            style={[styles.modalContent, { backgroundColor: colors.background.primary }]}
-                            onPress={(e) => e.stopPropagation()}
-                        >
-                            {/* Modal Header */}
-                            <View style={styles.modalHeader}>
-                                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
-                                    {t('topicDetail.editModal.title')}
-                                </Text>
-                                <Pressable onPress={logic.hideEditModal}>
-                                    <MaterialIcons name="close" size={24} color={colors.text.secondary} />
-                                </Pressable>
-                            </View>
-
-                            {/* Input */}
-                            <GlassView style={styles.modalInputContainer} showBorder>
-                                <TextInput
-                                    style={[styles.modalInput, { color: colors.text.primary }]}
-                                    placeholder={t('topicDetail.editModal.placeholder')}
-                                    placeholderTextColor={colors.text.muted}
-                                    value={logic.editTitle}
-                                    onChangeText={logic.setEditTitle}
-                                    autoFocus
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleEditSave}
-                                />
-                            </GlassView>
-
-                            {/* Save Button */}
-                            <TouchableOpacity
-                                style={[
-                                    styles.modalSaveButton,
-                                    { backgroundColor: colors.text.primary },
-                                    !logic.editTitle.trim() && styles.modalSaveButtonDisabled,
-                                ]}
-                                onPress={handleEditSave}
-                                disabled={!logic.editTitle.trim()}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={[styles.modalSaveButtonText, { color: colors.text.inverse }]}>
-                                    {t('topicDetail.editModal.save')}
-                                </Text>
-                            </TouchableOpacity>
-                        </Pressable>
-                    </Pressable>
-                </KeyboardAvoidingView>
-            </Modal>
         </ScreenWrapper>
     );
-}
+});
 
-export const TopicDetailScreen = memo(TopicDetailScreenComponent);
+export default TopicDetailScreen;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// STYLES (Static - colors applied inline with useTheme)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-    header: {
+    // List content
+    listContent: {
+        padding: Spacing.lg,
+        paddingBottom: 120,
+        flexGrow: 1,
+    },
+
+    // Navigation header
+    navHeader: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.md,
-        gap: Spacing.sm,
+        marginBottom: Spacing.md,
     },
     backButton: {
-        padding: Spacing.xs,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    headerTitleContainer: {
+    navTitle: {
         flex: 1,
+        fontSize: 18,
+        fontWeight: '600',
+        textAlign: 'center',
+        marginHorizontal: Spacing.md,
     },
-    headerTitle: {
-        fontSize: 20,
+    headerSpacer: {
+        width: 40,
+    },
+
+    // Stats summary
+    statsSummary: {
+        flexDirection: 'row',
+        gap: Spacing.md,
+        marginBottom: Spacing.lg,
+    },
+    statItem: {
+        flex: 1,
+        alignItems: 'center',
+        padding: Spacing.md,
+    },
+    statValue: {
+        fontSize: 24,
         fontWeight: '700',
     },
-    headerSubtitle: {
-        fontSize: 13,
-        marginTop: 2,
+    statLabel: {
+        fontSize: 12,
+        marginTop: Spacing.xs,
     },
-    headerActions: {
-        flexDirection: 'row',
-        gap: Spacing.xs,
+
+    // Section header
+    sectionHeader: {
+        marginBottom: Spacing.md,
     },
-    headerButton: {
-        padding: Spacing.xs,
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginLeft: Spacing.xs,
     },
-    listContent: {
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: 120,
-    },
+
+    // Loading state
     loadingContainer: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     loadingText: {
-        marginTop: Spacing.md,
         fontSize: 16,
+        marginTop: Spacing.md,
     },
+
+    // Error state
     errorStateContainer: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        padding: Spacing.xl,
-        gap: Spacing.md,
+        justifyContent: 'center',
+        paddingHorizontal: Spacing.xl,
     },
     errorText: {
         fontSize: 16,
+        marginTop: Spacing.md,
         textAlign: 'center',
     },
+    retryButton: {
+        marginTop: Spacing.lg,
+        minWidth: 160,
+    },
+
+    // Empty state
     emptyContainer: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: Spacing.xxl * 2,
-        gap: Spacing.sm,
+        justifyContent: 'center',
+        paddingVertical: Spacing.xxl,
+        paddingHorizontal: Spacing.lg,
+    },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.lg,
     },
     emptyTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '600',
-        marginTop: Spacing.md,
-    },
-    emptyDescription: {
-        fontSize: 14,
+        marginBottom: Spacing.sm,
         textAlign: 'center',
     },
-    bottomContainer: {
+    emptySubtitle: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+    },
+
+    // Session card wrapper
+    sessionCardWrapper: {
+        marginBottom: Spacing.md,
+    },
+
+    // FAB
+    fabContainer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        padding: Spacing.lg,
-        paddingBottom: Spacing.xl,
-    },
-    recordButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: Spacing.md,
-        borderRadius: BorderRadius.lg,
-        gap: Spacing.sm,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    recordButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        borderTopLeftRadius: BorderRadius.xl,
-        borderTopRightRadius: BorderRadius.xl,
-        padding: Spacing.lg,
-        paddingBottom: Spacing.xxl,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    modalInputContainer: {
-        marginBottom: Spacing.lg,
-    },
-    modalInput: {
-        fontSize: 16,
-        padding: Spacing.md,
-    },
-    modalSaveButton: {
-        paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
-        borderRadius: BorderRadius.md,
+        paddingBottom: Spacing.xl,
+        paddingTop: Spacing.md,
+        backgroundColor: 'transparent',
+    },
+    fabButton: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: Spacing.sm,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: BorderRadius.xl,
     },
-    modalSaveButtonDisabled: {
-        opacity: 0.5,
+    fabButtonPressed: {
+        opacity: 0.9,
+        transform: [{ scale: 0.98 }],
     },
-    modalSaveButtonText: {
+    fabText: {
         fontSize: 16,
         fontWeight: '600',
     },
 });
-
-export default TopicDetailScreen;

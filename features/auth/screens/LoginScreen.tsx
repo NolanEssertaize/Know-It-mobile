@@ -1,8 +1,6 @@
 /**
  * @file LoginScreen.tsx
- * @description Login screen - Theme Aware, Internationalized
- *
- * UPDATED: All hardcoded strings replaced with i18n translations
+ * @description Login screen - Theme Aware, NO EMOJI
  */
 
 import React, { memo, useRef } from 'react';
@@ -18,7 +16,6 @@ import {
 import { useRouter } from 'expo-router';
 import { Mail, Lock } from 'lucide-react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
@@ -33,7 +30,6 @@ export const LoginScreen = memo(function LoginScreen() {
     const router = useRouter();
     const passwordInputRef = useRef<TextInput>(null);
     const { colors } = useTheme();
-    const { t } = useTranslation();
 
     const {
         email,
@@ -53,7 +49,7 @@ export const LoginScreen = memo(function LoginScreen() {
         if (result.success) {
             router.replace('/');
         } else if (result.error) {
-            Alert.alert(t('auth.login.loginFailed'), result.error);
+            Alert.alert('Login Failed', result.error);
         }
     };
 
@@ -67,25 +63,23 @@ export const LoginScreen = memo(function LoginScreen() {
 
     return (
         <AuthLayout
-            title={t('auth.login.title')}
-            subtitle={t('auth.login.subtitle')}
+            title="Welcome Back"
+            subtitle="Sign in to continue your learning journey"
             footer={
                 <View style={styles.footerContent}>
                     <Text style={[styles.footerText, { color: colors.text.secondary }]}>
-                        {t('auth.login.noAccount')}
+                        Don't have an account?
                     </Text>
                     <TouchableOpacity onPress={onRegisterPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>
-                            {t('auth.login.signUp')}
-                        </Text>
+                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>Sign Up</Text>
                     </TouchableOpacity>
                 </View>
             }
         >
             {/* Email Input */}
             <GlassInput
-                label={t('auth.login.email')}
-                placeholder={t('auth.login.emailPlaceholder')}
+                label="Email"
+                placeholder="Enter your email"
                 value={email}
                 onChangeText={setEmail}
                 error={validationErrors.email}
@@ -102,8 +96,8 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Password Input */}
             <GlassInput
                 ref={passwordInputRef}
-                label={t('auth.login.password')}
-                placeholder={t('auth.login.passwordPlaceholder')}
+                label="Password"
+                placeholder="Enter your password"
                 value={password}
                 onChangeText={setPassword}
                 error={validationErrors.password}
@@ -118,7 +112,7 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Forgot Password Link */}
             <TouchableOpacity style={styles.forgotPasswordContainer}>
                 <Text style={[styles.forgotPasswordText, { color: colors.text.muted }]}>
-                    {t('auth.login.forgotPassword')}
+                    Forgot Password?
                 </Text>
             </TouchableOpacity>
 
@@ -146,7 +140,7 @@ export const LoginScreen = memo(function LoginScreen() {
                         <ActivityIndicator size="small" color={colors.text.primary} />
                     ) : (
                         <Text style={[styles.loginButtonText, { color: colors.text.inverse }]}>
-                            {t('auth.login.signIn')}
+                            Sign In
                         </Text>
                     )}
                 </View>
@@ -155,22 +149,20 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Divider */}
             <View style={styles.dividerContainer}>
                 <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
-                <Text style={[styles.dividerText, { color: colors.text.muted }]}>
-                    {t('auth.login.orContinueWith')}
-                </Text>
+                <Text style={[styles.dividerText, { color: colors.text.muted }]}>or continue with</Text>
                 <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
             </View>
 
-            {/* Social Login Buttons */}
+            {/* Social Login Buttons - NO EMOJI */}
             <View style={styles.socialContainer}>
-                <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border }]}
+                <TouchableOpacity 
+                    style={[styles.socialButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border }]} 
                     disabled={isLoading}
                 >
                     <MaterialCommunityIcons name="google" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border }]}
+                <TouchableOpacity 
+                    style={[styles.socialButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border }]} 
                     disabled={isLoading}
                 >
                     <MaterialCommunityIcons name="apple" size={24} color={colors.text.primary} />

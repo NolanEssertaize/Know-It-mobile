@@ -1,147 +1,360 @@
 /**
  * @file TopicCard.tsx
- * @description Topic Card Component - Theme Aware, Internationalized
+ * @description Carte de topic avec swipe actions - Theme Aware
+ *
+ * FIXED:
+ * - All colors now use useTheme() hook
+ * - Swipe action buttons adaptive to theme
  */
 
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import React, { memo, useEffect, useRef, useCallback, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import ReanimatedSwipeable, {
+    type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, {
+    type SharedValue,
+    useAnimatedStyle,
+    interpolate,
+} from 'react-native-reanimated';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useTranslation } from 'react-i18next';
-
-import { GlassView } from '@/shared/components';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage, formatRelativeTime } from '@/i18n';
+import type { TopicItemData } from '../../hooks/useTopicsList';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface TopicWithMeta {
-    id: string;
-    title: string;
-    sessionCount?: number;
-    lastSessionAt?: string;
-    isFavorite?: boolean;
-}
-
 interface TopicCardProps {
-    topic: TopicWithMeta;
+    data: TopicItemData;
     onPress: () => void;
-    style?: ViewStyle;
+    onEdit: () => void;
+    onShare: () => void;
+    onDelete: () => void;
+    registerRef: (ref: SwipeableMethods) => void;
+    unregisterRef: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT
+// SWIPE ACTIONS - Theme Aware
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const TopicCard = memo(function TopicCard({
-                                                     topic,
-                                                     onPress,
-                                                     style,
-                                                 }: TopicCardProps) {
-    const { colors } = useTheme();
-    const { t } = useTranslation();
-    const { language } = useLanguage();
+interface RightActionsProps {
+    progress: SharedValue<number>;
+    onEdit: () => void;
+    onShare: () => void;
+    onDelete: () => void;
+}
 
-    const sessionCount = topic.sessionCount || 0;
-    const lastSessionText = topic.lastSessionAt
-        ? formatRelativeTime(topic.lastSessionAt, t)
-        : t('topics.card.noSessions');
+const RightActions = memo(function RightActions({
+    progress,
+    onEdit,
+    onShare,
+    onDelete,
+}: RightActionsProps) {
+    const { colors } = useTheme();
+    
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(progress.value, [0, 1], [0, 1]),
+        transform: [
+            {
+                translateX: interpolate(progress.value, [0, 1], [100, 0]),
+            },
+        ],
+    }));
 
     return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-            <GlassView style={[styles.container, style]} showBorder>
-                {/* Left: Icon */}
-                <View style={[styles.iconContainer, { backgroundColor: colors.surface.glass }]}>
-                    <MaterialCommunityIcons
-                        name="book-open-variant"
-                        size={24}
-                        color={colors.text.primary}
-                    />
-                </View>
+        <Reanimated.View style={[styles.actionsContainer, animatedStyle]}>
+            {/* Edit Button */}
+            <Pressable
+                style={({ pressed }) => [
+                    styles.actionButton,
+                    { 
+                        backgroundColor: colors.surface.glass,
+                        borderWidth: 1,
+                        borderColor: colors.glass.borderLight,
+                    },
+                    pressed && styles.actionButtonPressed,
+                ]}
+                onPress={onEdit}
+            >
+                <MaterialIcons name="edit" size={20} color={colors.text.primary} />
+            </Pressable>
 
-                {/* Center: Content */}
-                <View style={styles.content}>
-                    <Text
-                        style={[styles.title, { color: colors.text.primary }]}
-                        numberOfLines={1}
-                    >
-                        {topic.title}
-                    </Text>
-                    <View style={styles.metaRow}>
-                        <View style={styles.metaItem}>
-                            <MaterialCommunityIcons
-                                name="microphone"
-                                size={14}
-                                color={colors.text.muted}
-                            />
-                            <Text style={[styles.metaText, { color: colors.text.secondary }]}>
-                                {t('topics.card.sessions', { count: sessionCount })}
-                            </Text>
-                        </View>
-                        <Text style={[styles.metaDot, { color: colors.text.muted }]}>•</Text>
-                        <Text
-                            style={[styles.metaText, { color: colors.text.muted }]}
-                            numberOfLines={1}
-                        >
-                            {lastSessionText}
-                        </Text>
-                    </View>
-                </View>
+            {/* Share Button */}
+            <Pressable
+                style={({ pressed }) => [
+                    styles.actionButton,
+                    { 
+                        backgroundColor: colors.surface.glass,
+                        borderWidth: 1,
+                        borderColor: colors.glass.borderLight,
+                    },
+                    pressed && styles.actionButtonPressed,
+                ]}
+                onPress={onShare}
+            >
+                <MaterialIcons name="share" size={20} color={colors.text.primary} />
+            </Pressable>
 
-                {/* Right: Chevron */}
-                <MaterialCommunityIcons
-                    name="chevron-right"
-                    size={24}
-                    color={colors.text.muted}
-                />
-            </GlassView>
-        </TouchableOpacity>
+            {/* Delete Button - HIGH CONTRAST */}
+            <Pressable
+                style={({ pressed }) => [
+                    styles.actionButton,
+                    { backgroundColor: colors.text.primary },
+                    pressed && styles.actionButtonPressed,
+                ]}
+                onPress={onDelete}
+            >
+                <MaterialIcons name="delete" size={20} color={colors.text.inverse} />
+            </Pressable>
+        </Reanimated.View>
     );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const TopicCard = memo(function TopicCard({
+    data,
+    onPress,
+    onEdit,
+    onShare,
+    onDelete,
+    registerRef,
+    unregisterRef,
+}: TopicCardProps) {
+    const swipeableRef = useRef<SwipeableMethods>(null);
+    const { topic, theme, lastSessionDate } = data;
+    const { colors } = useTheme();
+
+    const [isSwipeOpen, setIsSwipeOpen] = useState(false);
+    const isSwipingRef = useRef(false);
+    const swipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        if (swipeableRef.current) {
+            registerRef(swipeableRef.current);
+        }
+        return () => {
+            unregisterRef();
+            if (swipeTimeoutRef.current) {
+                clearTimeout(swipeTimeoutRef.current);
+            }
+        };
+    }, [registerRef, unregisterRef]);
+
+    const handleSwipeableWillOpen = useCallback(() => {
+        isSwipingRef.current = true;
+        setIsSwipeOpen(true);
+    }, []);
+
+    const handleSwipeableOpen = useCallback(() => {
+        setIsSwipeOpen(true);
+        if (swipeTimeoutRef.current) {
+            clearTimeout(swipeTimeoutRef.current);
+        }
+        swipeTimeoutRef.current = setTimeout(() => {
+            isSwipingRef.current = false;
+        }, 100);
+    }, []);
+
+    const handleSwipeableWillClose = useCallback(() => {
+        isSwipingRef.current = true;
+    }, []);
+
+    const handleSwipeableClose = useCallback(() => {
+        setIsSwipeOpen(false);
+        if (swipeTimeoutRef.current) {
+            clearTimeout(swipeTimeoutRef.current);
+        }
+        swipeTimeoutRef.current = setTimeout(() => {
+            isSwipingRef.current = false;
+        }, 150);
+    }, []);
+
+    const handleCardPress = useCallback(() => {
+        if (isSwipeOpen || isSwipingRef.current) {
+            if (isSwipeOpen && swipeableRef.current) {
+                swipeableRef.current.close();
+            }
+            return;
+        }
+        onPress();
+    }, [isSwipeOpen, onPress]);
+
+    const renderRightActions = useCallback(
+        (progress: SharedValue<number>) => (
+            <RightActions
+                progress={progress}
+                onEdit={onEdit}
+                onShare={onShare}
+                onDelete={onDelete}
+            />
+        ),
+        [onEdit, onShare, onDelete]
+    );
+
+    return (
+        <View style={styles.swipeableContainer}>
+            <ReanimatedSwipeable
+                ref={swipeableRef}
+                friction={2}
+                rightThreshold={40}
+                renderRightActions={renderRightActions}
+                overshootRight={false}
+                onSwipeableWillOpen={handleSwipeableWillOpen}
+                onSwipeableOpen={handleSwipeableOpen}
+                onSwipeableWillClose={handleSwipeableWillClose}
+                onSwipeableClose={handleSwipeableClose}
+            >
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.card,
+                        { 
+                            backgroundColor: colors.surface.glass,
+                            borderColor: colors.glass.border,
+                        },
+                        pressed && styles.cardPressed,
+                    ]}
+                    onPress={handleCardPress}
+                >
+                    {/* Topic Icon Container */}
+                    <View style={[styles.iconContainer, { backgroundColor: colors.surface.glassLight }]}>
+                        <MaterialCommunityIcons
+                            name={theme.icon as keyof typeof MaterialCommunityIcons.glyphMap}
+                            size={26}
+                            color={colors.text.primary}
+                        />
+                    </View>
+
+                    {/* Topic Info */}
+                    <View style={styles.topicInfo}>
+                        <Text style={[styles.topicTitle, { color: colors.text.primary }]} numberOfLines={1}>
+                            {topic.title}
+                        </Text>
+                        <View style={styles.topicMeta}>
+                            <View style={styles.metaItem}>
+                                <MaterialCommunityIcons
+                                    name="text-box-outline"
+                                    size={14}
+                                    color={colors.text.secondary}
+                                />
+                                <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+                                    {topic.sessions.length} session{topic.sessions.length !== 1 ? 's' : ''}
+                                </Text>
+                            </View>
+                            <View style={[styles.metaDot, { backgroundColor: colors.text.muted }]} />
+                            <View style={styles.metaItem}>
+                                <MaterialCommunityIcons
+                                    name="clock-outline"
+                                    size={14}
+                                    color={colors.text.secondary}
+                                />
+                                <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+                                    {lastSessionDate}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Chevron */}
+                    <View style={styles.chevronContainer}>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </View>
+                </Pressable>
+            </ReanimatedSwipeable>
+        </View>
+    );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES (Static - colors applied inline)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-    container: {
+    swipeableContainer: {
+        marginBottom: Spacing.md,
+    },
+
+    card: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: Spacing.md,
         borderRadius: BorderRadius.lg,
-        gap: Spacing.md,
+        borderWidth: 1,
     },
+
+    cardPressed: {
+        opacity: 0.8,
+    },
+
     iconContainer: {
         width: 48,
         height: 48,
         borderRadius: BorderRadius.md,
         alignItems: 'center',
         justifyContent: 'center',
+        marginRight: Spacing.md,
     },
-    content: {
+
+    topicInfo: {
         flex: 1,
     },
-    title: {
+
+    topicTitle: {
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: Spacing.xs,
     },
-    metaRow: {
+
+    topicMeta: {
         flexDirection: 'row',
         alignItems: 'center',
     },
+
     metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
     },
+
     metaText: {
         fontSize: 12,
     },
+
     metaDot: {
-        fontSize: 12,
-        marginHorizontal: 6,
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        marginHorizontal: Spacing.sm,
+    },
+
+    chevronContainer: {
+        padding: Spacing.xs,
+    },
+
+    // Swipe Actions
+    actionsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: Spacing.sm,
+    },
+
+    actionButton: {
+        width: 48,
+        height: 48,
+        borderRadius: BorderRadius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: Spacing.xs,
+    },
+
+    actionButtonPressed: {
+        opacity: 0.7,
+        transform: [{ scale: 0.95 }],
     },
 });
 

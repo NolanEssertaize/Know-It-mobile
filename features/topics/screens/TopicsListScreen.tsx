@@ -1,232 +1,217 @@
 /**
  * @file TopicsListScreen.tsx
- * @description Topics List Screen - Theme Aware, Internationalized
+ * @description Écran principal - Liste des sujets - Theme Aware
  *
- * UPDATED: All hardcoded strings replaced with i18n translations
+ * FIXED: 
+ * - All colors now use useTheme() hook
+ * - Correct prop names for AddTopicModal (value, onChangeText, etc.)
+ * - Correct prop names for TopicCard (registerRef, unregisterRef)
+ * - Correct method names from hook (handleCardPress, handleEdit, etc.)
+ * - Correct keyExtractor using item.topic.id
  */
 
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback } from 'react';
 import {
     View,
     Text,
-    FlatList,
     TextInput,
+    FlatList,
     Pressable,
-    ActivityIndicator,
     RefreshControl,
+    ActivityIndicator,
+    Platform,
     StyleSheet,
-    ListRenderItem,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useTranslation } from 'react-i18next';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
-import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage, formatShortDate } from '@/i18n';
+import { Spacing, BorderRadius, useTheme } from '@/theme';
 
-import { useTopics, type TopicWithMeta } from '../hooks/useTopics';
+import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
 import { AddTopicModal } from '../components/AddTopicModal';
 import { CategoryFilter } from '../components/CategoryFilter';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT
+// COMPOSANT
 // ═══════════════════════════════════════════════════════════════════════════
 
-function TopicsListScreenComponent() {
-    const router = useRouter();
-    const { colors } = useTheme();
-    const { t } = useTranslation();
-    const { language, greeting } = useLanguage();
-
-    const logic = useTopics();
+export const TopicsListScreen = memo(function TopicsListScreen() {
+    const logic = useTopicsList();
+    const { colors, isDark } = useTheme();
 
     // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS
+    // RENDER HELPERS
     // ─────────────────────────────────────────────────────────────────────────
-
-    const handleTopicPress = useCallback(
-        (topic: TopicWithMeta) => {
-            router.push(`/${topic.id}`);
-        },
-        [router]
-    );
-
-    const handleProfilePress = useCallback(() => {
-        router.push('/profile');
-    }, [router]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // COMPUTED VALUES
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const totalSessions = useMemo(() => {
-        return logic.filteredTopics.reduce((sum, topic) => sum + (topic.sessionCount || 0), 0);
-    }, [logic.filteredTopics]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER FUNCTIONS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const renderItem: ListRenderItem<TopicWithMeta> = useCallback(
-        ({ item }) => (
-            <TopicCard
-                topic={item}
-                onPress={() => handleTopicPress(item)}
-                style={styles.topicCard}
-            />
-        ),
-        [handleTopicPress]
-    );
-
-    const keyExtractor = useCallback((item: TopicWithMeta) => item.id, []);
 
     const renderListHeader = useCallback(
         () => (
-            <View style={styles.listHeaderContainer}>
-                <Text style={[styles.listSectionTitle, { color: colors.text.secondary }]}>
-                    {t('topics.card.sessions_other', { count: logic.filteredTopics.length })} {t('topics.stats.topics')}
-                </Text>
+            <View style={styles.listHeader}>
+                {/* Titre de section */}
+                <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+                        Mes Sujets
+                    </Text>
+                    <Text style={[styles.sectionCount, { color: colors.text.muted }]}>
+                        {logic.filteredTopics.length} sujets
+                    </Text>
+                </View>
+
+                {/* Indication de swipe */}
+                <View style={styles.swipeHintContainer}>
+                    <MaterialIcons name="swipe" size={14} color={colors.text.muted} />
+                    <Text style={[styles.swipeHint, { color: colors.text.muted }]}>
+                        Glissez pour plus d'options
+                    </Text>
+                </View>
+
+                {/* Indicateur de filtres actifs */}
+                {logic.hasActiveFilters && (
+                    <Pressable 
+                        onPress={logic.resetFilters} 
+                        style={[styles.activeFiltersBar, { backgroundColor: colors.surface.glass }]}
+                    >
+                        <Text style={[styles.activeFiltersText, { color: colors.text.primary }]}>
+                            Filtres actifs
+                        </Text>
+                        <MaterialCommunityIcons name="close-circle" size={16} color={colors.text.primary} />
+                    </Pressable>
+                )}
             </View>
         ),
-        [colors.text.secondary, logic.filteredTopics.length, t]
+        [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters, colors]
+    );
+
+    // FIX: Use correct method names and pass registerRef/unregisterRef
+    const renderItem = useCallback(
+        ({ item }: { item: TopicItemData }) => (
+            <TopicCard
+                data={item}
+                onPress={() => logic.handleCardPress(item.topic.id)}
+                onEdit={() => logic.handleEdit(item.topic.id)}
+                onShare={() => logic.handleShare(item.topic.id)}
+                onDelete={() => logic.handleDelete(item.topic.id)}
+                registerRef={(ref) => logic.registerSwipeableRef(item.topic.id, ref)}
+                unregisterRef={() => logic.unregisterSwipeableRef(item.topic.id)}
+            />
+        ),
+        [
+            logic.handleCardPress, 
+            logic.handleEdit, 
+            logic.handleShare, 
+            logic.handleDelete, 
+            logic.registerSwipeableRef, 
+            logic.unregisterSwipeableRef
+        ]
     );
 
     const renderEmptyState = useCallback(
         () => (
             <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons
-                    name="book-open-variant"
-                    size={64}
-                    color={colors.text.muted}
-                />
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface.glass }]}>
+                    <MaterialCommunityIcons
+                        name="book-plus"
+                        size={48}
+                        color={colors.text.primary}
+                    />
+                </View>
                 <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
-                    {logic.searchText ? t('topics.search.noResults') : t('topics.empty.title')}
+                    Aucun sujet trouvé
                 </Text>
                 <Text style={[styles.emptyDescription, { color: colors.text.secondary }]}>
-                    {logic.searchText
-                        ? t('topics.search.noResults')
-                        : t('topics.empty.description')}
+                    {logic.hasActiveFilters
+                        ? 'Essayez de modifier vos filtres'
+                        : 'Créez votre premier sujet pour commencer'}
                 </Text>
-                {!logic.searchText && (
+                {!logic.hasActiveFilters && (
                     <Pressable
                         style={[styles.emptyButton, { backgroundColor: colors.text.primary }]}
                         onPress={() => logic.setShowAddModal(true)}
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.inverse} />
                         <Text style={[styles.emptyButtonText, { color: colors.text.inverse }]}>
-                            {t('topics.empty.action')}
+                            Créer un sujet
                         </Text>
                     </Pressable>
                 )}
             </View>
         ),
-        [colors, logic.searchText, logic.setShowAddModal, t]
+        [logic.hasActiveFilters, logic.setShowAddModal, colors]
     );
 
+    // FIX: Use item.topic.id for unique key
+    const keyExtractor = useCallback((item: TopicItemData) => item.topic.id, []);
+
     // ─────────────────────────────────────────────────────────────────────────
-    // MAIN RENDER
+    // RENDER
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <ScreenWrapper useSafeArea padding={0}>
+        <ScreenWrapper scrollable={false} padding={0}>
             {/* Header */}
             <View style={styles.header}>
                 <View>
-                    <Text style={[styles.greeting, { color: colors.text.secondary }]}>
-                        {greeting}
-                    </Text>
                     <Text style={[styles.title, { color: colors.text.primary }]}>
-                        {t('topics.title')}
+                        Prêt à apprendre ?
                     </Text>
                 </View>
-                <Pressable
-                    style={[styles.profileButton, { backgroundColor: colors.surface.glass }]}
-                    onPress={handleProfilePress}
-                >
-                    <MaterialIcons name="person" size={24} color={colors.text.primary} />
-                </Pressable>
+                <ProfileButton />
             </View>
 
             {/* Stats Cards */}
             <View style={styles.statsContainer}>
                 <View style={styles.statsRow}>
-                    <GlassView
-                        style={[styles.statCard, { borderColor: colors.glass.border }]}
-                        showBorder
-                    >
-                        <View
-                            style={[
-                                styles.statIconContainer,
-                                { backgroundColor: colors.surface.glass },
-                            ]}
-                        >
-                            <MaterialCommunityIcons
-                                name="book-multiple"
-                                size={20}
-                                color={colors.text.primary}
-                            />
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="book-multiple" size={22} color={colors.text.primary} />
                         </View>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.filteredTopics.length}
+                            {logic.topicsCount}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
-                            {t('topics.stats.topics')}
-                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sujets</Text>
                     </GlassView>
 
-                    <GlassView
-                        style={[styles.statCard, { borderColor: colors.glass.border }]}
-                        showBorder
-                    >
-                        <View
-                            style={[
-                                styles.statIconContainer,
-                                { backgroundColor: colors.surface.glass },
-                            ]}
-                        >
-                            <MaterialCommunityIcons
-                                name="microphone"
-                                size={20}
-                                color={colors.text.primary}
-                            />
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="microphone" size={22} color={colors.text.primary} />
                         </View>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {totalSessions}
+                            {logic.totalSessions}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
-                            {t('topics.stats.sessions')}
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sessions</Text>
+                    </GlassView>
+
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialCommunityIcons name="fire" size={22} color={colors.text.primary} />
+                        </View>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {logic.streak}
                         </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Streak</Text>
                     </GlassView>
                 </View>
-            </View>
 
-            {/* Search & Filters */}
-            <View style={styles.filtersContainer}>
-                {/* Search Bar */}
-                <GlassView style={styles.searchBar} showBorder>
+                {/* Recherche */}
+                <GlassView style={styles.searchContainer}>
                     <MaterialCommunityIcons name="magnify" size={22} color={colors.text.muted} />
                     <TextInput
                         style={[styles.searchInput, { color: colors.text.primary }]}
-                        placeholder={t('topics.search.placeholder')}
+                        placeholder="Rechercher un sujet..."
                         placeholderTextColor={colors.text.muted}
                         value={logic.searchText}
                         onChangeText={logic.setSearchText}
                     />
                     {logic.searchText.length > 0 && (
                         <Pressable onPress={() => logic.setSearchText('')}>
-                            <MaterialCommunityIcons
-                                name="close-circle"
-                                size={20}
-                                color={colors.text.muted}
-                            />
+                            <MaterialCommunityIcons name="close-circle" size={20} color={colors.text.muted} />
                         </Pressable>
                     )}
                 </GlassView>
 
-                {/* Category Filter */}
+                {/* Filtres par catégorie */}
                 <CategoryFilter
                     selectedCategory={logic.selectedCategory}
                     onSelectCategory={logic.setSelectedCategory}
@@ -258,7 +243,7 @@ function TopicsListScreenComponent() {
                 />
             )}
 
-            {/* FAB */}
+            {/* FAB - Theme Aware */}
             <View style={styles.fabContainer}>
                 <Pressable
                     style={({ pressed }) => [
@@ -272,7 +257,7 @@ function TopicsListScreenComponent() {
                 </Pressable>
             </View>
 
-            {/* Add Topic Modal */}
+            {/* Add Topic Modal - CORRECT PROPS matching AddTopicModal interface */}
             <AddTopicModal
                 visible={logic.showAddModal}
                 value={logic.newTopicText}
@@ -282,12 +267,10 @@ function TopicsListScreenComponent() {
             />
         </ScreenWrapper>
     );
-}
-
-export const TopicsListScreen = memo(TopicsListScreenComponent);
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// STYLES (Static - colors applied inline with useTheme)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
@@ -306,13 +289,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-    },
-    profileButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     statsContainer: {
         paddingHorizontal: Spacing.lg,
@@ -343,41 +319,69 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     statLabel: {
-        fontSize: 12,
+        fontSize: 10,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
-    filtersContainer: {
-        paddingHorizontal: Spacing.lg,
-        marginBottom: Spacing.md,
-    },
-    searchBar: {
+    searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
-        borderRadius: BorderRadius.md,
+        borderRadius: BorderRadius.lg,
         gap: Spacing.sm,
         marginBottom: Spacing.sm,
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
-        padding: 0,
+        paddingVertical: Spacing.xs,
     },
-    listContent: {
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: 100,
+    listHeader: {
+        marginBottom: Spacing.md,
     },
-    listHeaderContainer: {
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: Spacing.sm,
     },
-    listSectionTitle: {
-        fontSize: 12,
+    sectionTitle: {
+        fontSize: 14,
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    topicCard: {
+    sectionCount: {
+        fontSize: 12,
+    },
+    swipeHintContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
         marginBottom: Spacing.sm,
+    },
+    swipeHint: {
+        fontSize: 12,
+    },
+    activeFiltersBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.full,
+        gap: Spacing.xs,
+        alignSelf: 'flex-start',
+    },
+    activeFiltersText: {
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    listContent: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: 100,
     },
     loadingContainer: {
         flex: 1,
@@ -385,28 +389,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: Spacing.xxl * 2,
+        paddingVertical: Spacing.xxl,
+    },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.lg,
     },
     emptyTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
-        marginTop: Spacing.lg,
         marginBottom: Spacing.sm,
     },
     emptyDescription: {
         fontSize: 14,
         textAlign: 'center',
         marginBottom: Spacing.lg,
+        paddingHorizontal: Spacing.xl,
     },
     emptyButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: Spacing.sm,
+        paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
-        borderRadius: BorderRadius.md,
+        borderRadius: BorderRadius.full,
         gap: Spacing.xs,
     },
     emptyButtonText: {
@@ -415,8 +425,8 @@ const styles = StyleSheet.create({
     },
     fabContainer: {
         position: 'absolute',
-        bottom: Spacing.xl,
-        right: Spacing.lg,
+        bottom: 24,
+        right: 16,
     },
     fab: {
         width: 56,
@@ -424,11 +434,17 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 8,
+            },
+        }),
     },
     fabPressed: {
         opacity: 0.8,

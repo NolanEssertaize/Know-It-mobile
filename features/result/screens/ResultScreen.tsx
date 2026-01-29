@@ -1,91 +1,51 @@
 /**
  * @file ResultScreen.tsx
- * @description Session Result Screen - Theme Aware, Internationalized
+ * @description Écran de résultats d'analyse - Theme Aware
  *
- * UPDATED: All hardcoded strings replaced with i18n translations
+ * FIXED: All colors now use useTheme() hook
  */
 
-import React, { memo, useCallback, useState, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import {
     View,
     Text,
     ScrollView,
-    TouchableOpacity,
-    ActivityIndicator,
+    Pressable,
     StyleSheet,
-    StatusBar,
-    Share,
-    Clipboard,
+    Platform,
+    ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
+import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage, formatDate } from '@/i18n';
 
-import { useSessionResult } from '../hooks/useSessionResult';
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-
-type TabType = 'transcription' | 'analysis';
+import { useResult } from '../hooks/useResult';
+import { ScoreGauge } from '../components/ScoreGauge';
+import { AnalysisSection } from '../components/AnalysisSection';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION COMPONENTS
+// STAT BADGE COMPONENT - Theme Aware
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface AnalysisSectionProps {
-    title: string;
-    items: string[];
-    emptyText: string;
-    icon: keyof typeof MaterialCommunityIcons.glyphMap;
-    iconColor: string;
+interface StatBadgeProps {
+    icon: keyof typeof MaterialIcons.glyphMap;
+    count: number;
+    label: string;
 }
 
-const AnalysisSection = memo(function AnalysisSection({
-                                                          title,
-                                                          items,
-                                                          emptyText,
-                                                          icon,
-                                                          iconColor,
-                                                      }: AnalysisSectionProps) {
+const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps) {
     const { colors } = useTheme();
-
+    
     return (
-        <GlassView style={styles.analysisSection} showBorder>
-            <View style={styles.sectionHeader}>
-                <MaterialCommunityIcons name={icon} size={20} color={iconColor} />
-                <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-                    {title}
-                </Text>
+        <View style={styles.statBadge}>
+            <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
+                <MaterialIcons name={icon} size={24} color={colors.text.primary} />
             </View>
-            {items.length > 0 ? (
-                <View style={styles.itemsList}>
-                    {items.map((item, index) => (
-                        <View key={index} style={styles.itemRow}>
-                            <View
-                                style={[
-                                    styles.itemBullet,
-                                    { backgroundColor: iconColor },
-                                ]}
-                            />
-                            <Text style={[styles.itemText, { color: colors.text.secondary }]}>
-                                {item}
-                            </Text>
-                        </View>
-                    ))}
-                </View>
-            ) : (
-                <Text style={[styles.emptyText, { color: colors.text.muted }]}>
-                    {emptyText}
-                </Text>
-            )}
-        </GlassView>
+            <Text style={[styles.statCount, { color: colors.text.primary }]}>{count}</Text>
+            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{label}</Text>
+        </View>
     );
 });
 
@@ -93,491 +53,303 @@ const AnalysisSection = memo(function AnalysisSection({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-function ResultScreenComponent() {
-    const router = useRouter();
-    const params = useLocalSearchParams();
+function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
-    const { t } = useTranslation();
-    const { language } = useLanguage();
+    const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
 
-    const [activeTab, setActiveTab] = useState<TabType>('analysis');
-    const [copied, setCopied] = useState(false);
+    // Theme-aware sections
+    const themedSections = useMemo(() => {
+        return sections.map(section => ({
+            ...section,
+            color: colors.text.primary,
+            glowColor: undefined,
+        }));
+    }, [sections, colors.text.primary]);
 
-    const logic = useSessionResult(params.sessionId as string);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const handleClose = useCallback(() => {
-        router.back();
-    }, [router]);
-
-    const handleNewSession = useCallback(() => {
-        router.replace(`/${params.topicId}/session`);
-    }, [router, params.topicId]);
-
-    const handleBackToTopic = useCallback(() => {
-        router.replace(`/${params.topicId}`);
-    }, [router, params.topicId]);
-
-    const handleCopyTranscription = useCallback(async () => {
-        if (logic.session?.transcription) {
-            Clipboard.setString(logic.session.transcription);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
-    }, [logic.session?.transcription]);
-
-    const handleShare = useCallback(async () => {
-        if (!logic.session) return;
-
-        const content = `
-${t('result.transcription.title')}:
-${logic.session.transcription || t('result.transcription.empty')}
-
-${t('result.analysis.correctPoints')}:
-${logic.analysis?.correctPoints?.join('\n• ') || t('result.analysis.noCorrectPoints')}
-
-${t('result.analysis.corrections')}:
-${logic.analysis?.corrections?.join('\n• ') || t('result.analysis.noCorrections')}
-        `.trim();
-
-        try {
-            await Share.share({
-                message: content,
-                title: t('result.title'),
-            });
-        } catch (error) {
-            console.error('Error sharing:', error);
-        }
-    }, [logic.session, logic.analysis, t]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // COMPUTED VALUES
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const scoreLabel = useMemo(() => {
-        const score = logic.analysis?.score;
-        if (score === undefined) return '';
-        if (score >= 80) return t('result.score.excellent');
-        if (score >= 60) return t('result.score.good');
-        return t('result.score.needsWork');
-    }, [logic.analysis?.score, t]);
-
-    const scoreColor = useMemo(() => {
-        const score = logic.analysis?.score;
-        if (score === undefined) return colors.text.muted;
-        if (score >= 80) return '#10B981'; // green
-        if (score >= 60) return '#F59E0B'; // amber
-        return '#EF4444'; // red
-    }, [logic.analysis?.score, colors.text.muted]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // LOADING STATE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    if (logic.isLoading) {
+    if (isLoading) {
         return (
-            <ScreenWrapper useSafeArea={false}>
-                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-                <View style={[styles.container, { paddingTop: insets.top }]}>
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color={colors.text.primary} />
-                        <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                            {t('result.loading')}
-                        </Text>
-                    </View>
-                </View>
-            </ScreenWrapper>
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
+                <ActivityIndicator size="large" color={colors.text.primary} />
+                <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                    Chargement des résultats...
+                </Text>
+            </View>
         );
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ERROR STATE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    if (!logic.session) {
-        return (
-            <ScreenWrapper useSafeArea={false}>
-                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-                <View style={[styles.container, { paddingTop: insets.top }]}>
-                    <View style={styles.loadingContainer}>
-                        <MaterialCommunityIcons
-                            name="alert-circle-outline"
-                            size={48}
-                            color={colors.text.muted}
-                        />
-                        <Text style={[styles.errorText, { color: colors.text.secondary }]}>
-                            {t('result.analysis.empty')}
-                        </Text>
-                        <GlassButton
-                            title={t('common.back')}
-                            onPress={handleClose}
-                            variant="secondary"
-                        />
-                    </View>
-                </View>
-            </ScreenWrapper>
-        );
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MAIN RENDER
-    // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <ScreenWrapper useSafeArea={false}>
-            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                {/* Header */}
+        <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 },
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header avec bouton fermer */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
-                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
-                        {t('result.title')}
-                    </Text>
-                    <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-                        <MaterialIcons name="share" size={24} color={colors.text.primary} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Score Card */}
-                {logic.analysis?.score !== undefined && (
-                    <View style={styles.scoreContainer}>
-                        <GlassView style={styles.scoreCard} showBorder>
-                            <View style={styles.scoreContent}>
-                                <Text style={[styles.scoreValue, { color: scoreColor }]}>
-                                    {logic.analysis.score}%
-                                </Text>
-                                <Text style={[styles.scoreLabel, { color: scoreColor }]}>
-                                    {scoreLabel}
-                                </Text>
-                            </View>
-                        </GlassView>
-                    </View>
-                )}
-
-                {/* Tabs */}
-                <View style={styles.tabsContainer}>
-                    <GlassView style={styles.tabsWrapper}>
-                        <TouchableOpacity
-                            style={[
-                                styles.tab,
-                                activeTab === 'analysis' && {
-                                    backgroundColor: colors.text.primary,
-                                },
-                            ]}
-                            onPress={() => setActiveTab('analysis')}
-                        >
-                            <MaterialCommunityIcons
-                                name="chart-bar"
-                                size={18}
-                                color={activeTab === 'analysis' ? colors.text.inverse : colors.text.muted}
-                            />
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    {
-                                        color: activeTab === 'analysis'
-                                            ? colors.text.inverse
-                                            : colors.text.muted,
-                                    },
-                                ]}
-                            >
-                                {t('result.tabs.analysis')}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.tab,
-                                activeTab === 'transcription' && {
-                                    backgroundColor: colors.text.primary,
-                                },
-                            ]}
-                            onPress={() => setActiveTab('transcription')}
-                        >
-                            <MaterialCommunityIcons
-                                name="text"
-                                size={18}
-                                color={
-                                    activeTab === 'transcription'
-                                        ? colors.text.inverse
-                                        : colors.text.muted
-                                }
-                            />
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    {
-                                        color:
-                                            activeTab === 'transcription'
-                                                ? colors.text.inverse
-                                                : colors.text.muted,
-                                    },
-                                ]}
-                            >
-                                {t('result.tabs.transcription')}
-                            </Text>
-                        </TouchableOpacity>
-                    </GlassView>
-                </View>
-
-                {/* Content */}
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {activeTab === 'analysis' ? (
-                        <>
-                            {/* Correct Points */}
-                            <AnalysisSection
-                                title={t('result.analysis.correctPoints')}
-                                items={logic.analysis?.correctPoints || []}
-                                emptyText={t('result.analysis.noCorrectPoints')}
-                                icon="check-circle"
-                                iconColor="#10B981"
-                            />
-
-                            {/* Corrections */}
-                            <AnalysisSection
-                                title={t('result.analysis.corrections')}
-                                items={logic.analysis?.corrections || []}
-                                emptyText={t('result.analysis.noCorrections')}
-                                icon="alert-circle"
-                                iconColor="#F59E0B"
-                            />
-
-                            {/* Missing Elements */}
-                            <AnalysisSection
-                                title={t('result.analysis.missingElements')}
-                                items={logic.analysis?.missingElements || []}
-                                emptyText={t('result.analysis.noMissingElements')}
-                                icon="help-circle"
-                                iconColor="#3B82F6"
-                            />
-                        </>
-                    ) : (
-                        /* Transcription Tab */
-                        <GlassView style={styles.transcriptionCard} showBorder>
-                            <View style={styles.transcriptionHeader}>
-                                <Text style={[styles.transcriptionTitle, { color: colors.text.primary }]}>
-                                    {t('result.transcription.title')}
-                                </Text>
-                                <TouchableOpacity
-                                    onPress={handleCopyTranscription}
-                                    style={[
-                                        styles.copyButton,
-                                        { backgroundColor: colors.surface.glass },
-                                    ]}
-                                >
-                                    <MaterialIcons
-                                        name={copied ? 'check' : 'content-copy'}
-                                        size={16}
-                                        color={colors.text.primary}
-                                    />
-                                    <Text style={[styles.copyButtonText, { color: colors.text.primary }]}>
-                                        {copied ? t('result.transcription.copied') : t('result.transcription.copy')}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={[styles.transcriptionText, { color: colors.text.secondary }]}>
-                                {logic.session.transcription || t('result.transcription.empty')}
-                            </Text>
-                        </GlassView>
-                    )}
-                </ScrollView>
-
-                {/* Bottom Actions */}
-                <View style={[styles.bottomActions, { paddingBottom: insets.bottom + Spacing.md }]}>
-                    <TouchableOpacity
+                    <Pressable 
                         style={[
-                            styles.secondaryButton,
-                            {
+                            styles.closeButton, 
+                            { 
                                 backgroundColor: colors.surface.glass,
-                                borderColor: colors.glass.border,
-                            },
-                        ]}
-                        onPress={handleBackToTopic}
+                                borderColor: colors.glass.borderLight,
+                            }
+                        ]} 
+                        onPress={handleClose}
                     >
-                        <MaterialIcons name="arrow-back" size={20} color={colors.text.primary} />
-                        <Text style={[styles.secondaryButtonText, { color: colors.text.primary }]}>
-                            {t('result.actions.backToTopic')}
+                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                    </Pressable>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={[styles.title, { color: colors.text.primary }]}>
+                            Session terminée
                         </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.primaryButton, { backgroundColor: colors.text.primary }]}
-                        onPress={handleNewSession}
-                    >
-                        <MaterialCommunityIcons
-                            name="microphone"
-                            size={20}
-                            color={colors.text.inverse}
-                        />
-                        <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>
-                            {t('result.actions.newSession')}
+                        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+                            Voici votre analyse détaillée
                         </Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </ScreenWrapper>
+
+                {/* Séparateur visuel */}
+                <View style={[styles.divider, { backgroundColor: colors.glass.border }]} />
+
+                {/* Score Gauge */}
+                <ScoreGauge
+                    value={score.value}
+                    label={score.label}
+                    color={colors.text.primary}
+                />
+
+                {/* Quick Summary */}
+                <GlassView variant="default" style={styles.summaryContainer}>
+                    <Text style={[styles.summaryTitle, { color: colors.text.primary }]}>
+                        Résumé rapide
+                    </Text>
+                    <View style={styles.statsRow}>
+                        <StatBadge
+                            icon="check-circle"
+                            count={summary.validCount}
+                            label="Validés"
+                        />
+                        <StatBadge
+                            icon="error"
+                            count={summary.correctionsCount}
+                            label="À corriger"
+                        />
+                        <StatBadge
+                            icon="cancel"
+                            count={summary.missingCount}
+                            label="Manquants"
+                        />
+                    </View>
+                    <View style={[styles.summaryDivider, { backgroundColor: colors.glass.border }]} />
+                    <Text style={[styles.summaryText, { color: colors.text.secondary }]}>
+                        {summary.totalPoints} points évalués au total
+                    </Text>
+                </GlassView>
+
+                {/* Sections d'analyse détaillées */}
+                <View style={styles.sectionsContainer}>
+                    <Text style={[styles.sectionHeader, { color: colors.text.secondary }]}>
+                        Détails de l'analyse
+                    </Text>
+                    {themedSections.map((section) => (
+                        <AnalysisSection
+                            key={section.id}
+                            title={section.title}
+                            icon={section.icon}
+                            items={section.items}
+                            color={colors.text.primary}
+                            glowColor={undefined}
+                        />
+                    ))}
+                </View>
+
+                {/* Actions - HIGH CONTRAST BUTTONS */}
+                <View style={styles.actionsContainer}>
+                    {/* "Réessayer" - Outline/Glass style */}
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.buttonOutline,
+                            { 
+                                backgroundColor: colors.surface.glass,
+                                borderColor: colors.glass.borderLight,
+                            },
+                            pressed && styles.buttonPressed,
+                        ]}
+                        onPress={handleRetry}
+                    >
+                        <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
+                        <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
+                            Réessayer
+                        </Text>
+                    </Pressable>
+
+                    <View style={styles.actionSpacer} />
+
+                    {/* "Terminer" - HIGH CONTRAST */}
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.buttonPrimary,
+                            { backgroundColor: colors.text.primary },
+                            pressed && styles.buttonPrimaryPressed,
+                        ]}
+                        onPress={handleClose}
+                    >
+                        <MaterialIcons name="done" size={20} color={colors.text.inverse} />
+                        <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
+                            Terminer
+                        </Text>
+                    </Pressable>
+                </View>
+            </ScrollView>
+        </View>
     );
 }
 
 export const ResultScreen = memo(ResultScreenComponent);
+export default ResultScreen;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STYLES
+// STYLES (Static - colors applied inline)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.md,
-    },
-    headerButton: {
-        padding: Spacing.xs,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    scoreContainer: {
-        paddingHorizontal: Spacing.lg,
-        marginBottom: Spacing.md,
-    },
-    scoreCard: {
-        padding: Spacing.lg,
-        borderRadius: BorderRadius.lg,
-        alignItems: 'center',
-    },
-    scoreContent: {
-        alignItems: 'center',
-    },
-    scoreValue: {
-        fontSize: 48,
-        fontWeight: '700',
-    },
-    scoreLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginTop: Spacing.xs,
-    },
-    tabsContainer: {
-        paddingHorizontal: Spacing.lg,
-        marginBottom: Spacing.md,
-    },
-    tabsWrapper: {
-        flexDirection: 'row',
-        borderRadius: BorderRadius.lg,
-        padding: 4,
-    },
-    tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.md,
-        borderRadius: BorderRadius.md,
-        gap: 6,
-    },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
+
     scrollView: {
         flex: 1,
     },
+
     scrollContent: {
         paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xl,
+        paddingBottom: Spacing.xxl,
     },
-    analysisSection: {
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.md,
-        marginBottom: Spacing.md,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
+
+    // Loading
+    loadingContainer: {
+        flex: 1,
         alignItems: 'center',
-        gap: Spacing.sm,
-        marginBottom: Spacing.sm,
+        justifyContent: 'center',
     },
-    sectionTitle: {
+
+    loadingText: {
         fontSize: 16,
-        fontWeight: '600',
+        marginTop: Spacing.md,
     },
-    itemsList: {
-        gap: Spacing.xs,
-    },
-    itemRow: {
+
+    // Header
+    header: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: Spacing.sm,
+        marginBottom: Spacing.lg,
     },
-    itemBullet: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        marginTop: 7,
-    },
-    itemText: {
-        flex: 1,
-        fontSize: 14,
-        lineHeight: 20,
-    },
-    emptyText: {
-        fontSize: 14,
-        fontStyle: 'italic',
-    },
-    transcriptionCard: {
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.md,
-    },
-    transcriptionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+
+    closeButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 1,
         alignItems: 'center',
-        marginBottom: Spacing.md,
+        justifyContent: 'center',
+        marginRight: Spacing.md,
     },
-    transcriptionTitle: {
+
+    headerTextContainer: {
+        flex: 1,
+        paddingTop: Spacing.xs,
+    },
+
+    title: {
+        fontSize: 24,
+        fontWeight: '700',
+        marginBottom: Spacing.xs,
+    },
+
+    subtitle: {
+        fontSize: 14,
+    },
+
+    divider: {
+        height: 1,
+        marginBottom: Spacing.lg,
+    },
+
+    // Summary
+    summaryContainer: {
+        marginBottom: Spacing.lg,
+        padding: Spacing.lg,
+    },
+
+    summaryTitle: {
         fontSize: 16,
         fontWeight: '600',
+        marginBottom: Spacing.md,
     },
-    copyButton: {
+
+    statsRow: {
         flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: Spacing.md,
+    },
+
+    statBadge: {
         alignItems: 'center',
-        gap: 4,
-        paddingVertical: Spacing.xs,
-        paddingHorizontal: Spacing.sm,
-        borderRadius: BorderRadius.sm,
     },
-    copyButtonText: {
+
+    statIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.xs,
+    },
+
+    statCount: {
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+
+    statLabel: {
         fontSize: 12,
-        fontWeight: '500',
     },
-    transcriptionText: {
+
+    summaryDivider: {
+        height: 1,
+        marginBottom: Spacing.md,
+    },
+
+    summaryText: {
         fontSize: 14,
-        lineHeight: 22,
+        textAlign: 'center',
     },
-    bottomActions: {
+
+    // Sections
+    sectionsContainer: {
+        marginBottom: Spacing.lg,
+    },
+
+    sectionHeader: {
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        marginBottom: Spacing.md,
+    },
+
+    // Actions
+    actionsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.md,
-        gap: Spacing.sm,
+        marginTop: Spacing.md,
     },
-    secondaryButton: {
+
+    buttonOutline: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -587,11 +359,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         gap: Spacing.xs,
     },
-    secondaryButtonText: {
-        fontSize: 14,
+
+    buttonOutlineText: {
+        fontSize: 16,
         fontWeight: '600',
     },
-    primaryButton: {
+
+    buttonPressed: {
+        opacity: 0.8,
+    },
+
+    actionSpacer: {
+        width: Spacing.md,
+    },
+
+    buttonPrimary: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -599,24 +381,26 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.md,
         borderRadius: BorderRadius.md,
         gap: Spacing.xs,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
-    primaryButtonText: {
-        fontSize: 14,
+
+    buttonPrimaryText: {
+        fontSize: 16,
         fontWeight: '600',
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: Spacing.md,
-    },
-    loadingText: {
-        fontSize: 16,
-    },
-    errorText: {
-        fontSize: 16,
-        marginBottom: Spacing.md,
+
+    buttonPrimaryPressed: {
+        opacity: 0.9,
+        transform: [{ scale: 0.98 }],
     },
 });
-
-export default ResultScreen;
