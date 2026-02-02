@@ -1,6 +1,7 @@
 /**
- * @file [topicId]/index.tsx
- * @description Route détail d'un sujet
+ * @file app/[topicId]/index.tsx
+ * @description Topic detail route - exports TopicDetailScreen
  */
 
-export { TopicDetailScreen as default } from '@/features/topic-detail/screens/TopicDetailScreen';
+import TopicDetailScreen from '@/features/topic-detail/screens/TopicDetailScreen';
+export default TopicDetailScreen;

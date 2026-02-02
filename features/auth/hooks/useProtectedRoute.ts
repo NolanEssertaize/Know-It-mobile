@@ -1,12 +1,6 @@
 /**
  * @file useProtectedRoute.ts
  * @description Hook for protecting routes that require authentication
- * 
- * Usage in _layout.tsx or any protected screen:
- * ```tsx
- * const { isReady } = useProtectedRoute();
- * if (!isReady) return <LoadingScreen />;
- * ```
  */
 
 import { useEffect, useState } from 'react';
@@ -23,7 +17,7 @@ interface UseProtectedRouteReturn {
 /**
  * Hook to protect routes and handle auth-based navigation
  * 
- * - Redirects unauthenticated users to /login
+ * - Redirects unauthenticated users to /auth/login
  * - Redirects authenticated users away from auth screens
  */
 export function useProtectedRoute(): UseProtectedRouteReturn {
@@ -53,7 +47,7 @@ export function useProtectedRoute(): UseProtectedRouteReturn {
     if (!isInitialized) return;
 
     // Check if we're in the auth group
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === 'auth' || segments[0] === '(auth)';
 
     console.log('[useProtectedRoute] Checking route:', {
       segments,
@@ -64,7 +58,7 @@ export function useProtectedRoute(): UseProtectedRouteReturn {
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to login if not authenticated and not in auth group
       console.log('[useProtectedRoute] Redirecting to login');
-      router.replace('/login');
+      router.replace('/auth/login');
     } else if (isAuthenticated && inAuthGroup) {
       // Redirect to home if authenticated but in auth group
       console.log('[useProtectedRoute] Redirecting to home');

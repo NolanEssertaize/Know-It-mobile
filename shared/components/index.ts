@@ -1,8 +1,8 @@
 /**
- * @file index.ts
- * @description Re-export de tous les composants partagés
+ * @file shared/components/index.ts
+ * @description Shared component exports
  */
 
-export * from './GlassView';
-export * from './GlassButton';
-export * from './ScreenWrapper';
+export { ScreenWrapper } from './ScreenWrapper';
+export { GlassView } from './GlassView';
+export { GlassButton } from './GlassButton';

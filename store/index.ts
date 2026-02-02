@@ -1,19 +1,9 @@
 /**
- * @file index.ts
- * @description Store Module - Centralized Zustand stores
+ * @file store/index.ts
+ * @description Store exports
  */
 
-// Auth Store
-export {
-  useAuthStore,
-  selectUser,
-  selectIsAuthenticated,
-  selectIsLoading as selectAuthIsLoading,
-  selectAuthError,
-  selectIsInitialized,
-} from './useAuthStore';
-
-// Topics Store
+// Main store
 export {
   useStore,
   selectTopics,
@@ -21,7 +11,20 @@ export {
   selectIsLoading,
   selectError,
   selectTopicById,
+  selectTotalSessions,
 } from './useStore';
 
+// Auth store
+export {
+  useAuthStore,
+  selectUser,
+  selectIsAuthenticated,
+  selectIsAuthLoading,
+  selectAuthError,
+} from './useAuthStore';
+
 // Types
-export type { Topic, Session } from './useStore';
+export type { StoreState, AuthState, Selector, AuthSelector } from './types';
+
+// Re-export domain types for convenience
+export type { Topic, Session, Analysis, User } from '@/types';

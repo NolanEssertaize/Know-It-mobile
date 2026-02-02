@@ -1,10 +1,7 @@
 /**
- * @file profile.tsx
- * @description Profile screen route (Expo Router) - Modal presentation
- *
- * REWORK: Opens as a bottom sheet modal
+ * @file app/profile.tsx
+ * @description Profile route - exports ProfileScreen
  */
 
-import { ProfileScreen } from '@/features/profile';
-
+import ProfileScreen from '@/features/profile/screens/ProfileScreen';
 export default ProfileScreen;

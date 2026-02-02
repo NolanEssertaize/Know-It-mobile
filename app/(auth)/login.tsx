@@ -1,10 +1,7 @@
 /**
- * @file login.tsx
- * @description Login route page (Expo Router)
+ * @file app/(auth)/login.tsx
+ * @description Login route - exports LoginScreen
  */
 
-import { LoginScreen } from '@/features/auth';
-
-export default function LoginPage() {
-  return <LoginScreen />;
-}
+import LoginScreen from '@/features/auth/screens/LoginScreen';
+export default LoginScreen;

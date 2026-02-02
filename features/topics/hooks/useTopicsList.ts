@@ -1,90 +1,69 @@
 /**
  * @file useTopicsList.ts
- * @description Logic Controller pour l'écran de liste des topics
+ * @description Topics list hook - Business logic for TopicsListScreen
  *
- * FIXES:
- * - Removed emoji from greeting (no emoji policy)
- * - Added safety filters to prevent crashes on undefined topics
- * - Added useEffect to load topics on mount for synchronization
- * - Added streak property for tracking consecutive days of study
- * - Uses corrected formatDateRelative from dateUtils for proper Today/Yesterday
+ * CRITICAL: This hook must NOT auto-refresh. Uses useRef to track initial load.
  */
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Keyboard } from 'react-native';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'expo-router';
-import type { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { useStore, selectTopics, selectIsLoading, selectError } from '@/store/useStore';
-import type { Topic, TopicTheme, TopicCategory } from '@/types';
-import { formatDateRelative } from '@/shared/utils/dateUtils';
+import { useStore, selectTopics, selectIsLoading, selectError } from '@/store';
+import type { Topic, TopicItemData } from '@/types';
+import { formatSessionHistoryDate } from '@/shared/utils/dateUtils';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CONSTANTES
-// ═══════════════════════════════════════════════════════════════════════════
+// Constants
+const DEBOUNCE_DELAY = 300;
 
-export const TOPIC_THEMES: TopicTheme[] = [
-    { icon: 'laptop', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-    { icon: 'brain', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-    { icon: 'chart-line', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-    { icon: 'palette', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-    { icon: 'flask', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-    { icon: 'book-open-variant', color: '#FFFFFF', gradient: ['rgba(255,255,255,0.75)', 'rgba(255,255,255,0.35)'] },
-];
+// Topic categories
+export const CATEGORIES = ['all', 'programming', 'science', 'languages', 'history', 'math', 'other'] as const;
+export type Category = typeof CATEGORIES[number];
 
-export const CATEGORIES: TopicCategory[] = [
-    { id: 'all', label: 'Tous', icon: 'view-grid' },
-    { id: 'recent', label: 'Récents', icon: 'clock-outline' },
-    { id: 'favorites', label: 'Favoris', icon: 'star-outline' },
-];
+// Topic theme colors for visual variety
+export const TOPIC_THEMES = [
+    { primary: '#6366F1', secondary: '#818CF8' }, // Indigo
+    { primary: '#8B5CF6', secondary: '#A78BFA' }, // Violet
+    { primary: '#EC4899', secondary: '#F472B6' }, // Pink
+    { primary: '#10B981', secondary: '#34D399' }, // Emerald
+    { primary: '#F59E0B', secondary: '#FBBF24' }, // Amber
+    { primary: '#3B82F6', secondary: '#60A5FA' }, // Blue
+] as const;
 
-const DEBOUNCE_DELAY = 300; // ms
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface TopicItemData {
-    topic: Topic;
-    theme: TopicTheme;
-    lastSessionDate: string;
+// Swipeable ref type
+export interface SwipeableMethods {
+    close: () => void;
 }
 
-export interface UseTopicsListReturn {
+interface UseTopicsListReturn {
     // Data
     filteredTopics: TopicItemData[];
-    searchText: string;
-    selectedCategory: string;
-    showAddModal: boolean;
-    newTopicText: string;
-    totalSessions: number;
-    topicsCount: number;
-    greeting: string;
-    hasActiveFilters: boolean;
+    stats: { topicsCount: number; sessionsCount: number; streak: number };
+
+    // State
     isLoading: boolean;
     error: string | null;
-    streak: number;
+    searchQuery: string;
+    selectedCategory: Category;
+    isAddModalVisible: boolean;
+    newTopicTitle: string;
+    isAddingTopic: boolean;
 
-    // Methods
-    setSearchText: (text: string) => void;
-    setSelectedCategory: (category: string) => void;
-    setShowAddModal: (show: boolean) => void;
-    setNewTopicText: (text: string) => void;
-    handleAddTopic: () => void;
+    // Actions
+    setSearchQuery: (text: string) => void;
+    setSelectedCategory: (category: Category) => void;
+    setIsAddModalVisible: (show: boolean) => void;
+    setNewTopicTitle: (text: string) => void;
     handleCardPress: (topicId: string) => void;
+    handleAddTopic: () => Promise<void>;
     handleEdit: (topicId: string) => void;
     handleShare: (topicId: string) => void;
-    handleDelete: (topicId: string) => void;
-    closeAllSwipeables: (exceptId?: string) => void;
+    handleDelete: (topicId: string) => Promise<void>;
     registerSwipeableRef: (id: string, ref: SwipeableMethods) => void;
     unregisterSwipeableRef: (id: string) => void;
     resetFilters: () => void;
     refreshTopics: () => Promise<void>;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOM HOOK - useDebounce
-// ═══════════════════════════════════════════════════════════════════════════
-
+// Custom debounce hook
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -101,42 +80,22 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPER - Calculate streak from sessions
-// ═══════════════════════════════════════════════════════════════════════════
-
+// Calculate streak
 function calculateStreak(topics: Topic[]): number {
-    if (!topics || !Array.isArray(topics)) return 0;
+    const allSessions = topics.flatMap((t) => t.sessions || []);
+    if (allSessions.length === 0) return 0;
 
-    const allSessionDates: Date[] = [];
-
-    topics.forEach(topic => {
-        if (topic && topic.sessions && Array.isArray(topic.sessions)) {
-            topic.sessions.forEach(session => {
-                if (session && session.date) {
-                    allSessionDates.push(new Date(session.date));
-                }
-            });
-        }
-    });
-
-    if (allSessionDates.length === 0) return 0;
-
-    // Sort dates descending
-    allSessionDates.sort((a, b) => b.getTime() - a.getTime());
-
-    // Calculate streak
-    let streak = 0;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const uniqueDays = new Set<string>();
-    allSessionDates.forEach(date => {
+
+    allSessions.forEach((session) => {
+        const date = new Date(session.date);
         const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         uniqueDays.add(dayKey);
     });
 
     const sortedDays = Array.from(uniqueDays).sort().reverse();
+    let streak = 0;
 
     for (let i = 0; i < sortedDays.length; i++) {
         const expectedDate = new Date(today);
@@ -153,10 +112,6 @@ function calculateStreak(topics: Topic[]): number {
     return streak;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// HOOK
-// ═══════════════════════════════════════════════════════════════════════════
-
 export function useTopicsList(): UseTopicsListReturn {
     const router = useRouter();
 
@@ -168,204 +123,182 @@ export function useTopicsList(): UseTopicsListReturn {
     // Store actions
     const { addTopic, deleteTopic, loadTopics } = useStore();
 
-    // État local
-    const [searchText, setSearchText] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('all');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newTopicText, setNewTopicText] = useState('');
-    const [openSwipeableId, setOpenSwipeableId] = useState<string | null>(null);
+    // Local state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [newTopicTitle, setNewTopicTitle] = useState('');
+    const [isAddingTopic, setIsAddingTopic] = useState(false);
 
-    // Debounce du texte de recherche
-    const debouncedSearchText = useDebounce(searchText, DEBOUNCE_DELAY);
+    // Debounced search
+    const debouncedSearchQuery = useDebounce(searchQuery, DEBOUNCE_DELAY);
 
-    // Refs pour les swipeables
+    // Swipeable refs
     const swipeableRefs = useRef<Map<string, SwipeableMethods>>(new Map());
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // EFFECTS - Load topics on mount
-    // ─────────────────────────────────────────────────────────────────────────
-    useEffect(() => {
-        console.log('[useTopicsList] Loading topics on mount...');
-        loadTopics();
-    }, [loadTopics]);
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CRITICAL: Load topics ONCE on mount - no auto-refresh
+    // ═══════════════════════════════════════════════════════════════════════════
+    const hasLoadedRef = useRef(false);
 
-    // ─────────────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
+            console.log('[useTopicsList] Initial load...');
+            loadTopics();
+        }
+        // CRITICAL: Empty dependency array - load ONCE only
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // MEMOIZED VALUES
-    // ─────────────────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════════
 
     const hasActiveFilters = useMemo(() => {
-        return debouncedSearchText.trim().length > 0 || selectedCategory !== 'all';
-    }, [debouncedSearchText, selectedCategory]);
+        return debouncedSearchQuery.length > 0 || selectedCategory !== 'all';
+    }, [debouncedSearchQuery, selectedCategory]);
 
-    // FIXED: Greeting without emoji (no emoji policy)
-    const greeting = useMemo(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Bonjour';
-        if (hour < 18) return 'Bon après-midi';
-        return 'Bonsoir';
-    }, []);
+    // Filter and transform topics
+    const filteredTopics: TopicItemData[] = useMemo(() => {
+        let filtered = topics || [];
 
-    // Topics filtrés et enrichis
-    const filteredTopics = useMemo((): TopicItemData[] => {
-        if (!topics || !Array.isArray(topics)) return [];
-
-        let result = topics.filter((t) => t && t.id);
-
-        // Filtre par recherche
-        if (debouncedSearchText.trim()) {
-            const query = debouncedSearchText.toLowerCase();
-            result = result.filter((t) => t.title && t.title.toLowerCase().includes(query));
+        // Filter by search
+        if (debouncedSearchQuery) {
+            const searchLower = debouncedSearchQuery.toLowerCase();
+            filtered = filtered.filter((topic) =>
+                topic.title.toLowerCase().includes(searchLower)
+            );
         }
 
-        // Tri par catégorie
-        if (selectedCategory === 'recent') {
-            result.sort((a, b) => {
-                const dateA = (a.sessions && a.sessions[0]?.date) || '';
-                const dateB = (b.sessions && b.sessions[0]?.date) || '';
-                return new Date(dateB).getTime() - new Date(dateA).getTime();
-            });
+        // Filter by category
+        if (selectedCategory !== 'all') {
+            filtered = filtered.filter((topic) => topic.category === selectedCategory);
         }
 
-        // Enrichissement
-        return result.map((topic, index) => ({
-            topic,
-            theme: TOPIC_THEMES[index % TOPIC_THEMES.length],
-            lastSessionDate: topic.sessions && topic.sessions[0]?.date
-                ? formatDateRelative(topic.sessions[0].date)
-                : 'Jamais',
-        }));
-    }, [topics, debouncedSearchText, selectedCategory]);
+        // Transform to TopicItemData
+        return filtered.map((topic, index) => {
+            const sessions = topic.sessions || [];
+            const sessionCount = sessions.length;
+            const lastSession = sessions[0];
+            const lastSessionDate = lastSession?.date || null;
+            const formattedLastSession = lastSessionDate
+                ? formatSessionHistoryDate(lastSessionDate)
+                : '';
 
-    // Stats (with safety check)
-    const totalSessions = useMemo(
-        () => (topics || []).reduce((acc, t) => acc + (t?.sessions?.length || 0), 0),
-        [topics]
-    );
-
-    // Streak
-    const streak = useMemo(() => calculateStreak(topics), [topics]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const resetFilters = useCallback(() => {
-        setSearchText('');
-        setSelectedCategory('all');
-    }, []);
-
-    const refreshTopics = useCallback(async () => {
-        console.log('[useTopicsList] Refreshing topics...');
-        await loadTopics();
-    }, [loadTopics]);
-
-    const handleAddTopic = useCallback(async () => {
-        const trimmed = newTopicText.trim();
-        if (!trimmed) return;
-
-        console.log('[useTopicsList] Adding topic:', trimmed);
-
-        try {
-            const newTopic = await addTopic(trimmed);
-
-            if (newTopic) {
-                console.log('[useTopicsList] Topic created:', newTopic.id);
-                setNewTopicText('');
-                setShowAddModal(false);
-                Keyboard.dismiss();
-            } else {
-                console.error('[useTopicsList] Failed to create topic - no topic returned');
-            }
-        } catch (error) {
-            console.error('[useTopicsList] Error creating topic:', error);
-        }
-    }, [newTopicText, addTopic]);
-
-    const closeAllSwipeables = useCallback((exceptId?: string) => {
-        swipeableRefs.current.forEach((ref, id) => {
-            if (id !== exceptId) {
-                ref?.close();
-            }
+            return {
+                topic: {
+                    ...topic,
+                    sessions, // Ensure sessions is always an array
+                    // Add theme for visual variety
+                    _theme: TOPIC_THEMES[index % TOPIC_THEMES.length],
+                },
+                sessionCount,
+                lastSessionDate,
+                formattedLastSession,
+            } as TopicItemData;
         });
-        if (!exceptId) {
-            setOpenSwipeableId(null);
-        }
-    }, []);
+    }, [topics, debouncedSearchQuery, selectedCategory]);
+
+    // Stats
+    const stats = useMemo(() => {
+        const safeTopics = topics || [];
+        const topicsCount = safeTopics.length;
+        const sessionsCount = safeTopics.reduce((acc, t) => acc + (t.sessions?.length || 0), 0);
+        const streak = calculateStreak(safeTopics);
+        return { topicsCount, sessionsCount, streak };
+    }, [topics]);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HANDLERS
+    // ═══════════════════════════════════════════════════════════════════════════
 
     const handleCardPress = useCallback(
         (topicId: string) => {
-            if (openSwipeableId) {
-                closeAllSwipeables();
-                return;
-            }
+            console.log('[useTopicsList] Card pressed:', topicId);
             router.push(`/${topicId}`);
         },
-        [openSwipeableId, closeAllSwipeables, router]
+        [router]
     );
+
+    const handleAddTopic = useCallback(async () => {
+        const trimmed = newTopicTitle?.trim();
+        if (!trimmed) return;
+
+        setIsAddingTopic(true);
+        try {
+            await addTopic(trimmed, selectedCategory === 'all' ? 'other' : selectedCategory);
+            setNewTopicTitle('');
+            setIsAddModalVisible(false);
+        } catch (err) {
+            console.error('[useTopicsList] Error adding topic:', err);
+        } finally {
+            setIsAddingTopic(false);
+        }
+    }, [newTopicTitle, selectedCategory, addTopic]);
 
     const handleEdit = useCallback(
         (topicId: string) => {
-            console.log('Edit topic:', topicId);
-            closeAllSwipeables();
-            // TODO: Implement edit
+            console.log('[useTopicsList] Edit topic:', topicId);
+            // Close swipeable
+            swipeableRefs.current.get(topicId)?.close();
+            // Navigate to topic detail with edit mode
+            router.push(`/${topicId}`);
         },
-        [closeAllSwipeables]
+        [router]
     );
 
-    const handleShare = useCallback(
-        (topicId: string) => {
-            console.log('Share topic:', topicId);
-            closeAllSwipeables();
-            // TODO: Implement share
-        },
-        [closeAllSwipeables]
-    );
+    const handleShare = useCallback((topicId: string) => {
+        console.log('[useTopicsList] Share topic:', topicId);
+        swipeableRefs.current.get(topicId)?.close();
+        // TODO: Implement share functionality
+    }, []);
 
     const handleDelete = useCallback(
-        (topicId: string) => {
-            deleteTopic(topicId);
-            closeAllSwipeables();
+        async (topicId: string) => {
+            console.log('[useTopicsList] Delete topic:', topicId);
+            swipeableRefs.current.get(topicId)?.close();
+            await deleteTopic(topicId);
         },
-        [deleteTopic, closeAllSwipeables]
+        [deleteTopic]
     );
 
     const registerSwipeableRef = useCallback((id: string, ref: SwipeableMethods) => {
-        if (ref) {
-            swipeableRefs.current.set(id, ref);
-        }
+        swipeableRefs.current.set(id, ref);
     }, []);
 
     const unregisterSwipeableRef = useCallback((id: string) => {
         swipeableRefs.current.delete(id);
     }, []);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // RETURN
-    // ─────────────────────────────────────────────────────────────────────────
+    const resetFilters = useCallback(() => {
+        setSearchQuery('');
+        setSelectedCategory('all');
+    }, []);
+
+    const refreshTopics = useCallback(async () => {
+        await loadTopics();
+    }, [loadTopics]);
 
     return {
         filteredTopics,
-        searchText,
-        selectedCategory,
-        showAddModal,
-        newTopicText,
-        totalSessions,
-        topicsCount: (topics || []).length,
-        greeting,
-        hasActiveFilters,
+        stats,
         isLoading,
         error,
-        streak,
-        setSearchText,
+        searchQuery,
+        setSearchQuery,
+        selectedCategory,
         setSelectedCategory,
-        setShowAddModal,
-        setNewTopicText,
-        handleAddTopic,
+        isAddModalVisible,
+        setIsAddModalVisible,
+        newTopicTitle,
+        setNewTopicTitle,
+        isAddingTopic,
         handleCardPress,
+        handleAddTopic,
         handleEdit,
         handleShare,
         handleDelete,
-        closeAllSwipeables,
         registerSwipeableRef,
         unregisterSwipeableRef,
         resetFilters,

@@ -1,238 +1,231 @@
 /**
  * @file RegisterScreen.tsx
- * @description Register screen - Theme Aware, NO EMOJI
+ * @description Registration screen with i18n support
  */
 
-import React, { memo, useRef } from 'react';
+import React, { memo } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Mail, Lock, User } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import { AuthLayout } from '@/features/auth/components/AuthLayout';
-import { GlassInput } from '@/features/auth/components/GlassInput';
-import { useTheme, Spacing, BorderRadius } from '@/theme';
-
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
+import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
+import { useTheme, Spacing, BorderRadius, Typography } from '@/theme';
+import { useRegister } from '../hooks/useRegister';
 
 export const RegisterScreen = memo(function RegisterScreen() {
-    const router = useRouter();
-    const { colors } = useTheme();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const logic = useRegister();
 
-    const emailInputRef = useRef<TextInput>(null);
-    const passwordInputRef = useRef<TextInput>(null);
-    const confirmPasswordInputRef = useRef<TextInput>(null);
-
-    const {
-        email,
-        setEmail,
-        password,
-        setPassword,
-        confirmPassword,
-        setConfirmPassword,
-        fullName,
-        setFullName,
-        isLoading,
-        error,
-        validationErrors,
-        handleRegister,
-        clearError,
-    } = useAuth();
-
-    const onRegisterPress = async () => {
-        clearError();
-        const result = await handleRegister();
-        if (result.success) {
-            router.replace('/');
-        } else if (result.error) {
-            Alert.alert('Registration Failed', result.error);
-        }
-    };
-
-    const onLoginPress = () => {
-        router.back();
-    };
-
-    const onFullNameSubmit = () => emailInputRef.current?.focus();
-    const onEmailSubmit = () => passwordInputRef.current?.focus();
-    const onPasswordSubmit = () => confirmPasswordInputRef.current?.focus();
-
-    return (
-        <AuthLayout
-            title="Create Account"
-            subtitle="Start your learning journey today"
-            footer={
-                <View style={styles.footerContent}>
-                    <Text style={[styles.footerText, { color: colors.text.secondary }]}>
-                        Already have an account?
-                    </Text>
-                    <TouchableOpacity onPress={onLoginPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>Sign In</Text>
-                    </TouchableOpacity>
-                </View>
-            }
+  return (
+    <ScreenWrapper scrollable={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-            {/* Full Name Input */}
-            <GlassInput
-                label="Full Name"
-                placeholder="Enter your name"
-                value={fullName}
-                onChangeText={setFullName}
-                error={validationErrors.fullName}
-                leftIcon={User}
-                autoCapitalize="words"
-                autoComplete="name"
-                returnKeyType="next"
-                onSubmitEditing={onFullNameSubmit}
-                editable={!isLoading}
-            />
-
-            {/* Email Input */}
-            <GlassInput
-                ref={emailInputRef}
-                label="Email"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                error={validationErrors.email}
-                leftIcon={Mail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                returnKeyType="next"
-                onSubmitEditing={onEmailSubmit}
-                editable={!isLoading}
-            />
-
-            {/* Password Input */}
-            <GlassInput
-                ref={passwordInputRef}
-                label="Password"
-                placeholder="Create a password"
-                value={password}
-                onChangeText={setPassword}
-                error={validationErrors.password}
-                leftIcon={Lock}
-                isPassword
-                autoComplete="password-new"
-                returnKeyType="next"
-                onSubmitEditing={onPasswordSubmit}
-                editable={!isLoading}
-            />
-
-            {/* Confirm Password Input */}
-            <GlassInput
-                ref={confirmPasswordInputRef}
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                error={validationErrors.confirmPassword}
-                leftIcon={Lock}
-                isPassword
-                autoComplete="password-new"
-                returnKeyType="done"
-                onSubmitEditing={onRegisterPress}
-                editable={!isLoading}
-            />
-
-            {/* Password Requirements Hint */}
-            <View style={styles.hintContainer}>
-                <Text style={[styles.hintText, { color: colors.text.muted }]}>
-                    Password must be at least 8 characters
-                </Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.surface.glass }]}>
+              <MaterialIcons name="person-add" size={48} color={colors.accent.primary} />
             </View>
+            <Text style={[styles.title, { color: colors.text.primary }]}>
+              {t('auth.register.title')}
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+              {t('auth.register.subtitle')}
+            </Text>
+          </View>
 
+          {/* Form */}
+          <GlassView style={styles.formContainer}>
             {/* Error Message */}
-            {error && (
-                <View style={[styles.errorContainer, { backgroundColor: colors.surface.glass }]}>
-                    <Text style={[styles.errorText, { color: colors.text.primary }]}>{error}</Text>
-                </View>
+            {logic.error && (
+              <View style={[styles.errorContainer, { backgroundColor: colors.status.error + '20' }]}>
+                <MaterialIcons name="error-outline" size={20} color={colors.status.error} />
+                <Text style={[styles.errorText, { color: colors.status.error }]}>
+                  {logic.error}
+                </Text>
+              </View>
             )}
 
-            {/* Register Button */}
-            <TouchableOpacity
-                onPress={onRegisterPress}
-                disabled={isLoading}
-                activeOpacity={0.8}
-                style={styles.buttonContainer}
-            >
-                <View
-                    style={[
-                        styles.registerButton,
-                        { backgroundColor: isLoading ? colors.surface.glass : colors.text.primary },
-                    ]}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator size="small" color={colors.text.primary} />
-                    ) : (
-                        <Text style={[styles.registerButtonText, { color: colors.text.inverse }]}>
-                            Create Account
-                        </Text>
-                    )}
-                </View>
-            </TouchableOpacity>
-        </AuthLayout>
-    );
-});
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>
+                {t('auth.register.email')}
+              </Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.glass.border }]}>
+                <MaterialIcons name="email" size={20} color={colors.text.muted} />
+                <TextInput
+                  style={[styles.input, { color: colors.text.primary }]}
+                  placeholder={t('auth.register.emailPlaceholder')}
+                  placeholderTextColor={colors.text.muted}
+                  value={logic.email}
+                  onChangeText={logic.setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+              </View>
+            </View>
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════════════════════════════════
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>
+                {t('auth.register.password')}
+              </Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.glass.border }]}>
+                <MaterialIcons name="lock" size={20} color={colors.text.muted} />
+                <TextInput
+                  style={[styles.input, { color: colors.text.primary }]}
+                  placeholder={t('auth.register.passwordPlaceholder')}
+                  placeholderTextColor={colors.text.muted}
+                  value={logic.password}
+                  onChangeText={logic.setPassword}
+                  secureTextEntry
+                  autoComplete="password-new"
+                />
+              </View>
+            </View>
+
+            {/* Confirm Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>
+                {t('auth.register.confirmPassword')}
+              </Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.glass.border }]}>
+                <MaterialIcons name="lock-outline" size={20} color={colors.text.muted} />
+                <TextInput
+                  style={[styles.input, { color: colors.text.primary }]}
+                  placeholder={t('auth.register.confirmPasswordPlaceholder')}
+                  placeholderTextColor={colors.text.muted}
+                  value={logic.confirmPassword}
+                  onChangeText={logic.setConfirmPassword}
+                  secureTextEntry
+                  autoComplete="password-new"
+                />
+              </View>
+            </View>
+
+            {/* Register Button */}
+            <GlassButton
+              title={t('auth.register.createAccount')}
+              onPress={logic.handleRegister}
+              loading={logic.isLoading}
+              disabled={!logic.email.trim() || !logic.password || !logic.confirmPassword}
+              fullWidth
+              style={styles.registerButton}
+            />
+
+            {/* Login Link */}
+            <View style={styles.loginLinkContainer}>
+              <Text style={[styles.loginText, { color: colors.text.secondary }]}>
+                {t('auth.register.hasAccount')}{' '}
+              </Text>
+              <TouchableOpacity onPress={logic.navigateToLogin}>
+                <Text style={[styles.loginLink, { color: colors.accent.primary }]}>
+                  {t('auth.register.signIn')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </GlassView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
+  );
+});
 
 const styles = StyleSheet.create({
-    footerContent: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: Spacing.xs,
-    },
-    footerText: {
-        fontSize: 14,
-    },
-    footerLink: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    hintContainer: {
-        marginBottom: Spacing.md,
-    },
-    hintText: {
-        fontSize: 12,
-    },
-    errorContainer: {
-        padding: Spacing.md,
-        borderRadius: BorderRadius.md,
-        marginBottom: Spacing.md,
-    },
-    errorText: {
-        fontSize: 14,
-        textAlign: 'center',
-    },
-    buttonContainer: {
-        marginTop: Spacing.md,
-    },
-    registerButton: {
-        height: 56,
-        borderRadius: BorderRadius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    registerButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  title: {
+    ...Typography.heading.h1,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    ...Typography.body.medium,
+    textAlign: 'center',
+  },
+  formContainer: {
+    marginHorizontal: Spacing.md,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  errorText: {
+    ...Typography.body.small,
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: Spacing.md,
+  },
+  label: {
+    ...Typography.body.small,
+    marginBottom: Spacing.xs,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    ...Typography.body.medium,
+  },
+  registerButton: {
+    marginTop: Spacing.md,
+  },
+  loginLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: Spacing.lg,
+  },
+  loginText: {
+    ...Typography.body.medium,
+  },
+  loginLink: {
+    ...Typography.body.medium,
+    fontWeight: '600',
+  },
 });
-
 export default RegisterScreen;

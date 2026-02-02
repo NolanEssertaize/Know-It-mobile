@@ -1,413 +1,449 @@
 /**
  * @file TopicDetailScreen.tsx
- * @description Écran de détail d'un topic - Theme Aware
- *
- * FIXES:
- * - ADDED useTheme() hook for dynamic colors (fixes white mode bug)
- * - All colors now adapt to light/dark mode
- * - FAB button adapts to theme
- * - RefreshControl colors adapt to theme
+ * @description Topic detail page with session history
  */
 
-import React, { memo, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, ActivityIndicator, Pressable, StyleSheet, Platform } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import React, { useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
-import { Spacing, BorderRadius, useTheme } from '@/theme';
-
+import { useTheme, Spacing, BorderRadius, Typography } from '@/theme';
 import { useTopicDetail } from '../hooks/useTopicDetail';
-import type { SessionItemData } from '../hooks/useTopicDetail';
 import { SessionHistoryCard } from '../components/SessionHistoryCard';
+import type { SessionItemData } from '@/types';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPOSANT
-// ═══════════════════════════════════════════════════════════════════════════
+export function TopicDetailScreen() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
 
-export const TopicDetailScreen = memo(function TopicDetailScreen() {
-    // ─────────────────────────────────────────────────────────────────────────
-    // HOOKS - All hooks MUST be called before any conditional returns
-    // ─────────────────────────────────────────────────────────────────────────
-    const { topicId } = useLocalSearchParams<{ topicId: string }>();
-    const router = useRouter();
-    const insets = useSafeAreaInsets();
-    const { colors, isDark } = useTheme();
+  const {
+    // Data
+    topic,
+    sessionsData,
+    isLoading,
+    error,
+    // Edit Modal
+    isEditModalVisible,
+    editTitle,
+    setEditTitle,
+    isUpdating,
+    // Actions
+    handleGoBack,
+    handleStartSession,
+    handleOpenEditModal,
+    handleCloseEditModal,
+    handleUpdateTitle,
+    handleDeleteTopic,
+    handleViewSession,
+    handleDeleteSession,
+    refreshTopic,
+  } = useTopicDetail();
 
-    const logic = useTopicDetail(topicId ?? '');
+  const renderSessionCard = useCallback(
+    ({ item }: { item: SessionItemData }) => (
+      <SessionHistoryCard
+        data={item}
+        onPress={() => handleViewSession(item.session.id)}
+        onDelete={() => handleDeleteSession(item.session.id)}
+      />
+    ),
+    [handleViewSession, handleDeleteSession]
+  );
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS - Define ALL useCallback hooks BEFORE any returns
-    // ─────────────────────────────────────────────────────────────────────────
+  const keyExtractor = useCallback((item: SessionItemData) => item.session.id, []);
 
-    const handleBack = useCallback(() => {
-        router.back();
-    }, [router]);
+  const ListHeader = (
+    <>
+      {/* Topic Header */}
+      <GlassView style={styles.topicHeader} padding="lg" radius="xl" variant="elevated">
+        <View style={[styles.topicIcon, { backgroundColor: colors.accent.primary + '20' }]}>
+          <MaterialCommunityIcons
+            name="book-open-variant"
+            size={40}
+            color={colors.accent.primary}
+          />
+        </View>
 
-    const handleStartSession = useCallback(() => {
-        if (topicId) {
-            router.push(`/${topicId}/session`);
-        }
-    }, [router, topicId]);
+        <Text style={[styles.topicTitle, { color: colors.text.primary }]}>
+          {topic?.title || t('common.loading')}
+        </Text>
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER HELPERS - Define ALL useCallback hooks BEFORE any returns
-    // ─────────────────────────────────────────────────────────────────────────
+        <View style={styles.topicStats}>
+          <View style={styles.statItem}>
+            <MaterialIcons name="mic" size={20} color={colors.text.muted} />
+            <Text style={[styles.statText, { color: colors.text.muted }]}>
+              {sessionsData.length} {sessionsData.length === 1 ? t('topicDetail.session') : t('topicDetail.sessions')}
+            </Text>
+          </View>
+        </View>
 
-    const renderHeader = useCallback(
-        () => (
-            <View>
-                {/* Navigation header */}
-                <View style={styles.navHeader}>
-                    <Pressable
-                        style={[
-                            styles.backButton,
-                            {
-                                backgroundColor: colors.surface.glass,
-                                borderColor: colors.glass.border,
-                                borderWidth: 1,
-                            }
-                        ]}
-                        onPress={handleBack}
-                    >
-                        <MaterialIcons
-                            name={Platform.OS === 'ios' ? 'arrow-back-ios' : 'arrow-back'}
-                            size={24}
-                            color={colors.text.primary}
-                        />
-                    </Pressable>
-                    <Text style={[styles.navTitle, { color: colors.text.primary }]} numberOfLines={1}>
-                        {logic.topic?.title}
-                    </Text>
-                    <View style={styles.headerSpacer} />
-                </View>
+        {/* Action Buttons */}
+        <View style={styles.topicActions}>
+          <TouchableOpacity
+            style={[styles.topicActionButton, { backgroundColor: colors.surface.glass }]}
+            onPress={handleOpenEditModal}
+          >
+            <MaterialIcons name="edit" size={20} color={colors.text.secondary} />
+            <Text style={[styles.topicActionText, { color: colors.text.secondary }]}>
+              {t('common.edit')}
+            </Text>
+          </TouchableOpacity>
 
-                {/* Stats summary */}
-                <View style={styles.statsSummary}>
-                    <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>{logic.sessions.length}</Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Sessions</Text>
-                    </View>
-                    <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.sessions.length > 0
-                                ? Math.round(
-                                    logic.sessions.reduce((acc, s) => {
-                                        const valid = s.session.analysis?.valid?.length || 0;
-                                        const total = valid + (s.session.analysis?.corrections?.length || 0) + (s.session.analysis?.missing?.length || 0);
-                                        return acc + (total > 0 ? (valid / total) * 100 : 0);
-                                    }, 0) / logic.sessions.length
-                                )
-                                : 0}
-                            %
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Score Moyen</Text>
-                    </View>
-                </View>
+          <TouchableOpacity
+            style={[styles.topicActionButton, { backgroundColor: colors.status.error + '15' }]}
+            onPress={handleDeleteTopic}
+          >
+            <MaterialIcons name="delete" size={20} color={colors.status.error} />
+            <Text style={[styles.topicActionText, { color: colors.status.error }]}>
+              {t('common.delete')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </GlassView>
 
-                {/* Section header */}
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Historique</Text>
-                </View>
-            </View>
-        ),
-        [logic.topic, logic.sessions, handleBack, colors]
-    );
+      {/* Section Title */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          {t('topicDetail.history.title')}
+        </Text>
+        <Text style={[styles.sectionCount, { color: colors.text.muted }]}>
+          {sessionsData.length} {sessionsData.length === 1 ? t('topicDetail.history.session') : t('topicDetail.history.sessions')}
+        </Text>
+      </View>
+    </>
+  );
 
-    const renderSessionCard = useCallback(
-        ({ item }: { item: SessionItemData }) => (
-            <View style={styles.sessionCardWrapper}>
-                <SessionHistoryCard
-                    data={item}
-                    onPress={() => logic.handleSessionPress(item.session.id)}
-                />
-            </View>
-        ),
-        [logic.handleSessionPress]
-    );
+  const ListEmpty = (
+    <View style={styles.emptyContainer}>
+      <MaterialIcons name="mic-none" size={64} color={colors.text.muted} />
+      <Text style={[styles.emptyTitle, { color: colors.text.secondary }]}>
+        {t('topicDetail.empty.title')}
+      </Text>
+      <Text style={[styles.emptyMessage, { color: colors.text.muted }]}>
+        {t('topicDetail.empty.message')}
+      </Text>
+    </View>
+  );
 
-    const renderEmptyState = useCallback(
-        () => (
-            <View style={styles.emptyContainer}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface.glass }]}>
-                    <MaterialCommunityIcons
-                        name="microphone-outline"
-                        size={40}
-                        color={colors.text.muted}
-                    />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>Aucune session</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.text.secondary }]}>
-                    Commencez à enregistrer vos explications pour ce sujet
-                </Text>
-            </View>
-        ),
-        [colors]
-    );
-
-    const keyExtractor = useCallback((item: SessionItemData) => item.session.id, []);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // LOADING STATE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    if (logic.isLoading && !logic.topic) {
-        return (
-            <ScreenWrapper useSafeArea padding={0}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.text.primary} />
-                    <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                        Chargement...
-                    </Text>
-                </View>
-            </ScreenWrapper>
-        );
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ERROR STATE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    if (!logic.topic) {
-        return (
-            <ScreenWrapper useSafeArea padding={0}>
-                <View style={styles.errorStateContainer}>
-                    <MaterialCommunityIcons
-                        name="alert-circle-outline"
-                        size={48}
-                        color={colors.text.muted}
-                    />
-                    <Text style={[styles.errorText, { color: colors.text.secondary }]}>
-                        Topic introuvable
-                    </Text>
-                    <GlassButton
-                        title="Retour"
-                        variant="primary"
-                        onPress={handleBack}
-                        style={styles.retryButton}
-                    />
-                </View>
-            </ScreenWrapper>
-        );
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MAIN RENDER
-    // ─────────────────────────────────────────────────────────────────────────
-
+  if (isLoading && !topic) {
     return (
-        <ScreenWrapper useSafeArea padding={0}>
-            <FlatList
-                data={logic.sessions}
-                keyExtractor={keyExtractor}
-                renderItem={renderSessionCard}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={renderEmptyState}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={logic.isLoading}
-                        onRefresh={logic.refreshSessions}
-                        tintColor={colors.text.primary}
-                        colors={[colors.text.primary]}
-                    />
-                }
-            />
-
-            {/* FAB - "Nouvelle Session" button - THEME AWARE */}
-            <View style={styles.fabContainer}>
-                <Pressable
-                    onPress={handleStartSession}
-                    style={({ pressed }) => [
-                        styles.fabButton,
-                        {
-                            backgroundColor: colors.text.primary,
-                            ...Platform.select({
-                                ios: {
-                                    shadowColor: isDark ? '#FFFFFF' : '#000000',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: 0.3,
-                                    shadowRadius: 8,
-                                },
-                                android: {
-                                    elevation: 8,
-                                },
-                            }),
-                        },
-                        pressed && styles.fabButtonPressed,
-                    ]}
-                >
-                    <MaterialCommunityIcons name="microphone" size={24} color={colors.text.inverse} />
-                    <Text style={[styles.fabText, { color: colors.text.inverse }]}>Nouvelle Session</Text>
-                </Pressable>
-            </View>
-        </ScreenWrapper>
+      <ScreenWrapper>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent.primary} />
+          <Text style={[styles.loadingText, { color: colors.text.muted }]}>
+            {t('common.loading')}
+          </Text>
+        </View>
+      </ScreenWrapper>
     );
-});
+  }
 
-export default TopicDetailScreen;
+  if (error && !topic) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color={colors.status.error} />
+          <Text style={[styles.errorText, { color: colors.text.secondary }]}>
+            {error}
+          </Text>
+          <GlassButton
+            title={t('common.goBack')}
+            onPress={handleGoBack}
+            variant="secondary"
+            size="md"
+          />
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STYLES (Static - colors applied inline with useTheme)
-// ═══════════════════════════════════════════════════════════════════════════
+  return (
+    <ScreenWrapper scrollable={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+          <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]} numberOfLines={1}>
+          {topic?.title}
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      {/* Content */}
+      <FlatList
+        data={sessionsData}
+        renderItem={renderSessionCard}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={ListEmpty}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={refreshTopic}
+            tintColor={colors.accent.primary}
+          />
+        }
+      />
+
+      {/* Start Session Button */}
+      <View style={styles.bottomActions}>
+        <GlassButton
+          title={t('topicDetail.startSession')}
+          onPress={handleStartSession}
+          variant="primary"
+          size="lg"
+          icon={<MaterialIcons name="mic" size={24} color={colors.text.inverse} />}
+          style={styles.startButton}
+        />
+      </View>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseEditModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={handleCloseEditModal}
+          />
+          <GlassView style={styles.modalContent} padding="lg" radius="xl" variant="elevated">
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              {t('topicDetail.edit.title')}
+            </Text>
+
+            <View style={[styles.inputContainer, { borderColor: colors.glass.border }]}>
+              <TextInput
+                style={[styles.input, { color: colors.text.primary }]}
+                placeholder={t('topicDetail.edit.placeholder')}
+                placeholderTextColor={colors.text.muted}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleUpdateTitle}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <GlassButton
+                title={t('common.cancel')}
+                onPress={handleCloseEditModal}
+                variant="ghost"
+                size="md"
+                style={styles.modalButton}
+              />
+              <GlassButton
+                title={t('common.save')}
+                onPress={handleUpdateTitle}
+                variant="primary"
+                size="md"
+                loading={isUpdating}
+                disabled={!editTitle.trim() || editTitle.trim() === topic?.title}
+                style={styles.modalButton}
+              />
+            </View>
+          </GlassView>
+        </KeyboardAvoidingView>
+      </Modal>
+    </ScreenWrapper>
+  );
+}
 
 const styles = StyleSheet.create({
-    // List content
-    listContent: {
-        padding: Spacing.lg,
-        paddingBottom: 120,
-        flexGrow: 1,
-    },
-
-    // Navigation header
-    navHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.md,
-        marginBottom: Spacing.md,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    navTitle: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: '600',
-        textAlign: 'center',
-        marginHorizontal: Spacing.md,
-    },
-    headerSpacer: {
-        width: 40,
-    },
-
-    // Stats summary
-    statsSummary: {
-        flexDirection: 'row',
-        gap: Spacing.md,
-        marginBottom: Spacing.lg,
-    },
-    statItem: {
-        flex: 1,
-        alignItems: 'center',
-        padding: Spacing.md,
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: '700',
-    },
-    statLabel: {
-        fontSize: 12,
-        marginTop: Spacing.xs,
-    },
-
-    // Section header
-    sectionHeader: {
-        marginBottom: Spacing.md,
-    },
-    sectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginLeft: Spacing.xs,
-    },
-
-    // Loading state
-    loadingContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    loadingText: {
-        fontSize: 16,
-        marginTop: Spacing.md,
-    },
-
-    // Error state
-    errorStateContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: Spacing.xl,
-    },
-    errorText: {
-        fontSize: 16,
-        marginTop: Spacing.md,
-        textAlign: 'center',
-    },
-    retryButton: {
-        marginTop: Spacing.lg,
-        minWidth: 160,
-    },
-
-    // Empty state
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: Spacing.xxl,
-        paddingHorizontal: Spacing.lg,
-    },
-    emptyIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: Spacing.lg,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: Spacing.sm,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        maxWidth: 280,
-    },
-
-    // Session card wrapper
-    sessionCardWrapper: {
-        marginBottom: Spacing.md,
-    },
-
-    // FAB
-    fabContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xl,
-        paddingTop: Spacing.md,
-        backgroundColor: 'transparent',
-    },
-    fabButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: Spacing.sm,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: BorderRadius.xl,
-    },
-    fabButtonPressed: {
-        opacity: 0.9,
-        transform: [{ scale: 0.98 }],
-    },
-    fabText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  backButton: {
+    padding: Spacing.sm,
+    marginRight: Spacing.sm,
+  },
+  headerTitle: {
+    flex: 1,
+    ...Typography.heading.h3,
+    fontWeight: '600',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  loadingText: {
+    ...Typography.body.medium,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+  },
+  errorText: {
+    ...Typography.body.medium,
+    textAlign: 'center',
+  },
+  listContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 120,
+    flexGrow: 1,
+  },
+  topicHeader: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  topicIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  topicTitle: {
+    ...Typography.heading.h2,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  topicStats: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  statText: {
+    ...Typography.body.medium,
+  },
+  topicActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  topicActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  topicActionText: {
+    ...Typography.body.small,
+    fontWeight: '500',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    ...Typography.heading.h3,
+    fontWeight: '600',
+  },
+  sectionCount: {
+    ...Typography.body.small,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    gap: Spacing.md,
+  },
+  emptyTitle: {
+    ...Typography.heading.h3,
+    fontWeight: '600',
+  },
+  emptyMessage: {
+    ...Typography.body.medium,
+    textAlign: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  bottomActions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  startButton: {
+    width: '100%',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    ...Typography.heading.h3,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+  },
+  input: {
+    ...Typography.body.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+  },
 });
+export default TopicDetailScreen;

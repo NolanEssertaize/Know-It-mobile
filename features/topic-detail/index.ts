@@ -1,8 +1,13 @@
 /**
- * @file index.ts
- * @description Export de la feature Topic Detail
+ * @file features/topic-detail/index.ts
+ * @description Topic detail feature exports
  */
 
+// Screens
 export { TopicDetailScreen } from './screens/TopicDetailScreen';
-export { useTopicDetail } from './hooks/useTopicDetail';
+
+// Components
 export { SessionHistoryCard } from './components/SessionHistoryCard';
+
+// Hooks
+export { useTopicDetail } from './hooks/useTopicDetail';

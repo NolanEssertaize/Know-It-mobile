@@ -1,218 +1,292 @@
 /**
  * @file useSessionWithAudio.ts
- * @description Logic Controller pour l'écran d'enregistrement avec audio réel
- * Combine useSession et useAudioRecording
- *
- * FIXED:
- * - Replaced mock setTimeout with real LLMService.processRecording() API call
- * - Added proper error handling
- * - Uses selectCurrentTopic instead of selectTopicById
- * - NOW ADDS SESSION TO STORE after successful analysis
+ * @description Hook for audio recording session with expo-av
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useStore, selectCurrentTopic } from '@/store/useStore';
-import { useAudioRecording } from './useAudioRecording';
-import { LLMService } from '@/shared/services';
-import type { Topic, RecordingState } from '@/types';
-import type { Session } from '@/store';
+import { Alert } from 'react-native';
+import { Audio } from 'expo-av';
+import { useTranslation } from 'react-i18next';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+import { useStore, selectCurrentTopic } from '@/store';
 
-export interface UseSessionWithAudioReturn {
-    // Data
-    topic: Topic | null;
-    recordingState: RecordingState;
-    isRecording: boolean;
-    isAnalyzing: boolean;
-    audioLevel: number;
-    audioUri: string | null;
-    error: string | null;
-    hasPermission: boolean;
-    duration: number;
+export type SessionStatus = 'idle' | 'recording' | 'paused' | 'analyzing' | 'completed' | 'error';
 
-    // Methods
-    toggleRecording: () => Promise<void>;
-    handleClose: () => void;
-    requestPermission: () => Promise<boolean>;
+interface UseSessionWithAudioReturn {
+  // State
+  status: SessionStatus;
+  recordingDuration: number;
+  formattedDuration: string;
+  error: string | null;
+  topic: ReturnType<typeof selectCurrentTopic>;
+
+  // Actions
+  handleStart: () => Promise<void>;
+  handlePause: () => Promise<void>;
+  handleResume: () => Promise<void>;
+  handleStop: () => Promise<void>;
+  handleSubmit: () => Promise<void>;
+  handleCancel: () => void;
+  handleGoBack: () => void;
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Generate a simple UUID v4
- * Note: If you have uuid package installed, use import { v4 as uuidv4 } from 'uuid'
- */
-function generateId(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0;
-        const v = c === 'x' ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-    });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HOOK
-// ═══════════════════════════════════════════════════════════════════════════
 
 export function useSessionWithAudio(): UseSessionWithAudioReturn {
-    const { topicId } = useLocalSearchParams<{ topicId: string }>();
-    const router = useRouter();
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { topicId } = useLocalSearchParams<{ topicId: string }>();
 
-    // FIX: Use currentTopic instead of selectTopicById
-    // The topic is already loaded by TopicDetailScreen before navigating here
-    const topic = useStore(selectCurrentTopic);
+  // Store
+  const currentTopic = useStore(selectCurrentTopic);
+  const addSession = useStore((state) => state.addSession);
 
-    // Get addSessionToTopic from store
-    const addSessionToTopic = useStore((state) => state.addSessionToTopic);
+  // State
+  const [status, setStatus] = useState<SessionStatus>('idle');
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
 
-    // Hook d'enregistrement audio
-    const audio = useAudioRecording();
+  // Refs
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // État d'analyse
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // Format duration as MM:SS
+  const formattedDuration = `${Math.floor(recordingDuration / 60)
+    .toString()
+    .padStart(2, '0')}:${(recordingDuration % 60).toString().padStart(2, '0')}`;
 
-    // Derived state pour combiner les états
-    const recordingState: RecordingState = isAnalyzing
-        ? 'analyzing'
-        : audio.isRecording
-            ? 'recording'
-            : analysisError
-                ? 'error'
-                : 'idle';
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const toggleRecording = useCallback(async () => {
-        if (audio.isRecording) {
-            // Arrêter l'enregistrement
-            const uri = await audio.stopRecording();
-
-            if (uri && topic) {
-                setIsAnalyzing(true);
-                setAnalysisError(null);
-
-                console.log('[useSessionWithAudio] Audio URI:', uri);
-                console.log('[useSessionWithAudio] Duration:', audio.duration, 'seconds');
-                console.log('[useSessionWithAudio] Processing recording for topic:', topic.title);
-
-                try {
-                    // ═══════════════════════════════════════════════════════════
-                    // REAL API CALL - Transcription + Analysis
-                    // ═══════════════════════════════════════════════════════════
-                    const result = await LLMService.processRecording(
-                        uri,
-                        topic.title,
-                        {
-                            topicId: topic.id,
-                            language: 'fr', // ou détecter automatiquement
-                        }
-                    );
-
-                    console.log('[useSessionWithAudio] Transcription:', result.transcription.substring(0, 100) + '...');
-                    console.log('[useSessionWithAudio] Analysis:', result.analysis);
-
-                    // ═══════════════════════════════════════════════════════════
-                    // FIX: Create session and add to store
-                    // ═══════════════════════════════════════════════════════════
-                    const newSession: Session = {
-                        id: generateId(), // The backend should return session_id, but we generate one for now
-                        date: new Date().toISOString(),
-                        audioUri: uri,
-                        transcription: result.transcription,
-                        analysis: result.analysis,
-                    };
-
-                    // Add session to store so it appears in TopicDetailScreen
-                    addSessionToTopic(topic.id, newSession);
-                    console.log('[useSessionWithAudio] Session added to store:', newSession.id);
-
-                    setIsAnalyzing(false);
-
-                    // Navigation vers les résultats avec les vraies données
-                    router.replace({
-                        pathname: `/${topicId}/result`,
-                        params: {
-                            sessionId: newSession.id,
-                            audioUri: uri,
-                            transcription: result.transcription,
-                            valid: JSON.stringify(result.analysis.valid),
-                            corrections: JSON.stringify(result.analysis.corrections),
-                            missing: JSON.stringify(result.analysis.missing),
-                        },
-                    });
-                } catch (error) {
-                    console.error('[useSessionWithAudio] API Error:', error);
-                    setIsAnalyzing(false);
-
-                    const errorMessage = error instanceof Error
-                        ? error.message
-                        : 'Une erreur est survenue lors de l\'analyse';
-
-                    setAnalysisError(errorMessage);
-
-                    // Optionnel: vous pouvez aussi naviguer vers une page d'erreur
-                    // ou afficher l'erreur dans l'UI
-                }
-            } else if (!topic) {
-                console.error('[useSessionWithAudio] No topic found');
-                setAnalysisError('Topic introuvable');
-            }
-        } else {
-            // Démarrer l'enregistrement
-            setAnalysisError(null);
-            await audio.startRecording();
-        }
-    }, [audio, topic, topicId, router, addSessionToTopic]);
-
-    const handleClose = useCallback(() => {
-        // Arrêter l'enregistrement si en cours
-        if (audio.isRecording) {
-            audio.stopRecording();
-        }
-        router.back();
-    }, [audio, router]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // CLEANUP
-    // ─────────────────────────────────────────────────────────────────────────
-
-    useEffect(() => {
-        return () => {
-            // Reset audio state on unmount
-            audio.reset();
-        };
-    }, []);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RETURN
-    // ─────────────────────────────────────────────────────────────────────────
-
-    return {
-        // Data
-        topic,
-        recordingState,
-        isRecording: audio.isRecording,
-        isAnalyzing,
-        audioLevel: audio.audioLevel,
-        audioUri: audio.audioUri,
-        error: audio.error || analysisError,
-        hasPermission: audio.hasPermission,
-        duration: audio.duration,
-
-        // Methods
-        toggleRecording,
-        handleClose,
-        requestPermission: audio.requestPermission,
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(console.error);
+      }
     };
-}
+  }, []);
 
-export default useSessionWithAudio;
+  // Request permissions
+  const requestPermissions = async (): Promise<boolean> => {
+    try {
+      const { status: existingStatus } = await Audio.getPermissionsAsync();
+      
+      if (existingStatus !== 'granted') {
+        const { status: newStatus } = await Audio.requestPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert(
+            t('session.permissions.title'),
+            t('session.permissions.message'),
+            [{ text: t('common.ok') }]
+          );
+          return false;
+        }
+      }
+
+      // Configure audio mode
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Error requesting permissions:', err);
+      setError(t('session.errors.permissions'));
+      return false;
+    }
+  };
+
+  // Start recording
+  const handleStart = useCallback(async () => {
+    try {
+      setError(null);
+
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) return;
+
+      // Create new recording
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+
+      recordingRef.current = recording;
+      setStatus('recording');
+      setRecordingDuration(0);
+
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      setError(t('session.errors.startFailed'));
+      setStatus('error');
+    }
+  }, [t]);
+
+  // Pause recording
+  const handlePause = useCallback(async () => {
+    try {
+      if (recordingRef.current) {
+        await recordingRef.current.pauseAsync();
+        setStatus('paused');
+        
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    } catch (err) {
+      console.error('Error pausing recording:', err);
+      setError(t('session.errors.pauseFailed'));
+    }
+  }, [t]);
+
+  // Resume recording
+  const handleResume = useCallback(async () => {
+    try {
+      if (recordingRef.current) {
+        await recordingRef.current.startAsync();
+        setStatus('recording');
+        
+        // Resume timer
+        timerRef.current = setInterval(() => {
+          setRecordingDuration((prev) => prev + 1);
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Error resuming recording:', err);
+      setError(t('session.errors.resumeFailed'));
+    }
+  }, [t]);
+
+  // Stop recording
+  const handleStop = useCallback(async () => {
+    try {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      if (recordingRef.current) {
+        await recordingRef.current.stopAndUnloadAsync();
+        const uri = recordingRef.current.getURI();
+        setAudioUri(uri);
+        recordingRef.current = null;
+        setStatus('idle'); // Ready to submit
+      }
+    } catch (err) {
+      console.error('Error stopping recording:', err);
+      setError(t('session.errors.stopFailed'));
+      setStatus('error');
+    }
+  }, [t]);
+
+  // Submit recording for analysis
+  const handleSubmit = useCallback(async () => {
+    if (!topicId || !audioUri) return;
+
+    setStatus('analyzing');
+    setError(null);
+
+    try {
+      // In a real app, this would upload audio to API for transcription and analysis
+      // For now, we'll create a mock session
+
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Mock analysis result
+      const mockSession = {
+        id: `session_${Date.now()}`,
+        date: new Date().toISOString(),
+        audioUri,
+        transcription: 'This is a mock transcription of the audio recording.',
+        analysis: {
+          valid: [
+            'Correctly explained the main concept',
+            'Good use of terminology',
+            'Clear structure in explanation',
+          ],
+          corrections: [
+            'Minor terminology error in second point',
+          ],
+          missing: [
+            'Did not mention the practical applications',
+          ],
+        },
+      };
+
+      // Add session to store
+      await addSession(topicId, mockSession);
+
+      setStatus('completed');
+
+      // Navigate to result
+      router.replace({
+        pathname: `/${topicId}/result`,
+        params: { sessionId: mockSession.id },
+      });
+    } catch (err) {
+      console.error('Error submitting recording:', err);
+      setError(t('session.errors.submitFailed'));
+      setStatus('error');
+    }
+  }, [topicId, audioUri, addSession, router, t]);
+
+  // Cancel session
+  const handleCancel = useCallback(() => {
+    Alert.alert(
+      t('session.cancel.title'),
+      t('session.cancel.message'),
+      [
+        {
+          text: t('common.no'),
+          style: 'cancel',
+        },
+        {
+          text: t('common.yes'),
+          style: 'destructive',
+          onPress: () => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            if (recordingRef.current) {
+              recordingRef.current.stopAndUnloadAsync().catch(console.error);
+            }
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [router, t]);
+
+  // Go back
+  const handleGoBack = useCallback(() => {
+    if (status === 'recording' || status === 'paused') {
+      handleCancel();
+    } else {
+      router.back();
+    }
+  }, [status, handleCancel, router]);
+
+  return {
+    // State
+    status,
+    recordingDuration,
+    formattedDuration,
+    error,
+    topic: currentTopic,
+
+    // Actions
+    handleStart,
+    handlePause,
+    handleResume,
+    handleStop,
+    handleSubmit,
+    handleCancel,
+    handleGoBack,
+  };
+}

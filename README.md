@@ -1,379 +1,219 @@
-# 📚 KnowIt - Documentation Complète
+# KnowIt Mobile App
 
-> **Index de navigation pour la documentation du projet**
+A mobile learning application built with React Native, Expo, and TypeScript. KnowIt helps users practice and test their knowledge through voice-based sessions with AI-powered analysis.
 
----
+## 🚀 Features
 
-## 🎯 DÉMARRAGE RAPIDE
+- **Voice Recording Sessions**: Record yourself explaining topics and get AI-powered feedback
+- **Multi-language Support**: Full internationalization with English and French
+- **Glassmorphism Design**: Modern, beautiful UI with glass-effect components
+- **Dark/Light/System Themes**: Automatic theme detection with manual override
+- **Progress Tracking**: Track your learning progress with statistics and streaks
+- **Offline-First**: Local storage with AsyncStorage and SecureStore
 
-### Pour les nouveaux arrivants
-1. 📖 Lisez **ce README** pour comprendre l'organisation
-2. 📘 Parcourez **KNOWIT_PROJECT_DOCUMENTATION.md** pour le contexte global
-3. ⚡ Consultez **KNOWIT_QUICK_REFERENCE.md** pour les templates de code
-4. 🤖 Lisez **GUIDE_UTILISATION_CLAUDE.md** pour travailler efficacement avec l'IA
+## 📱 Tech Stack
 
-### Pour les développeurs expérimentés
-→ Allez directement à **KNOWIT_QUICK_REFERENCE.md** pour les patterns et règles
+- **Framework**: React Native with Expo SDK 54
+- **Language**: TypeScript
+- **Navigation**: Expo Router v6
+- **State Management**: Zustand v5
+- **Internationalization**: i18next + react-i18next
+- **UI Components**: Custom glassmorphism components
+- **Storage**: AsyncStorage + Expo SecureStore
+- **Animations**: React Native Reanimated
 
-### Pour débugger ou comprendre les flux
-→ Consultez **KNOWIT_ARCHITECTURE_FLOW.md** pour les diagrammes
+## 🛠️ Installation
 
----
+### Prerequisites
 
-## 📂 STRUCTURE DE LA DOCUMENTATION
+- Node.js 18+ 
+- npm or yarn
+- Expo CLI (`npm install -g expo-cli`)
+- iOS Simulator (macOS) or Android Emulator
 
-```
-Documentation KnowIt/
-│
-├── README.md (ce fichier)
-│   └── Index et guide de navigation
-│
-├── KNOWIT_PROJECT_DOCUMENTATION.md
-│   ├── Vue d'ensemble du projet
-│   ├── Architecture technique détaillée
-│   ├── Stack technologique
-│   ├── Design System
-│   ├── Types principaux
-│   ├── Services critiques
-│   ├── Patterns de hooks
-│   ├── Exemples de code complets
-│   └── Roadmap
-│   📏 ~800 lignes | ⏱️ Temps de lecture : 30-40 min
-│
-├── KNOWIT_QUICK_REFERENCE.md
-│   ├── Règles non-négociables
-│   ├── Templates de code (Composant, Hook, Service, Screen)
-│   ├── Patterns critiques (async, performance, store)
-│   ├── Design tokens (colors, typography, spacing)
-│   ├── Checklist pré-commit
-│   ├── Commandes rapides (navigation, store, storage)
-│   ├── Structure des imports
-│   └── Exemples de prompts pour Claude
-│   📏 ~500 lignes | ⏱️ Temps de lecture : 15-20 min
-│
-├── KNOWIT_ARCHITECTURE_FLOW.md
-│   ├── Architecture globale (diagramme)
-│   ├── Flux de données complets (avec diagrammes ASCII)
-│   ├── Couches architecturales (responsabilités)
-│   ├── Règles de communication entre couches
-│   ├── Navigation flow
-│   ├── Design patterns utilisés
-│   ├── State management strategy
-│   ├── Gestion des erreurs
-│   └── Performance optimization checklist
-│   📏 ~600 lignes | ⏱️ Temps de lecture : 20-30 min
-│
-└── GUIDE_UTILISATION_CLAUDE.md
-    ├── Objectif de la documentation
-    ├── Description des 4 documents
-    ├── Comment structurer les prompts
-    ├── Exemples de prompts par scénario
-    ├── Tips pour travailler avec Claude
-    ├── Workflow recommandé
-    ├── Métriques de qualité
-    ├── Pièges à éviter
-    └── FAQ
-    📏 ~600 lignes | ⏱️ Temps de lecture : 20-25 min
+### Setup
+
+1. Clone the repository and navigate to the project:
+
+```bash
+cd knowit
 ```
 
----
+2. Install dependencies:
 
-## 🗺️ PARCOURS DE LECTURE RECOMMANDÉS
-
-### Parcours 1 : Onboarding complet (Nouveau sur le projet)
-**Temps total : ~2h**
-
-```
-1. README.md (ce fichier)
-   └── 5 min - Vue d'ensemble
-
-2. GUIDE_UTILISATION_CLAUDE.md
-   └── 20 min - Comprendre comment travailler avec l'IA
-
-3. KNOWIT_PROJECT_DOCUMENTATION.md
-   └── 40 min - Contexte global, architecture, stack
-
-4. KNOWIT_QUICK_REFERENCE.md
-   └── 20 min - Règles et templates de code
-
-5. KNOWIT_ARCHITECTURE_FLOW.md
-   └── 30 min - Flux de données et diagrammes
-
-6. Exploration du code source
-   └── 30 min - Parcourir les dossiers features/, shared/, store/
+```bash
+npm install
 ```
 
-### Parcours 2 : Démarrage rapide (Déjà familier avec React Native)
-**Temps total : ~45 min**
+3. Start the development server:
 
-```
-1. README.md (ce fichier)
-   └── 5 min
-
-2. KNOWIT_QUICK_REFERENCE.md
-   └── 15 min - Règles strictes et patterns
-
-3. KNOWIT_ARCHITECTURE_FLOW.md
-   └── 15 min - Focus sur les diagrammes de flux
-
-4. Code source : features/topics/
-   └── 10 min - Exemple concret d'une feature
+```bash
+npx expo start
 ```
 
-### Parcours 3 : Utilisation quotidienne (Développeur du projet)
-**Temps de consultation : ~5-10 min/jour**
+4. Run on your preferred platform:
+   - Press `i` for iOS Simulator
+   - Press `a` for Android Emulator
+   - Scan QR code with Expo Go app for physical device
+
+## 📁 Project Structure
 
 ```
-Consultation à la demande :
-
-- Besoin d'un template de code ?
-  → KNOWIT_QUICK_REFERENCE.md (section Templates)
-
-- Oublié une règle ?
-  → KNOWIT_QUICK_REFERENCE.md (section Règles)
-
-- Comprendre un flux ?
-  → KNOWIT_ARCHITECTURE_FLOW.md (section correspondante)
-
-- Prompt pour Claude ?
-  → GUIDE_UTILISATION_CLAUDE.md (section Exemples)
+knowit/
+├── app/                    # Expo Router pages
+│   ├── (auth)/            # Auth group routes
+│   │   ├── login.tsx
+│   │   └── register.tsx
+│   ├── [topicId]/         # Dynamic topic routes
+│   │   ├── index.tsx      # Topic detail
+│   │   ├── session.tsx    # Recording session
+│   │   └── result.tsx     # Session result
+│   ├── _layout.tsx        # Root layout
+│   ├── index.tsx          # Home (topics list)
+│   └── profile.tsx        # Profile screen
+├── features/              # Feature modules
+│   ├── auth/              # Authentication
+│   ├── topics/            # Topics list
+│   ├── topic-detail/      # Topic detail
+│   ├── session/           # Recording session
+│   ├── result/            # Session result
+│   └── profile/           # User profile
+├── shared/                # Shared utilities
+│   ├── api/               # API client
+│   ├── components/        # Shared UI components
+│   ├── hooks/             # Shared hooks
+│   └── utils/             # Utility functions
+├── store/                 # Zustand stores
+├── theme/                 # Theme configuration
+├── i18n/                  # Internationalization
+│   ├── locales/           # Translation files
+│   │   ├── en.json
+│   │   └── fr.json
+│   └── i18n.ts            # i18n configuration
+└── types/                 # TypeScript types
 ```
 
-### Parcours 4 : Revue de code
-**Temps : ~10 min**
+## 🌐 Internationalization
 
-```
-1. KNOWIT_QUICK_REFERENCE.md
-   └── Section "Checklist pré-commit"
+### Changing Language
 
-2. Vérifier que le code respecte :
-   - Pattern MVVM
-   - Typage strict
-   - Styles séparés
-   - Imports organisés
+Users can change the app language from the Profile screen:
+1. Navigate to Profile
+2. Select preferred language (English 🇬🇧 or French 🇫🇷)
+3. The change is applied immediately and persisted
 
-3. Utiliser Claude pour l'audit :
-   └── GUIDE_UTILISATION_CLAUDE.md (Scénario 5 : Tests et validation)
-```
+### Adding a New Language
 
----
+1. Create a new translation file in `i18n/locales/`:
 
-## 🎓 GUIDE PAR RÔLE
-
-### Si vous êtes **Développeur Frontend**
-
-**Priorité** : Comprendre l'architecture et les patterns React Native
-
-📖 Lisez en priorité :
-1. KNOWIT_PROJECT_DOCUMENTATION.md (sections : Architecture, Design System)
-2. KNOWIT_QUICK_REFERENCE.md (Templates de code)
-3. KNOWIT_ARCHITECTURE_FLOW.md (Flux de données)
-
-🔧 Référez-vous souvent à :
-- Templates de composants
-- Règles de style (glassmorphism)
-- Patterns de hooks
-
-### Si vous êtes **Développeur Backend/API**
-
-**Priorité** : Comprendre la couche de services et l'intégration IA
-
-📖 Lisez en priorité :
-1. KNOWIT_PROJECT_DOCUMENTATION.md (section : Services critiques)
-2. KNOWIT_ARCHITECTURE_FLOW.md (section : Data Layer)
-
-🔧 Implémentez :
-- LLMService avec vraies APIs (Whisper, GPT-4)
-- Gestion robuste des erreurs
-- Logging structuré
-
-### Si vous êtes **UI/UX Designer**
-
-**Priorité** : Comprendre le Design System et l'identité visuelle
-
-📖 Lisez en priorité :
-1. KNOWIT_PROJECT_DOCUMENTATION.md (section : Design System)
-2. Code : Parcourir `theme/` pour voir les tokens
-
-🎨 Éléments clés :
-- Palette glassmorphism (GlassColors)
-- Typographie (Typography tokens)
-- Spacing (échelle d'espacement)
-- Effets LED/néon (accent colors)
-
-### Si vous êtes **Chef de projet / Product Owner**
-
-**Priorité** : Comprendre la vision, les features, et la roadmap
-
-📖 Lisez en priorité :
-1. KNOWIT_PROJECT_DOCUMENTATION.md (sections : Contexte, Roadmap)
-2. KNOWIT_ARCHITECTURE_FLOW.md (Vue d'ensemble)
-
-📊 Utilisez pour :
-- Planifier les prochaines features
-- Comprendre les dépendances techniques
-- Estimer la complexité
-
----
-
-## 🔍 RECHERCHE RAPIDE
-
-### Par mot-clé
-
-| Mot-clé | Où le trouver |
-|---------|---------------|
-| **MVVM** | KNOWIT_PROJECT_DOCUMENTATION.md (Architecture) |
-| **Hook** | KNOWIT_QUICK_REFERENCE.md (Template 2) |
-| **Service** | KNOWIT_PROJECT_DOCUMENTATION.md (Services critiques) |
-| **Store** | KNOWIT_ARCHITECTURE_FLOW.md (State management) |
-| **Navigation** | KNOWIT_ARCHITECTURE_FLOW.md (Navigation flow) |
-| **Flux de données** | KNOWIT_ARCHITECTURE_FLOW.md (Flux complets) |
-| **Design tokens** | KNOWIT_QUICK_REFERENCE.md (Design System) |
-| **Prompt Claude** | GUIDE_UTILISATION_CLAUDE.md (Exemples) |
-| **Templates** | KNOWIT_QUICK_REFERENCE.md (Templates de code) |
-| **Roadmap** | KNOWIT_PROJECT_DOCUMENTATION.md (Prochaines étapes) |
-
-### Par problème
-
-| Problème | Solution |
-|----------|----------|
-| **Code non typé (any)** | KNOWIT_QUICK_REFERENCE.md → Règle 3 |
-| **Logique dans la vue** | KNOWIT_QUICK_REFERENCE.md → Pattern MVVM |
-| **Styles inline** | KNOWIT_QUICK_REFERENCE.md → Règle 2 |
-| **Re-renders inutiles** | KNOWIT_ARCHITECTURE_FLOW.md → Performance |
-| **Navigation ne fonctionne pas** | KNOWIT_ARCHITECTURE_FLOW.md → Navigation flow |
-| **Erreur API non gérée** | KNOWIT_ARCHITECTURE_FLOW.md → Gestion des erreurs |
-| **Prompt Claude vague** | GUIDE_UTILISATION_CLAUDE.md → Structurer vos prompts |
-
----
-
-## 🚀 QUICKSTART (5 MINUTES)
-
-Vous voulez coder **maintenant** ? Voici le minimum vital :
-
-### 1. Règles non-négociables (30 secondes)
-```
-✅ Pattern MVVM : Vue (.tsx) → Hook (.ts) → Service (.ts)
-✅ Styles dans fichier .styles.ts séparé
-✅ Typage strict (zéro any)
-✅ Imports organisés (React → Libs → Local)
+```bash
+cp i18n/locales/en.json i18n/locales/es.json
 ```
 
-### 2. Template de composant (2 minutes)
+2. Translate all keys in the new file
+
+3. Add the language to `i18n/index.ts`:
+
 ```typescript
-// Copier depuis KNOWIT_QUICK_REFERENCE.md (Template 1)
+export const LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' }, // New
+];
 ```
 
-### 3. Structure d'une feature (2 minutes)
-```
-features/ma-feature/
-├── components/    # Composants UI
-├── hooks/        # Logique métier
-├── screens/      # Écrans
-└── index.ts      # Exports
-```
+4. Import the translations in `i18n/i18n.ts`:
 
-### 4. Commencer à coder (30 secondes)
-→ Ouvrir votre IDE et créer votre premier fichier !
+```typescript
+import es from './locales/es.json';
 
----
-
-## 🤖 UTILISATION AVEC CLAUDE AI
-
-### Setup (déjà fait)
-✅ Ces documents sont dans le **Project Knowledge** de Claude  
-✅ Claude a déjà lu et indexé toute la documentation  
-✅ Vous pouvez commencer à coder immédiatement
-
-### Exemple de prompt simple
-```
-Crée un nouveau composant Button dans shared/components/ 
-avec le style glassmorphism du projet
+const resources = {
+  en: { translation: en },
+  fr: { translation: fr },
+  es: { translation: es }, // New
+};
 ```
 
-### Pour aller plus loin
-→ Lisez **GUIDE_UTILISATION_CLAUDE.md** pour les techniques avancées
+### Using Translations in Components
 
----
+```typescript
+import { useTranslation } from 'react-i18next';
 
-## 📊 STATISTIQUES DE LA DOCUMENTATION
-
+function MyComponent() {
+  const { t } = useTranslation();
+  
+  return (
+    <View>
+      <Text>{t('common.loading')}</Text>
+      <Text>{t('dates.daysAgo', { count: 5 })}</Text>
+    </View>
+  );
+}
 ```
-Total de lignes : ~2,500 lignes
-Nombre de documents : 5 fichiers
-Templates de code : 15+
-Exemples de prompts : 10+
-Diagrammes ASCII : 8+
-Temps de lecture total : ~3h (lecture complète)
-Temps de consultation quotidienne : ~5-10 min
+
+## 🎨 Theming
+
+The app supports three theme modes:
+- **Light**: Bright, clean interface
+- **Dark**: Eye-friendly dark mode
+- **System**: Follows device settings
+
+### Using Theme in Components
+
+```typescript
+import { useTheme } from '@/theme';
+
+function MyComponent() {
+  const { colors, isDark, mode, setMode } = useTheme();
+  
+  return (
+    <View style={{ backgroundColor: colors.background.primary }}>
+      <Text style={{ color: colors.text.primary }}>Hello</Text>
+    </View>
+  );
+}
 ```
 
----
+## 🐛 Troubleshooting
 
-## 🔄 MAINTENANCE DE LA DOCUMENTATION
+### App Refreshes Data on Every Navigation
 
-### Quand mettre à jour ?
+The app uses refs to track loading state and prevent unnecessary reloads:
 
-- ✅ Ajout d'une nouvelle feature (mettre à jour Roadmap)
-- ✅ Changement de pattern architectural (mettre à jour Architecture)
-- ✅ Nouvelle règle de codage (mettre à jour Quick Reference)
-- ✅ Nouveau service (mettre à jour Services critiques)
+```typescript
+const hasLoadedRef = useRef(false);
 
-### Comment mettre à jour ?
+useEffect(() => {
+  if (!hasLoadedRef.current) {
+    hasLoadedRef.current = true;
+    loadData();
+  }
+}, []); // Empty deps
+```
 
-1. Modifier le fichier concerné
-2. Mettre à jour la date "Dernière mise à jour" en bas du fichier
-3. Si changement majeur : incrémenter la version (1.0 → 1.1)
+### Language Changes Not Persisting
 
----
+Ensure AsyncStorage has proper permissions. Clear app cache and restart:
 
-## 📞 SUPPORT
+```bash
+npx expo start --clear
+```
 
-### Questions sur l'architecture ?
-→ Consultez **KNOWIT_PROJECT_DOCUMENTATION.md** ou **KNOWIT_ARCHITECTURE_FLOW.md**
+### TypeScript Path Aliases Not Working
 
-### Questions sur un pattern de code ?
-→ Consultez **KNOWIT_QUICK_REFERENCE.md**
+Make sure both `tsconfig.json` and `babel.config.js` have matching path configurations.
 
-### Questions sur comment utiliser Claude ?
-→ Consultez **GUIDE_UTILISATION_CLAUDE.md**
+## 📄 License
 
-### Question non couverte par la documentation ?
-→ Posez-la à Claude directement, il a accès à toute cette documentation !
+MIT License - see LICENSE file for details.
 
----
+## 🤝 Contributing
 
-## 🎯 OBJECTIF FINAL
-
-Cette documentation vise à :
-
-1. **Réduire le temps d'onboarding** de 2 semaines à 2-3 jours
-2. **Garantir la cohérence du code** entre tous les développeurs
-3. **Maximiser l'efficacité** de Claude AI comme assistant de développement
-4. **Servir de référence** pour toutes les décisions architecturales
-5. **Faciliter la maintenance** à long terme (5+ ans)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ---
 
-## 📝 CHANGELOG
-
-### Version 1.0 (Janvier 2026)
-- ✨ Création initiale de la documentation complète
-- 📘 KNOWIT_PROJECT_DOCUMENTATION.md : Architecture et règles
-- ⚡ KNOWIT_QUICK_REFERENCE.md : Templates et patterns
-- 🗺️ KNOWIT_ARCHITECTURE_FLOW.md : Diagrammes et flux
-- 🤖 GUIDE_UTILISATION_CLAUDE.md : Guide d'utilisation IA
-- 📚 README.md : Index de navigation
-
----
-
-**Bienvenue dans le projet KnowIt ! 🎉**
-
-**Version** : 1.0  
-**Dernière mise à jour** : Janvier 2026  
-**Auteur** : KnowIt Team  
-**Licence** : Propriétaire
-
----
-
-**Prêt à commencer ? Choisissez votre parcours ci-dessus et c'est parti ! 🚀**
+Built with ❤️ using React Native and Expo

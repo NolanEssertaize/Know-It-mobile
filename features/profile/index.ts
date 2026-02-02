@@ -1,15 +1,9 @@
 /**
- * @file index.ts
- * @description Profile Feature - Centralized exports
+ * @file features/profile/index.ts
+ * @description Profile feature exports
  */
 
-// Hooks
-export { useProfile, type ProfileTab, type UserProfile, type UserPreferences } from './hooks/useProfile';
-
-// Components
-export { ProfileButton } from './components/ProfileButton';
-export { PasswordChangeModal } from './components/PasswordChangeModal';
-export { DeleteAccountModal } from './components/DeleteAccountModal';
-
-// Screens
 export { ProfileScreen } from './screens/ProfileScreen';
+export { LanguageSwitcher } from './components/LanguageSwitcher';
+export { useProfile } from './hooks/useProfile';
+export type { UserStats, ProfilePreferences } from './hooks/useProfile';

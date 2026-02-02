@@ -1,6 +1,7 @@
 /**
- * @file [topicId]/session.tsx
- * @description Route session d'enregistrement
+ * @file app/[topicId]/session.tsx
+ * @description Session recording route - exports SessionScreen
  */
 
-export { SessionScreen as default } from '@/features/session/screens/SessionScreen';
+import SessionScreen from '@/features/session/screens/SessionScreen';
+export default SessionScreen;

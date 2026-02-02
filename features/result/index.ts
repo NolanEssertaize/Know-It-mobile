@@ -1,5 +1,9 @@
-// Feature: Result
+/**
+ * @file features/result/index.ts
+ * @description Result feature exports
+ */
+
 export { ResultScreen } from './screens/ResultScreen';
-export { useResult } from './hooks/useResult';
 export { ScoreGauge } from './components/ScoreGauge';
-export { AnalysisSection } from './components/AnalysisSection';
+export { AnalysisCard } from './components/AnalysisCard';
+export { useResult } from './hooks/useResult';

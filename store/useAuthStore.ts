@@ -1,240 +1,225 @@
 /**
  * @file useAuthStore.ts
- * @description Authentication Store - Global auth state management
- * 
- * Requires API connection to be established before initialization.
- * Uses expo-secure-store for token storage.
+ * @description Auth store with secure token storage
  */
 
 import { create } from 'zustand';
-import { AuthService } from '@/shared/services';
-import { ApiException } from '@/shared/api';
-import type { UserRead, UserCreate, UserLogin, UserUpdate } from '@/shared/api';
+import * as SecureStore from 'expo-secure-store';
+import type { User, AuthTokens } from '@/types';
+import type { AuthState } from './types';
+
+// Storage keys
+const AUTH_TOKENS_KEY = 'knowit_auth_tokens';
+const USER_KEY = 'knowit_user';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TYPES
+// HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface AuthState {
-  user: UserRead | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  error: string | null;
-  isInitialized: boolean;
-}
+const saveToSecureStore = async (key: string, value: string): Promise<void> => {
+  try {
+    await SecureStore.setItemAsync(key, value);
+  } catch (error) {
+    console.error('[Auth] Error saving to secure store:', error);
+  }
+};
 
-interface AuthActions {
-  initialize: () => Promise<void>;
-  register: (data: UserCreate) => Promise<void>;
-  login: (data: UserLogin) => Promise<void>;
-  logout: () => Promise<void>;
-  updateProfile: (data: UserUpdate) => Promise<void>;
-  refreshUser: () => Promise<void>;
-  clearError: () => void;
-  setError: (error: string) => void;
-}
+const getFromSecureStore = async (key: string): Promise<string | null> => {
+  try {
+    return await SecureStore.getItemAsync(key);
+  } catch (error) {
+    console.error('[Auth] Error reading from secure store:', error);
+    return null;
+  }
+};
 
-type AuthStore = AuthState & AuthActions;
+const deleteFromSecureStore = async (key: string): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch (error) {
+    console.error('[Auth] Error deleting from secure store:', error);
+  }
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STORE
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
-  // State
+export const useAuthStore = create<AuthState>((set, get) => ({
+  // Initial state
   user: null,
-  isLoading: false,
+  tokens: null,
   isAuthenticated: false,
-  error: null,
   isInitialized: false,
+  isLoading: false,
+  error: null,
 
-  /**
-   * Initialize auth state from stored tokens
-   * Called after API connection is established
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // Initialize auth state from secure storage
+  // ─────────────────────────────────────────────────────────────────────────
   initialize: async () => {
-    if (get().isInitialized) return;
+    console.log('[Auth] Initializing...');
+    try {
+      const [tokensJson, userJson] = await Promise.all([
+        getFromSecureStore(AUTH_TOKENS_KEY),
+        getFromSecureStore(USER_KEY),
+      ]);
 
-    console.log('[AuthStore] Initializing...');
+      if (tokensJson && userJson) {
+        const tokens: AuthTokens = JSON.parse(tokensJson);
+        const user: User = JSON.parse(userJson);
+
+        // Check if token is expired
+        if (tokens.expiresAt > Date.now()) {
+          console.log('[Auth] Valid session found');
+          set({
+            tokens,
+            user,
+            isAuthenticated: true,
+            isInitialized: true,
+          });
+          return;
+        }
+        console.log('[Auth] Token expired, clearing...');
+      }
+
+      // No valid session
+      set({ isInitialized: true });
+    } catch (error) {
+      console.error('[Auth] Initialize error:', error);
+      set({ isInitialized: true });
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Login
+  // ─────────────────────────────────────────────────────────────────────────
+  login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
     try {
-      const user = await AuthService.initializeAuth();
-      
+      // TODO: Replace with actual API call
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mock successful login
+      const user: User = {
+        id: 'mock-user-id',
+        email,
+        name: email.split('@')[0],
+        createdAt: new Date().toISOString(),
+      };
+
+      const tokens: AuthTokens = {
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      };
+
+      // Save to secure storage
+      await Promise.all([
+        saveToSecureStore(AUTH_TOKENS_KEY, JSON.stringify(tokens)),
+        saveToSecureStore(USER_KEY, JSON.stringify(user)),
+      ]);
+
+      console.log('[Auth] Login successful');
       set({
         user,
-        isAuthenticated: user !== null,
-        isLoading: false,
-        isInitialized: true,
-      });
-
-      console.log('[AuthStore] Initialized, authenticated:', user !== null);
-    } catch (error) {
-      console.error('[AuthStore] Initialization failed:', error);
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        isInitialized: true,
-        error: error instanceof Error ? error.message : 'Initialization failed',
-      });
-    }
-  },
-
-  /**
-   * Register a new user
-   */
-  register: async (data: UserCreate) => {
-    console.log('[AuthStore] Registering...');
-    set({ isLoading: true, error: null });
-
-    try {
-      const response = await AuthService.register(data);
-      
-      set({
-        user: response.user,
+        tokens,
         isAuthenticated: true,
         isLoading: false,
       });
-
-      console.log('[AuthStore] Registration successful');
     } catch (error) {
-      const message = error instanceof ApiException
-        ? error.message
-        : 'Registration failed';
-      
-      console.error('[AuthStore] Registration failed:', message);
+      console.error('[Auth] Login error:', error);
       set({
+        error: 'Login failed. Please check your credentials.',
         isLoading: false,
-        error: message,
       });
-      
-      throw error;
     }
   },
 
-  /**
-   * Login with email and password
-   */
-  login: async (data: UserLogin) => {
-    console.log('[AuthStore] Logging in...');
+  // ─────────────────────────────────────────────────────────────────────────
+  // Register
+  // ─────────────────────────────────────────────────────────────────────────
+  register: async (email: string, password: string, name?: string) => {
     set({ isLoading: true, error: null });
 
     try {
-      const response = await AuthService.login(data);
-      
+      // TODO: Replace with actual API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mock successful registration
+      const user: User = {
+        id: 'mock-user-id',
+        email,
+        name: name || email.split('@')[0],
+        createdAt: new Date().toISOString(),
+      };
+
+      const tokens: AuthTokens = {
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      };
+
+      await Promise.all([
+        saveToSecureStore(AUTH_TOKENS_KEY, JSON.stringify(tokens)),
+        saveToSecureStore(USER_KEY, JSON.stringify(user)),
+      ]);
+
+      console.log('[Auth] Registration successful');
       set({
-        user: response.user,
+        user,
+        tokens,
         isAuthenticated: true,
         isLoading: false,
       });
-
-      console.log('[AuthStore] Login successful');
     } catch (error) {
-      const message = error instanceof ApiException
-        ? error.message
-        : 'Login failed';
-      
-      console.error('[AuthStore] Login failed:', message);
+      console.error('[Auth] Registration error:', error);
       set({
+        error: 'Registration failed. Please try again.',
         isLoading: false,
-        error: message,
       });
-      
-      throw error;
     }
   },
 
-  /**
-   * Logout current user
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // Logout
+  // ─────────────────────────────────────────────────────────────────────────
   logout: async () => {
-    console.log('[AuthStore] Logging out...');
     set({ isLoading: true });
 
     try {
-      await AuthService.logout();
-    } catch (error) {
-      console.warn('[AuthStore] Logout API failed, clearing local state');
-    }
+      await Promise.all([
+        deleteFromSecureStore(AUTH_TOKENS_KEY),
+        deleteFromSecureStore(USER_KEY),
+      ]);
 
-    set({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    });
-
-    console.log('[AuthStore] Logout complete');
-  },
-
-  /**
-   * Update user profile
-   */
-  updateProfile: async (data: UserUpdate) => {
-    console.log('[AuthStore] Updating profile...');
-    set({ isLoading: true, error: null });
-
-    try {
-      const user = await AuthService.updateProfile(data);
-      
+      console.log('[Auth] Logout successful');
       set({
-        user,
+        user: null,
+        tokens: null,
+        isAuthenticated: false,
         isLoading: false,
+        error: null,
       });
-
-      console.log('[AuthStore] Profile updated');
     } catch (error) {
-      const message = error instanceof ApiException
-        ? error.message
-        : 'Profile update failed';
-      
-      console.error('[AuthStore] Profile update failed:', message);
-      set({
-        isLoading: false,
-        error: message,
-      });
-      
-      throw error;
+      console.error('[Auth] Logout error:', error);
+      set({ isLoading: false });
     }
   },
 
-  /**
-   * Refresh user data from server
-   */
-  refreshUser: async () => {
-    if (!get().isAuthenticated) return;
-
-    console.log('[AuthStore] Refreshing user...');
-
-    try {
-      const user = await AuthService.getCurrentUser();
-      set({ user });
-      console.log('[AuthStore] User refreshed');
-    } catch (error) {
-      console.error('[AuthStore] User refresh failed:', error);
-      
-      if (error instanceof ApiException && error.code === 'AUTH_REQUIRED') {
-        await get().logout();
-      }
-    }
-  },
-
-  clearError: () => {
-    set({ error: null });
-  },
-
-  setError: (error: string) => {
-    set({ error });
-  },
+  // ─────────────────────────────────────────────────────────────────────────
+  // Clear error
+  // ─────────────────────────────────────────────────────────────────────────
+  clearError: () => set({ error: null }),
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SELECTORS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const selectUser = (state: AuthStore) => state.user;
-export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated;
-export const selectIsLoading = (state: AuthStore) => state.isLoading;
-export const selectAuthError = (state: AuthStore) => state.error;
-export const selectIsInitialized = (state: AuthStore) => state.isInitialized;
+export const selectUser = (state: AuthState) => state.user;
+export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
+export const selectIsAuthLoading = (state: AuthState) => state.isLoading;
+export const selectAuthError = (state: AuthState) => state.error;

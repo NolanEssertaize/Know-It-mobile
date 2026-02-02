@@ -1,505 +1,259 @@
 /**
- * @file useProfile.ts
- * @description Hook métier pour l'écran de profil
- *
- * Gère la logique de l'écran de profil avec intégration API complète:
- * - Données utilisateur depuis useAuthStore
- * - Mise à jour du profil via API
- * - Changement de mot de passe
- * - Déconnexion avec confirmation
- * - Suppression de compte avec double vérification
- * - Préférences utilisateur
+ * @file features/profile/hooks/useProfile.ts
+ * @description Hook for managing user profile, preferences, and statistics
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { AuthService } from '@/shared/services';
-import type { UserUpdate, PasswordChange } from '@/shared/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Alert } from 'react-native';
+import { router } from 'expo-router';
+import { useAuthStore } from '@/store';
+import { useStore } from '@/store';
+import { useTheme } from '@/theme';
+import { useLanguage } from '@/i18n';
+import type { ThemeMode } from '@/types';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-
-export type ProfileTab = 'profile' | 'preferences' | 'about';
-
-export interface UserProfile {
-    id: string;
-    email: string;
-    fullName: string;
-    pictureUrl: string | null;
-    createdAt: string;
-    lastLogin: string;
-    isGoogleLinked: boolean;
+interface UserStats {
+  totalTopics: number;
+  totalSessions: number;
+  averageScore: number;
+  currentStreak: number;
+  bestStreak: number;
+  totalStudyTime: number; // in minutes
 }
 
-export interface UserPreferences {
-    notifications: boolean;
-    darkMode: boolean;
-    language: 'fr' | 'en';
-    autoSave: boolean;
-    analyticsEnabled: boolean;
+interface ProfilePreferences {
+  themeMode: ThemeMode;
+  language: string;
+  notificationsEnabled: boolean;
+  soundEnabled: boolean;
+  hapticEnabled: boolean;
 }
 
-export interface PasswordChangeData {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-}
+export function useProfile() {
+  const { t } = useTranslation();
+  const { user, logout, isLoading: authLoading } = useAuthStore();
+  const { topics } = useStore();
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const hasLoadedRef = useRef(false);
+  
+  // Preferences state
+  const [preferences, setPreferences] = useState<ProfilePreferences>({
+    themeMode: themeMode,
+    language: currentLanguage,
+    notificationsEnabled: true,
+    soundEnabled: true,
+    hapticEnabled: true,
+  });
 
-export interface UseProfileReturn {
-    // Tab navigation
-    activeTab: ProfileTab;
-    setActiveTab: (tab: ProfileTab) => void;
+  // Calculate user statistics
+  const [stats, setStats] = useState<UserStats>({
+    totalTopics: 0,
+    totalSessions: 0,
+    averageScore: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    totalStudyTime: 0,
+  });
 
+  // Calculate stats from topics - only once
+  useEffect(() => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+
+    const calculateStats = () => {
+      let totalSessions = 0;
+      let totalScore = 0;
+      let scoredSessions = 0;
+      let totalTime = 0;
+
+      topics.forEach((topic) => {
+        totalSessions += topic.sessionCount;
+        topic.sessions?.forEach((session) => {
+          if (session.analysis?.score !== undefined) {
+            totalScore += session.analysis.score;
+            scoredSessions++;
+          }
+          // Estimate ~5 minutes per session
+          totalTime += 5;
+        });
+      });
+
+      // Simple streak calculation based on consecutive days
+      // In production, this would use actual session dates
+      const currentStreak = Math.min(totalSessions, 7); // Cap at 7 for demo
+      const bestStreak = Math.max(currentStreak, 10); // Demo value
+
+      setStats({
+        totalTopics: topics.length,
+        totalSessions,
+        averageScore: scoredSessions > 0 ? Math.round(totalScore / scoredSessions) : 0,
+        currentStreak,
+        bestStreak,
+        totalStudyTime: totalTime,
+      });
+    };
+
+    calculateStats();
+  }, [topics]);
+
+  // Sync preferences with actual values
+  useEffect(() => {
+    setPreferences((prev) => ({
+      ...prev,
+      themeMode,
+      language: currentLanguage,
+    }));
+  }, [themeMode, currentLanguage]);
+
+  /**
+   * Update a single preference
+   */
+  const updatePreference = useCallback(
+    <K extends keyof ProfilePreferences>(key: K, value: ProfilePreferences[K]) => {
+      setPreferences((prev) => ({ ...prev, [key]: value }));
+
+      // Apply changes immediately for theme and language
+      if (key === 'themeMode') {
+        setThemeMode(value as ThemeMode);
+      } else if (key === 'language') {
+        changeLanguage(value as string);
+      }
+    },
+    [setThemeMode, changeLanguage]
+  );
+
+  /**
+   * Save all preferences
+   */
+  const handleSavePreferences = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      // In production, this would sync to backend
+      // For now, theme and language are already persisted via their respective stores
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+      
+      Alert.alert(t('common.success'), t('profile.preferencesSaved'));
+    } catch (error) {
+      Alert.alert(t('errors.generic'), t('errors.saveFailed'));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [t]);
+
+  /**
+   * Handle user logout
+   */
+  const handleLogout = useCallback(() => {
+    Alert.alert(
+      t('profile.logoutConfirmTitle'),
+      t('profile.logoutConfirmMessage'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('profile.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await logout();
+              router.replace('/(auth)/login');
+            } catch (error) {
+              Alert.alert(t('errors.generic'), t('errors.logoutFailed'));
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [logout, t]);
+
+  /**
+   * Handle account deletion request
+   */
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      t('profile.deleteAccountTitle'),
+      t('profile.deleteAccountMessage'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('profile.deleteAccount'),
+          style: 'destructive',
+          onPress: () => {
+            // In production, this would call the API to delete the account
+            Alert.alert(
+              t('profile.deleteAccountRequestedTitle'),
+              t('profile.deleteAccountRequestedMessage')
+            );
+          },
+        },
+      ]
+    );
+  }, [t]);
+
+  /**
+   * Navigate to edit profile
+   */
+  const handleEditProfile = useCallback(() => {
+    // In production, this would navigate to an edit profile screen
+    Alert.alert(t('common.comingSoon'), t('profile.editProfileComingSoon'));
+  }, [t]);
+
+  /**
+   * Format study time for display
+   */
+  const formatStudyTime = useCallback(
+    (minutes: number): string => {
+      if (minutes < 60) {
+        return t('profile.minutesStudied', { count: minutes });
+      }
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes === 0) {
+        return t('profile.hoursStudied', { count: hours });
+      }
+      return t('profile.hoursMinutesStudied', { hours, minutes: remainingMinutes });
+    },
+    [t]
+  );
+
+  return {
     // User data
-    user: UserProfile | null;
-    isLoading: boolean;
-    error: string | null;
-
-    // Profile actions
-    fullName: string;
-    setFullName: (name: string) => void;
-    handleUpdateProfile: () => Promise<{ success: boolean; error?: string }>;
-
-    // Password change
-    passwordData: PasswordChangeData;
-    setCurrentPassword: (value: string) => void;
-    setNewPassword: (value: string) => void;
-    setConfirmPassword: (value: string) => void;
-    handleChangePassword: () => Promise<{ success: boolean; error?: string }>;
-    passwordErrors: Partial<PasswordChangeData>;
-    isPasswordModalVisible: boolean;
-    showPasswordModal: () => void;
-    hidePasswordModal: () => void;
-
+    user,
+    stats,
+    
     // Preferences
-    preferences: UserPreferences;
-    toggleNotifications: () => void;
-    toggleDarkMode: () => void;
-    toggleAutoSave: () => void;
-    toggleAnalytics: () => void;
-    setLanguage: (lang: 'fr' | 'en') => void;
-
-    // RGPD Actions
-    handleExportData: () => Promise<void>;
-    handleDeleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
-    isDeleteModalVisible: boolean;
-    showDeleteModal: () => void;
-    hideDeleteModal: () => void;
-
-    // Logout
-    handleLogout: () => Promise<{ success: boolean; error?: string }>;
-    isLogoutModalVisible: boolean;
-    showLogoutModal: () => void;
-    hideLogoutModal: () => void;
+    preferences,
+    updatePreference,
+    handleSavePreferences,
+    
+    // Language options
+    availableLanguages,
+    
+    // Actions
+    handleLogout,
+    handleDeleteAccount,
+    handleEditProfile,
+    
+    // Utilities
+    formatStudyTime,
+    
+    // Loading states
+    isLoading: isLoading || authLoading,
+    isSaving,
+  };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MOCK PREFERENCES (à remplacer par AsyncStorage/API plus tard)
-// ═══════════════════════════════════════════════════════════════════════════
-
-const DEFAULT_PREFERENCES: UserPreferences = {
-    notifications: true,
-    darkMode: true,
-    language: 'fr',
-    autoSave: true,
-    analyticsEnabled: false,
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HOOK
-// ═══════════════════════════════════════════════════════════════════════════
-
-export function useProfile(): UseProfileReturn {
-    // ─────────────────────────────────────────────────────────────────────────
-    // AUTH STORE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const authUser = useAuthStore((state) => state.user);
-    const authIsLoading = useAuthStore((state) => state.isLoading);
-    const authError = useAuthStore((state) => state.error);
-    const logout = useAuthStore((state) => state.logout);
-    const updateProfile = useAuthStore((state) => state.updateProfile);
-    const clearError = useAuthStore((state) => state.clearError);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // STATE
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const [activeTab, setActiveTab] = useState<ProfileTab>('profile');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Fullname editing
-    const [fullName, setFullName] = useState(authUser?.full_name || '');
-
-    // Password change
-    const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
-    const [passwordData, setPasswordData] = useState<PasswordChangeData>({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-    });
-    const [passwordErrors, setPasswordErrors] = useState<Partial<PasswordChangeData>>({});
-
-    // Preferences
-    const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
-
-    // Delete account modal
-    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-
-    // Logout modal
-    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // SYNC FULLNAME WITH AUTH USER
-    // ─────────────────────────────────────────────────────────────────────────
-
-    useEffect(() => {
-        if (authUser?.full_name) {
-            setFullName(authUser.full_name);
-        }
-    }, [authUser?.full_name]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // COMPUTED USER
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const user: UserProfile | null = useMemo(() => {
-        if (!authUser) return null;
-
-        return {
-            id: authUser.id,
-            email: authUser.email,
-            fullName: authUser.full_name,
-            pictureUrl: authUser.picture_url || null,
-            createdAt: authUser.created_at,
-            lastLogin: authUser.last_login || authUser.created_at,
-            isGoogleLinked: authUser.google_id !== null && authUser.google_id !== undefined,
-        };
-    }, [authUser]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // PASSWORD HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const setCurrentPassword = useCallback((value: string) => {
-        setPasswordData(prev => ({ ...prev, currentPassword: value }));
-        setPasswordErrors(prev => ({ ...prev, currentPassword: undefined }));
-    }, []);
-
-    const setNewPassword = useCallback((value: string) => {
-        setPasswordData(prev => ({ ...prev, newPassword: value }));
-        setPasswordErrors(prev => ({ ...prev, newPassword: undefined }));
-    }, []);
-
-    const setConfirmPassword = useCallback((value: string) => {
-        setPasswordData(prev => ({ ...prev, confirmPassword: value }));
-        setPasswordErrors(prev => ({ ...prev, confirmPassword: undefined }));
-    }, []);
-
-    const showPasswordModal = useCallback(() => {
-        setIsPasswordModalVisible(true);
-    }, []);
-
-    const hidePasswordModal = useCallback(() => {
-        setIsPasswordModalVisible(false);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setPasswordErrors({});
-    }, []);
-
-    const validatePassword = useCallback((): boolean => {
-        const errors: Partial<PasswordChangeData> = {};
-
-        if (!passwordData.currentPassword) {
-            errors.currentPassword = 'Mot de passe actuel requis';
-        }
-
-        if (!passwordData.newPassword) {
-            errors.newPassword = 'Nouveau mot de passe requis';
-        } else if (passwordData.newPassword.length < 8) {
-            errors.newPassword = 'Minimum 8 caractères';
-        } else if (!/[A-Z]/.test(passwordData.newPassword)) {
-            errors.newPassword = 'Au moins une majuscule requise';
-        } else if (!/[a-z]/.test(passwordData.newPassword)) {
-            errors.newPassword = 'Au moins une minuscule requise';
-        } else if (!/[0-9]/.test(passwordData.newPassword)) {
-            errors.newPassword = 'Au moins un chiffre requis';
-        }
-
-        if (!passwordData.confirmPassword) {
-            errors.confirmPassword = 'Confirmation requise';
-        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
-            errors.confirmPassword = 'Les mots de passe ne correspondent pas';
-        }
-
-        setPasswordErrors(errors);
-        return Object.keys(errors).length === 0;
-    }, [passwordData]);
-
-    const handleChangePassword = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-        if (!validatePassword()) {
-            return { success: false, error: 'Validation échouée' };
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const changeData: PasswordChange = {
-                current_password: passwordData.currentPassword,
-                new_password: passwordData.newPassword,
-            };
-
-            await AuthService.changePassword(changeData);
-            hidePasswordModal();
-
-            return { success: true };
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Erreur lors du changement de mot de passe';
-            setError(errorMessage);
-            return { success: false, error: errorMessage };
-        } finally {
-            setIsLoading(false);
-        }
-    }, [validatePassword, passwordData, hidePasswordModal]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // PREFERENCES HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const toggleNotifications = useCallback(() => {
-        setPreferences(prev => ({ ...prev, notifications: !prev.notifications }));
-    }, []);
-
-    const toggleDarkMode = useCallback(() => {
-        setPreferences(prev => ({ ...prev, darkMode: !prev.darkMode }));
-    }, []);
-
-    const toggleAutoSave = useCallback(() => {
-        setPreferences(prev => ({ ...prev, autoSave: !prev.autoSave }));
-    }, []);
-
-    const toggleAnalytics = useCallback(() => {
-        setPreferences(prev => ({ ...prev, analyticsEnabled: !prev.analyticsEnabled }));
-    }, []);
-
-    const setLanguage = useCallback((lang: 'fr' | 'en') => {
-        setPreferences(prev => ({ ...prev, language: lang }));
-    }, []);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // DELETE ACCOUNT MODAL HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const showDeleteModal = useCallback(() => {
-        setIsDeleteModalVisible(true);
-    }, []);
-
-    const hideDeleteModal = useCallback(() => {
-        setIsDeleteModalVisible(false);
-    }, []);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // LOGOUT MODAL HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const showLogoutModal = useCallback(() => {
-        setIsLogoutModalVisible(true);
-    }, []);
-
-    const hideLogoutModal = useCallback(() => {
-        setIsLogoutModalVisible(false);
-    }, []);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // PROFILE UPDATE HANDLER
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const handleUpdateProfile = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-        if (!fullName.trim()) {
-            return { success: false, error: 'Le nom ne peut pas être vide' };
-        }
-
-        if (fullName === authUser?.full_name) {
-            return { success: true }; // Aucune modification
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const updateData: UserUpdate = {
-                full_name: fullName.trim(),
-            };
-
-            await updateProfile(updateData);
-
-            return { success: true };
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la mise à jour du profil';
-            setError(errorMessage);
-            return { success: false, error: errorMessage };
-        } finally {
-            setIsLoading(false);
-        }
-    }, [fullName, authUser?.full_name, updateProfile]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RGPD / DATA HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const handleExportData = useCallback(async (): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            // TODO: Implémenter l'endpoint API d'export des données
-            // Pour l'instant, simulation
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // L'API devrait envoyer un email avec les données
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'export des données';
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    const handleDeleteAccount = useCallback(async (password: string): Promise<{ success: boolean; error?: string }> => {
-        if (!password) {
-            return { success: false, error: 'Mot de passe requis pour la suppression' };
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            // TODO: Implémenter l'endpoint API de suppression du compte
-            // L'API devrait vérifier le mot de passe avant suppression
-            // await api.delete('/api/v1/auth/me', { data: { password } });
-
-            // Simulation pour l'instant
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            hideDeleteModal();
-
-            // Déconnexion après suppression
-            await logout();
-
-            return { success: true };
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la suppression du compte';
-            setError(errorMessage);
-            return { success: false, error: errorMessage };
-        } finally {
-            setIsLoading(false);
-        }
-    }, [hideDeleteModal, logout]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // LOGOUT HANDLER
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const handleLogout = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            await logout();
-            hideLogoutModal();
-            return { success: true };
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la déconnexion';
-            setError(errorMessage);
-            return { success: false, error: errorMessage };
-        } finally {
-            setIsLoading(false);
-        }
-    }, [logout, hideLogoutModal]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RETURN
-    // ─────────────────────────────────────────────────────────────────────────
-
-    return useMemo(() => ({
-        // Tab navigation
-        activeTab,
-        setActiveTab,
-
-        // User data
-        user,
-        isLoading: isLoading || authIsLoading,
-        error: error || authError,
-
-        // Profile actions
-        fullName,
-        setFullName,
-        handleUpdateProfile,
-
-        // Password change
-        passwordData,
-        setCurrentPassword,
-        setNewPassword,
-        setConfirmPassword,
-        handleChangePassword,
-        passwordErrors,
-        isPasswordModalVisible,
-        showPasswordModal,
-        hidePasswordModal,
-
-        // Preferences
-        preferences,
-        toggleNotifications,
-        toggleDarkMode,
-        toggleAutoSave,
-        toggleAnalytics,
-        setLanguage,
-
-        // RGPD Actions
-        handleExportData,
-        handleDeleteAccount,
-        isDeleteModalVisible,
-        showDeleteModal,
-        hideDeleteModal,
-
-        // Logout
-        handleLogout,
-        isLogoutModalVisible,
-        showLogoutModal,
-        hideLogoutModal,
-    }), [
-        activeTab,
-        user,
-        isLoading,
-        authIsLoading,
-        error,
-        authError,
-        fullName,
-        handleUpdateProfile,
-        passwordData,
-        setCurrentPassword,
-        setNewPassword,
-        setConfirmPassword,
-        handleChangePassword,
-        passwordErrors,
-        isPasswordModalVisible,
-        showPasswordModal,
-        hidePasswordModal,
-        preferences,
-        toggleNotifications,
-        toggleDarkMode,
-        toggleAutoSave,
-        toggleAnalytics,
-        setLanguage,
-        handleExportData,
-        handleDeleteAccount,
-        isDeleteModalVisible,
-        showDeleteModal,
-        hideDeleteModal,
-        handleLogout,
-        isLogoutModalVisible,
-        showLogoutModal,
-        hideLogoutModal,
-    ]);
-}
+export type { UserStats, ProfilePreferences };

@@ -1,162 +1,147 @@
 /**
  * @file useResult.ts
- * @description Logic Controller pour l'écran de résultats
- * Utilise des noms d'icônes Material au lieu d'emojis
+ * @description Hook for result screen - displays analysis from a session
  */
 
-import { useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { AnalysisResult } from '@/types';
-import { GlassColors } from '@/theme';
+import { Share, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+import { useStore, selectCurrentTopic } from '@/store';
+import type { Session, Analysis } from '@/types';
 
-export interface ScoreData {
-    readonly value: number;
-    readonly label: string;
-    readonly color: string;
+interface UseResultReturn {
+  // Data
+  session: Session | null;
+  topic: ReturnType<typeof selectCurrentTopic>;
+  analysis: Analysis | null;
+  score: number;
+  isLoading: boolean;
+  showTranscription: boolean;
+
+  // Actions
+  toggleTranscription: () => void;
+  handleTryAgain: () => void;
+  handleBackToTopic: () => void;
+  handleShare: () => void;
+  handleGoHome: () => void;
 }
-
-export interface SummaryData {
-    readonly validCount: number;
-    readonly correctionsCount: number;
-    readonly missingCount: number;
-    readonly totalPoints: number;
-}
-
-export interface AnalysisSection {
-    readonly id: string;
-    readonly title: string;
-    /** Material Icon name */
-    readonly icon: string;
-    readonly items: readonly string[];
-    readonly color: string;
-    readonly glowColor: string;
-}
-
-export interface UseResultReturn {
-    // Data
-    readonly analysis: AnalysisResult;
-    readonly score: ScoreData;
-    readonly summary: SummaryData;
-    readonly sections: readonly AnalysisSection[];
-
-    // Methods
-    readonly handleClose: () => void;
-    readonly handleRetry: () => void;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function parseJsonParam<T>(param: string | string[] | undefined, fallback: T): T {
-    if (!param || Array.isArray(param)) return fallback;
-    try {
-        return JSON.parse(param);
-    } catch {
-        return fallback;
-    }
-}
-
-function calculateScore(analysis: AnalysisResult): ScoreData {
-    const total = analysis.valid.length + analysis.corrections.length + analysis.missing.length;
-    const value = total > 0 ? Math.round((analysis.valid.length / total) * 100) : 0;
-
-    if (value >= 70) {
-        return { value, label: 'Excellent !', color: GlassColors.semantic.success };
-    }
-    if (value >= 40) {
-        return { value, label: 'Bien, continuez !', color: GlassColors.semantic.warning };
-    }
-    return { value, label: 'À améliorer', color: GlassColors.semantic.error };
-}
-
-function calculateSummary(analysis: AnalysisResult): SummaryData {
-    return {
-        validCount: analysis.valid.length,
-        correctionsCount: analysis.corrections.length,
-        missingCount: analysis.missing.length,
-        totalPoints: analysis.valid.length + analysis.corrections.length + analysis.missing.length,
-    };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HOOK
-// ═══════════════════════════════════════════════════════════════════════════
 
 export function useResult(): UseResultReturn {
-    const params = useLocalSearchParams();
-    const router = useRouter();
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { topicId, sessionId } = useLocalSearchParams<{ topicId: string; sessionId: string }>();
 
-    // Parse params
-    const analysis = useMemo(
-        (): AnalysisResult => ({
-            valid: parseJsonParam(params.valid, []),
-            corrections: parseJsonParam(params.corrections, []),
-            missing: parseJsonParam(params.missing, []),
-        }),
-        [params.valid, params.corrections, params.missing]
-    );
+  // Store
+  const currentTopic = useStore(selectCurrentTopic);
+  const loadTopicDetail = useStore((state) => state.loadTopicDetail);
 
-    // Calculate score
-    const score = useMemo(() => calculateScore(analysis), [analysis]);
+  // Local state
+  const [isLoading, setIsLoading] = useState(true);
+  const [showTranscription, setShowTranscription] = useState(false);
 
-    // Calculate summary
-    const summary = useMemo(() => calculateSummary(analysis), [analysis]);
+  // Track if we've loaded
+  const hasLoadedRef = useRef(false);
 
-    // Build sections with Material Icon names (filter out empty ones)
-    const sections = useMemo(
-        (): readonly AnalysisSection[] => [
-            {
-                id: 'valid',
-                title: 'Points validés',
-                icon: 'check-circle',
-                items: analysis.valid,
-                color: GlassColors.semantic.success,
-                glowColor: GlassColors.semantic.successGlow,
-            },
-            {
-                id: 'corrections',
-                title: 'À corriger',
-                icon: 'error',
-                items: analysis.corrections,
-                color: GlassColors.semantic.warning,
-                glowColor: GlassColors.semantic.warningGlow,
-            },
-            {
-                id: 'missing',
-                title: 'Points manquants',
-                icon: 'cancel',
-                items: analysis.missing,
-                color: GlassColors.semantic.error,
-                glowColor: GlassColors.semantic.errorGlow,
-            },
-        ].filter(section => section.items.length > 0),
-        [analysis]
-    );
+  // Load topic if needed
+  useEffect(() => {
+    if (topicId && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      setIsLoading(true);
+      loadTopicDetail(topicId).finally(() => {
+        setIsLoading(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId]);
 
-    // Handlers
-    const handleClose = useCallback(() => {
-        router.back();
-        router.back(); // Retour à la liste des topics
-    }, [router]);
+  // Find the specific session
+  const session = useMemo(() => {
+    if (!currentTopic?.sessions || !sessionId) return null;
+    return currentTopic.sessions.find((s) => s.id === sessionId) || null;
+  }, [currentTopic?.sessions, sessionId]);
 
-    const handleRetry = useCallback(() => {
-        router.back(); // Retour à l'écran de session
-    }, [router]);
+  // Get analysis
+  const analysis = session?.analysis || null;
 
-    return {
-        // Data
-        analysis,
-        score,
-        summary,
-        sections,
+  // Calculate score
+  const score = useMemo(() => {
+    if (!analysis) return 0;
 
-        // Methods
-        handleClose,
-        handleRetry,
-    };
+    const validCount = analysis.valid?.length || 0;
+    const correctionsCount = analysis.corrections?.length || 0;
+    const missingCount = analysis.missing?.length || 0;
+    const total = validCount + correctionsCount + missingCount;
+
+    if (total === 0) return 0;
+    return Math.round((validCount / total) * 100);
+  }, [analysis]);
+
+  // Toggle transcription visibility
+  const toggleTranscription = useCallback(() => {
+    setShowTranscription((prev) => !prev);
+  }, []);
+
+  // Try again - go back to session
+  const handleTryAgain = useCallback(() => {
+    if (topicId) {
+      router.replace(`/${topicId}/session`);
+    }
+  }, [router, topicId]);
+
+  // Back to topic detail
+  const handleBackToTopic = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  // Go to home
+  const handleGoHome = useCallback(() => {
+    router.replace('/');
+  }, [router]);
+
+  // Share results
+  const handleShare = useCallback(async () => {
+    if (!session || !analysis || !currentTopic) return;
+
+    const validCount = analysis.valid?.length || 0;
+    const correctionsCount = analysis.corrections?.length || 0;
+    const missingCount = analysis.missing?.length || 0;
+
+    const message = t('result.share.message', {
+      topic: currentTopic.title,
+      score,
+      valid: validCount,
+      corrections: correctionsCount,
+      missing: missingCount,
+    });
+
+    try {
+      await Share.share({
+        message,
+        title: t('result.share.title'),
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message !== 'User did not share') {
+        Alert.alert(t('common.error'), t('result.errors.shareFailed'));
+      }
+    }
+  }, [session, analysis, currentTopic, score, t]);
+
+  return {
+    // Data
+    session,
+    topic: currentTopic,
+    analysis,
+    score,
+    isLoading,
+    showTranscription,
+
+    // Actions
+    toggleTranscription,
+    handleTryAgain,
+    handleBackToTopic,
+    handleShare,
+    handleGoHome,
+  };
 }

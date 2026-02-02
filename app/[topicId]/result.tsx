@@ -1,6 +1,7 @@
 /**
- * @file [topicId]/result.tsx
- * @description Route résultats d'analyse
+ * @file app/[topicId]/result.tsx
+ * @description Result route - exports ResultScreen
  */
 
-export { ResultScreen as default } from '@/features/result/screens/ResultScreen';
+import ResultScreen from '@/features/result/screens/ResultScreen';
+export default ResultScreen;

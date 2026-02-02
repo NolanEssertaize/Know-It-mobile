@@ -1,16 +1,10 @@
 /**
- * @file index.ts
- * @description Auth Feature - Centralized exports
+ * @file features/auth/index.ts
+ * @description Auth feature exports
  */
 
-// Hooks
-export { useAuth } from './hooks/useAuth';
-export { useProtectedRoute } from './hooks/useProtectedRoute';
-
-// Components
-export { GlassInput, type GlassInputProps } from './components/GlassInput';
-export { AuthLayout, type AuthLayoutProps } from './components/AuthLayout';
-
-// Screens
 export { LoginScreen } from './screens/LoginScreen';
 export { RegisterScreen } from './screens/RegisterScreen';
+export { useLogin } from './hooks/useLogin';
+export { useRegister } from './hooks/useRegister';
+export { useProtectedRoute } from './hooks/useProtectedRoute';

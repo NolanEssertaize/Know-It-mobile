@@ -1,154 +1,101 @@
 /**
  * @file dateUtils.ts
- * @description Utilitaires de formatage de dates
- *
- * FIXED: Now properly calculates calendar days (not raw time difference)
- * - "Aujourd'hui" = same calendar day
- * - "Hier" = previous calendar day
- * - Otherwise shows date
+ * @description Date formatting utilities with i18n support
  */
 
+import i18n from '@/i18n';
+
 /**
- * Get the start of day (midnight) for a date
+ * Check if a date is today
  */
-function startOfDay(date: Date): Date {
-    const result = new Date(date);
-    result.setHours(0, 0, 0, 0);
-    return result;
+export function isToday(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
 }
 
 /**
- * Calculate the difference in calendar days between two dates
- * This properly handles timezone and gives correct "Today" vs "Yesterday"
+ * Check if a date is yesterday
  */
-function diffInCalendarDays(dateLeft: Date, dateRight: Date): number {
-    const startOfDayLeft = startOfDay(dateLeft);
-    const startOfDayRight = startOfDay(dateRight);
-
-    const diffMs = startOfDayLeft.getTime() - startOfDayRight.getTime();
-    return Math.round(diffMs / (1000 * 60 * 60 * 24));
+export function isYesterday(date: Date): boolean {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  );
 }
 
 /**
- * Formate une date ISO en format français complet
+ * Get days between two dates
  */
-export function formatDateFull(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+export function getDaysBetween(date1: Date, date2: Date): number {
+  const diffTime = Math.abs(date2.getTime() - date1.getTime());
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
 /**
- * Formate une date ISO en format relatif (Aujourd'hui, Hier, ou date)
- * FIXED: Now uses calendar days, not raw time difference
- */
-export function formatDateRelative(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-
-    // Calculate difference in calendar days (not raw time)
-    const diffDays = diffInCalendarDays(now, date);
-
-    if (diffDays === 0) {
-        return "Aujourd'hui";
-    }
-    if (diffDays === 1) {
-        return 'Hier';
-    }
-    if (diffDays < 7) {
-        return `Il y a ${diffDays} jours`;
-    }
-    if (diffDays < 30) {
-        const weeks = Math.floor(diffDays / 7);
-        return `Il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`;
-    }
-
-    // For older dates, show day + month
-    return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-    });
-}
-
-/**
- * Formate une date ISO pour l'affichage dans les sessions
- * Shows: "Aujourd'hui à HH:MM", "Hier", or "DD mois"
- */
-export function formatSessionDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-
-    // Calculate difference in calendar days
-    const diffDays = diffInCalendarDays(now, date);
-
-    if (diffDays === 0) {
-        // Today - show time
-        return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        })}`;
-    }
-    if (diffDays === 1) {
-        // Yesterday - show "Hier à HH:MM"
-        return `Hier à ${date.toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        })}`;
-    }
-    if (diffDays < 7) {
-        // This week - show day name
-        const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
-        return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}`;
-    }
-
-    // Older - show full date
-    return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-    });
-}
-
-/**
- * Formate une date ISO en format court sans heure
- */
-export function formatDateShort(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'short',
-    });
-}
-
-/**
- * Formate une date pour l'historique des sessions (avec plus de détails)
- * Shows: "Aujourd'hui à HH:MM", "Hier à HH:MM", "DD mois à HH:MM"
+ * Format a date for session history display
+ * Returns "Today", "Yesterday", or "X days ago"
  */
 export function formatSessionHistoryDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
+  const date = new Date(dateString);
+  const t = i18n.t.bind(i18n);
 
-    const diffDays = diffInCalendarDays(now, date);
-    const timeStr = date.toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+  if (isToday(date)) {
+    return t('dates.today');
+  }
 
-    if (diffDays === 0) {
-        return `Aujourd'hui à ${timeStr}`;
-    }
-    if (diffDays === 1) {
-        return `Hier à ${timeStr}`;
-    }
+  if (isYesterday(date)) {
+    return t('dates.yesterday');
+  }
 
-    // Show date with time
-    const dateStr = date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-    });
-    return `${dateStr} à ${timeStr}`;
+  const daysAgo = getDaysBetween(date, new Date());
+  return t('dates.daysAgo', { count: daysAgo });
+}
+
+/**
+ * Format a date as relative time (short format)
+ * e.g., "2h ago", "3d ago"
+ */
+export function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 7) return `${days}d`;
+  
+  return date.toLocaleDateString();
+}
+
+/**
+ * Format date for display
+ */
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(i18n.language, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+  });
+}
+
+/**
+ * Format time duration in seconds to mm:ss
+ */
+export function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

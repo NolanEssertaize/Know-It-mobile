@@ -1,6 +1,7 @@
 /**
- * @file index.tsx
- * @description Route principale - Liste des sujets
+ * @file app/index.tsx
+ * @description Home route - exports TopicsListScreen
  */
 
-export { TopicsListScreen as default } from '@/features/topics/screens/TopicsListScreen';
+import TopicsListScreen from '@/features/topics/screens/TopicsListScreen';
+export default TopicsListScreen;

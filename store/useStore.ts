@@ -1,374 +1,234 @@
 /**
  * @file useStore.ts
- * @description Topics Store - Global state management with Zustand + API integration
- *
- * FIXED: loadTopics now fetches topic details (with sessions) for all topics
- * so sessions are visible from the main topic list.
- *
- * Manages:
- * - Topics list
- * - Topic CRUD operations via API
- * - Sessions within topics
- * - Loading and error states
+ * @description Main Zustand store for topics and sessions
  */
 
 import { create } from 'zustand';
-import { TopicsService, LLMService } from '@/shared/services';
-import { ApiException } from '@/shared/api';
-import type {
-    TopicRead,
-    TopicDetail,
-    SessionRead,
-    AnalysisResult,
-} from '@/shared/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuidv4 } from 'uuid';
+import type { Topic, Session } from '@/types';
+import type { StoreState, Selector } from './types';
+
+// Storage key
+const TOPICS_KEY = '@knowit/topics';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TYPES (Frontend-compatible interfaces)
+// STORE
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Topic with sessions (for local state)
- */
-export interface Topic {
-    readonly id: string;
-    readonly title: string;
-    readonly createdAt: string;
-    readonly sessions: Session[];
-}
+export const useStore = create<StoreState>((set, get) => ({
+  // Initial state
+  topics: [],
+  currentTopic: null,
+  isLoading: false,
+  error: null,
 
-/**
- * Session interface (compatible with existing frontend)
- */
-export interface Session {
-    readonly id: string;
-    readonly date: string;
-    readonly audioUri?: string;
-    readonly transcription?: string;
-    readonly analysis: AnalysisResult;
-}
+  // ─────────────────────────────────────────────────────────────────────────
+  // Load topics from storage
+  // ─────────────────────────────────────────────────────────────────────────
+  loadTopics: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      console.log('[useStore] Loading topics from storage...');
+      const stored = await AsyncStorage.getItem(TOPICS_KEY);
+      const topics: Topic[] = stored ? JSON.parse(stored) : [];
+      console.log('[useStore] Loaded topics:', topics.length);
+      set({ topics, isLoading: false });
+    } catch (error) {
+      console.error('[useStore] Error loading topics:', error);
+      set({ error: 'Failed to load topics', isLoading: false });
+    }
+  },
 
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Convert API TopicRead to frontend Topic (without sessions)
- */
-function mapTopicReadToTopic(topic: TopicRead): Topic {
-    return {
-        id: topic.id,
-        title: topic.title,
-        createdAt: topic.created_at,
-        sessions: [],
+  // ─────────────────────────────────────────────────────────────────────────
+  // Add a new topic
+  // ─────────────────────────────────────────────────────────────────────────
+  addTopic: async (title: string, category?: string) => {
+    const newTopic: Topic = {
+      id: uuidv4(),
+      title: title.trim(),
+      category: category || 'other',
+      sessions: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-}
 
-/**
- * Convert API TopicDetail to frontend Topic (with sessions)
- */
-function mapTopicDetailToTopic(topic: TopicDetail): Topic {
-    return {
-        id: topic.id,
-        title: topic.title,
-        createdAt: topic.created_at,
-        sessions: topic.sessions?.map(mapSessionReadToSession) || [],
-    };
-}
+    const topics = [...get().topics, newTopic];
+    set({ topics });
 
-/**
- * Convert API SessionRead to frontend Session
- */
-function mapSessionReadToSession(session: SessionRead): Session {
-    return {
-        id: session.id,
-        date: session.date,
-        audioUri: session.audio_uri || undefined,
-        transcription: session.transcription || undefined,
-        analysis: session.analysis,
-    };
-}
+    try {
+      await AsyncStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+      console.log('[useStore] Topic added:', newTopic.id);
+    } catch (error) {
+      console.error('[useStore] Error saving topic:', error);
+    }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STORE INTERFACE
-// ═══════════════════════════════════════════════════════════════════════════
+    return newTopic;
+  },
 
-interface TopicsState {
-    /** List of all topics */
-    topics: Topic[];
-    /** Currently selected topic (with full details) */
-    currentTopic: Topic | null;
-    /** Loading state */
-    isLoading: boolean;
-    /** Error message */
-    error: string | null;
-}
+  // ─────────────────────────────────────────────────────────────────────────
+  // Update topic title
+  // ─────────────────────────────────────────────────────────────────────────
+  updateTopicTitle: async (topicId: string, title: string) => {
+    const topics = get().topics.map((topic) =>
+      topic.id === topicId
+        ? { ...topic, title: title.trim(), updatedAt: new Date().toISOString() }
+        : topic
+    );
+    set({ topics });
 
-interface TopicsActions {
-    /** Fetch all topics from API (with sessions) */
-    loadTopics: () => Promise<void>;
-    /** Fetch a single topic with sessions */
-    loadTopicDetail: (topicId: string) => Promise<Topic | null>;
-    /** Create a new topic */
-    addTopic: (title: string) => Promise<Topic | null>;
-    /** Update topic title */
-    updateTopicTitle: (topicId: string, newTitle: string) => Promise<void>;
-    /** Delete a topic */
-    deleteTopic: (topicId: string) => Promise<void>;
-    /** Add a session to a topic (after recording) */
-    addSessionToTopic: (topicId: string, session: Session) => void;
-    /** Get topic by ID (from local state) */
-    getTopicById: (topicId: string) => Topic | undefined;
-    /** Set current topic */
-    setCurrentTopic: (topic: Topic | null) => void;
-    /** Clear error */
-    clearError: () => void;
-}
+    // Update currentTopic if it's the one being edited
+    const currentTopic = get().currentTopic;
+    if (currentTopic?.id === topicId) {
+      set({ currentTopic: { ...currentTopic, title: title.trim() } });
+    }
 
-type Store = TopicsState & TopicsActions;
+    try {
+      await AsyncStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+      console.log('[useStore] Topic updated:', topicId);
+    } catch (error) {
+      console.error('[useStore] Error updating topic:', error);
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Delete a topic
+  // ─────────────────────────────────────────────────────────────────────────
+  deleteTopic: async (topicId: string) => {
+    const topics = get().topics.filter((topic) => topic.id !== topicId);
+    set({ topics, currentTopic: null });
+
+    try {
+      await AsyncStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+      console.log('[useStore] Topic deleted:', topicId);
+    } catch (error) {
+      console.error('[useStore] Error deleting topic:', error);
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Load topic detail
+  // ─────────────────────────────────────────────────────────────────────────
+  loadTopicDetail: async (topicId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const topic = get().topics.find((t) => t.id === topicId) || null;
+      set({ currentTopic: topic, isLoading: false });
+      console.log('[useStore] Loaded topic detail:', topicId);
+      return topic;
+    } catch (error) {
+      console.error('[useStore] Error loading topic detail:', error);
+      set({ error: 'Failed to load topic', isLoading: false });
+      return null;
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Set current topic directly
+  // ─────────────────────────────────────────────────────────────────────────
+  setCurrentTopic: (topic: Topic | null) => {
+    set({ currentTopic: topic });
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Add a session to a topic
+  // ─────────────────────────────────────────────────────────────────────────
+  addSession: async (topicId: string, session: Session) => {
+    const topics = get().topics.map((topic) =>
+      topic.id === topicId
+        ? {
+            ...topic,
+            sessions: [session, ...topic.sessions],
+            updatedAt: new Date().toISOString(),
+          }
+        : topic
+    );
+    set({ topics });
+
+    // Update currentTopic if it matches
+    const currentTopic = get().currentTopic;
+    if (currentTopic?.id === topicId) {
+      set({
+        currentTopic: {
+          ...currentTopic,
+          sessions: [session, ...currentTopic.sessions],
+        },
+      });
+    }
+
+    try {
+      await AsyncStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+      console.log('[useStore] Session added to topic:', topicId);
+    } catch (error) {
+      console.error('[useStore] Error saving session:', error);
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Delete a session
+  // ─────────────────────────────────────────────────────────────────────────
+  deleteSession: async (topicId: string, sessionId: string) => {
+    const topics = get().topics.map((topic) =>
+      topic.id === topicId
+        ? {
+            ...topic,
+            sessions: topic.sessions.filter((s) => s.id !== sessionId),
+            updatedAt: new Date().toISOString(),
+          }
+        : topic
+    );
+    set({ topics });
+
+    // Update currentTopic if it matches
+    const currentTopic = get().currentTopic;
+    if (currentTopic?.id === topicId) {
+      set({
+        currentTopic: {
+          ...currentTopic,
+          sessions: currentTopic.sessions.filter((s) => s.id !== sessionId),
+        },
+      });
+    }
+
+    try {
+      await AsyncStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+      console.log('[useStore] Session deleted:', sessionId);
+    } catch (error) {
+      console.error('[useStore] Error deleting session:', error);
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Utility actions
+  // ─────────────────────────────────────────────────────────────────────────
+  clearError: () => set({ error: null }),
+
+  reset: async () => {
+    set({
+      topics: [],
+      currentTopic: null,
+      isLoading: false,
+      error: null,
+    });
+    try {
+      await AsyncStorage.removeItem(TOPICS_KEY);
+    } catch (error) {
+      console.error('[useStore] Error resetting store:', error);
+    }
+  },
+}));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SELECTORS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const selectTopics = (state: Store) => state.topics;
-export const selectCurrentTopic = (state: Store) => state.currentTopic;
-export const selectIsLoading = (state: Store) => state.isLoading;
-export const selectError = (state: Store) => state.error;
+export const selectTopics: Selector<Topic[]> = (state) => state.topics;
+export const selectCurrentTopic: Selector<Topic | null> = (state) => state.currentTopic;
+export const selectIsLoading: Selector<boolean> = (state) => state.isLoading;
+export const selectError: Selector<string | null> = (state) => state.error;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STORE IMPLEMENTATION
-// ═══════════════════════════════════════════════════════════════════════════
+export const selectTopicById = (id: string): Selector<Topic | undefined> => (state) =>
+  state.topics.find((t) => t.id === id);
 
-export const useStore = create<Store>((set, get) => ({
-    // ─────────────────────────────────────────────────────────────────────────
-    // STATE
-    // ─────────────────────────────────────────────────────────────────────────
-    topics: [],
-    currentTopic: null,
-    isLoading: false,
-    error: null,
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ACTIONS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Load all topics from API WITH sessions
-     * FIXED: Now fetches topic details (with sessions) for each topic
-     */
-    loadTopics: async () => {
-        console.log('[Store] Loading topics with sessions...');
-        set({ isLoading: true, error: null });
-
-        try {
-            // First, get the list of topics
-            const response = await TopicsService.getTopics();
-            console.log(`[Store] Got ${response.topics.length} topics, fetching details...`);
-
-            // Then, fetch details (with sessions) for each topic in parallel
-            const topicsWithSessions = await Promise.all(
-                response.topics.map(async (topicRead) => {
-                    try {
-                        const detail = await TopicsService.getTopic(topicRead.id);
-                        return mapTopicDetailToTopic(detail);
-                    } catch (error) {
-                        // If fetching details fails, fallback to topic without sessions
-                        console.warn(`[Store] Failed to load details for topic ${topicRead.id}:`, error);
-                        return mapTopicReadToTopic(topicRead);
-                    }
-                })
-            );
-
-            set({
-                topics: topicsWithSessions,
-                isLoading: false,
-            });
-
-            const totalSessions = topicsWithSessions.reduce((acc, t) => acc + t.sessions.length, 0);
-            console.log(`[Store] Loaded ${topicsWithSessions.length} topics with ${totalSessions} total sessions`);
-        } catch (error) {
-            const message = error instanceof ApiException
-                ? error.message
-                : 'Failed to load topics';
-
-            console.error('[Store] Failed to load topics:', message);
-            set({
-                isLoading: false,
-                error: message,
-            });
-        }
-    },
-
-    /**
-     * Load topic detail with sessions
-     */
-    loadTopicDetail: async (topicId: string) => {
-        console.log(`[Store] Loading topic detail: ${topicId}`);
-        set({ isLoading: true, error: null });
-
-        try {
-            const topicDetail = await TopicsService.getTopic(topicId);
-            const topic = mapTopicDetailToTopic(topicDetail);
-
-            // Update current topic
-            set({
-                currentTopic: topic,
-                isLoading: false,
-            });
-
-            // Also update in topics list if present
-            set((state) => ({
-                topics: state.topics.map((t) =>
-                    t.id === topicId ? topic : t
-                ),
-            }));
-
-            console.log(`[Store] Loaded topic with ${topic.sessions.length} sessions`);
-            return topic;
-        } catch (error) {
-            const message = error instanceof ApiException
-                ? error.message
-                : 'Failed to load topic';
-
-            console.error('[Store] Failed to load topic:', message);
-            set({
-                isLoading: false,
-                error: message,
-            });
-            return null;
-        }
-    },
-
-    /**
-     * Create a new topic via API
-     */
-    addTopic: async (title: string) => {
-        console.log(`[Store] Creating topic: "${title}"`);
-        set({ isLoading: true, error: null });
-
-        try {
-            const created = await TopicsService.createTopic({ title: title.trim() });
-            const newTopic = mapTopicReadToTopic(created);
-
-            set((state) => ({
-                topics: [...state.topics, newTopic],
-                isLoading: false,
-            }));
-
-            console.log(`[Store] Topic created: ${newTopic.id}`);
-            return newTopic;
-        } catch (error) {
-            const message = error instanceof ApiException
-                ? error.message
-                : 'Failed to create topic';
-
-            console.error('[Store] Failed to create topic:', message);
-            set({
-                isLoading: false,
-                error: message,
-            });
-            return null;
-        }
-    },
-
-    /**
-     * Update topic title via API
-     */
-    updateTopicTitle: async (topicId: string, newTitle: string) => {
-        console.log(`[Store] Updating topic ${topicId} title to: "${newTitle}"`);
-        set({ error: null });
-
-        try {
-            const updated = await TopicsService.updateTopic(topicId, {
-                title: newTitle.trim(),
-            });
-
-            set((state) => ({
-                topics: state.topics.map((t) =>
-                    t.id === topicId
-                        ? { ...t, title: updated.title }
-                        : t
-                ),
-                currentTopic: state.currentTopic?.id === topicId
-                    ? { ...state.currentTopic, title: updated.title }
-                    : state.currentTopic,
-            }));
-
-            console.log('[Store] Topic title updated');
-        } catch (error) {
-            const message = error instanceof ApiException
-                ? error.message
-                : 'Failed to update topic';
-
-            console.error('[Store] Failed to update topic:', message);
-            set({ error: message });
-        }
-    },
-
-    /**
-     * Delete a topic via API
-     */
-    deleteTopic: async (topicId: string) => {
-        console.log(`[Store] Deleting topic: ${topicId}`);
-        set({ error: null });
-
-        try {
-            await TopicsService.deleteTopic(topicId);
-
-            set((state) => ({
-                topics: state.topics.filter((t) => t.id !== topicId),
-                currentTopic: state.currentTopic?.id === topicId
-                    ? null
-                    : state.currentTopic,
-            }));
-
-            console.log('[Store] Topic deleted');
-        } catch (error) {
-            const message = error instanceof ApiException
-                ? error.message
-                : 'Failed to delete topic';
-
-            console.error('[Store] Failed to delete topic:', message);
-            set({ error: message });
-        }
-    },
-
-    /**
-     * Add a session to a topic (called after recording)
-     */
-    addSessionToTopic: (topicId: string, session: Session) => {
-        console.log(`[Store] Adding session to topic ${topicId}`);
-
-        set((state) => ({
-            topics: state.topics.map((t) =>
-                t.id === topicId
-                    ? { ...t, sessions: [...t.sessions, session] }
-                    : t
-            ),
-            currentTopic: state.currentTopic?.id === topicId
-                ? { ...state.currentTopic, sessions: [...state.currentTopic.sessions, session] }
-                : state.currentTopic,
-        }));
-    },
-
-    /**
-     * Get topic by ID from local state
-     */
-    getTopicById: (topicId: string) => {
-        return get().topics.find((t) => t.id === topicId);
-    },
-
-    /**
-     * Set current topic
-     */
-    setCurrentTopic: (topic: Topic | null) => {
-        set({ currentTopic: topic });
-    },
-
-    /**
-     * Clear error
-     */
-    clearError: () => {
-        set({ error: null });
-    },
-}));
+export const selectTotalSessions: Selector<number> = (state) =>
+  state.topics.reduce((acc, topic) => acc + topic.sessions.length, 0);

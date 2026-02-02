@@ -1,406 +1,414 @@
 /**
- * @file ResultScreen.tsx
- * @description Écran de résultats d'analyse - Theme Aware
- *
- * FIXED: All colors now use useTheme() hook
+ * @file features/result/screens/ResultScreen.tsx
+ * @description Session result screen displaying score and analysis
  */
 
-import React, { memo, useMemo } from 'react';
+import React from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    Pressable,
-    StyleSheet,
-    Platform,
-    ActivityIndicator,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-
-import { GlassView } from '@/shared/components';
-import { useTheme, Spacing, BorderRadius } from '@/theme';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
+import { useTheme, Spacing, BorderRadius, Typography } from '@/theme';
 import { useResult } from '../hooks/useResult';
 import { ScoreGauge } from '../components/ScoreGauge';
-import { AnalysisSection } from '../components/AnalysisSection';
+import { AnalysisCard } from '../components/AnalysisCard';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STAT BADGE COMPONENT - Theme Aware
-// ═══════════════════════════════════════════════════════════════════════════
+export function ResultScreen() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const {
+    session,
+    topic,
+    analysis,
+    score,
+    isLoading,
+    showTranscription,
+    toggleTranscription,
+    handleTryAgain,
+    handleBackToTopic,
+    handleShare,
+    handleGoHome,
+  } = useResult();
 
-interface StatBadgeProps {
-    icon: keyof typeof MaterialIcons.glyphMap;
-    count: number;
-    label: string;
-}
-
-const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps) {
-    const { colors } = useTheme();
-    
+  // Loading state
+  if (isLoading) {
     return (
-        <View style={styles.statBadge}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                <MaterialIcons name={icon} size={24} color={colors.text.primary} />
-            </View>
-            <Text style={[styles.statCount, { color: colors.text.primary }]}>{count}</Text>
-            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{label}</Text>
+      <ScreenWrapper>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+            {t('result.loading')}
+          </Text>
         </View>
+      </ScreenWrapper>
     );
-});
+  }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
+  // No session found
+  if (!session || !analysis) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color={colors.text.tertiary} />
+          <Text style={[styles.errorTitle, { color: colors.text.primary }]}>
+            {t('result.notFound')}
+          </Text>
+          <Text style={[styles.errorMessage, { color: colors.text.secondary }]}>
+            {t('result.notFoundMessage')}
+          </Text>
+          <GlassButton
+            title={t('common.goBack')}
+            onPress={handleGoHome}
+            variant="primary"
+            style={styles.errorButton}
+          />
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
-function ResultScreenComponent(): React.JSX.Element {
-    const insets = useSafeAreaInsets();
-    const { colors, isDark } = useTheme();
-    const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
+  return (
+    <ScreenWrapper>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={handleBackToTopic}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]} numberOfLines={1}>
+          {topic?.title || t('result.title')}
+        </Text>
+        <TouchableOpacity
+          onPress={handleShare}
+          style={styles.shareButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="share-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-    // Theme-aware sections
-    const themedSections = useMemo(() => {
-        return sections.map(section => ({
-            ...section,
-            color: colors.text.primary,
-            glowColor: undefined,
-        }));
-    }, [sections, colors.text.primary]);
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        {/* Score Section */}
+        <GlassView variant="elevated" padding="xl" radius="xl" style={styles.scoreCard}>
+          <Text style={[styles.resultLabel, { color: colors.text.secondary }]}>
+            {t('result.yourScore')}
+          </Text>
+          <View style={styles.gaugeContainer}>
+            <ScoreGauge score={score} size={200} strokeWidth={14} />
+          </View>
+        </GlassView>
 
-    if (isLoading) {
-        return (
-            <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
-                <ActivityIndicator size="large" color={colors.text.primary} />
-                <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                    Chargement des résultats...
+        {/* Quick Stats */}
+        <View style={styles.statsRow}>
+          <GlassView variant="subtle" padding="md" radius="lg" style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.success + '20' }]}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text.primary }]}>
+              {analysis.valid?.length || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+              {t('result.valid')}
+            </Text>
+          </GlassView>
+
+          <GlassView variant="subtle" padding="md" radius="lg" style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.warning + '20' }]}>
+              <Ionicons name="pencil" size={20} color={colors.warning} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text.primary }]}>
+              {analysis.corrections?.length || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+              {t('result.corrections')}
+            </Text>
+          </GlassView>
+
+          <GlassView variant="subtle" padding="md" radius="lg" style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.error + '20' }]}>
+              <Ionicons name="help-circle" size={20} color={colors.error} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text.primary }]}>
+              {analysis.missing?.length || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+              {t('result.missing')}
+            </Text>
+          </GlassView>
+        </View>
+
+        {/* Analysis Section */}
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          {t('result.detailedAnalysis')}
+        </Text>
+
+        {analysis.valid && analysis.valid.length > 0 && (
+          <AnalysisCard
+            type="valid"
+            title={t('result.validPoints')}
+            items={analysis.valid}
+          />
+        )}
+
+        {analysis.corrections && analysis.corrections.length > 0 && (
+          <AnalysisCard
+            type="corrections"
+            title={t('result.correctionsNeeded')}
+            items={analysis.corrections}
+          />
+        )}
+
+        {analysis.missing && analysis.missing.length > 0 && (
+          <AnalysisCard
+            type="missing"
+            title={t('result.missingPoints')}
+            items={analysis.missing}
+          />
+        )}
+
+        {/* Transcription Toggle */}
+        {session.transcription && (
+          <TouchableOpacity
+            onPress={toggleTranscription}
+            activeOpacity={0.7}
+            style={styles.transcriptionToggle}
+          >
+            <GlassView variant="subtle" padding="md" radius="lg" style={styles.transcriptionHeader}>
+              <View style={styles.transcriptionTitleRow}>
+                <Ionicons name="document-text-outline" size={20} color={colors.text.secondary} />
+                <Text style={[styles.transcriptionTitle, { color: colors.text.primary }]}>
+                  {t('result.transcription')}
                 </Text>
-            </View>
-        );
-    }
+              </View>
+              <Ionicons
+                name={showTranscription ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.text.secondary}
+              />
+            </GlassView>
+          </TouchableOpacity>
+        )}
 
-    return (
-        <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={[
-                    styles.scrollContent,
-                    { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 },
-                ]}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header avec bouton fermer */}
-                <View style={styles.header}>
-                    <Pressable 
-                        style={[
-                            styles.closeButton, 
-                            { 
-                                backgroundColor: colors.surface.glass,
-                                borderColor: colors.glass.borderLight,
-                            }
-                        ]} 
-                        onPress={handleClose}
-                    >
-                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
-                    </Pressable>
-                    <View style={styles.headerTextContainer}>
-                        <Text style={[styles.title, { color: colors.text.primary }]}>
-                            Session terminée
-                        </Text>
-                        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-                            Voici votre analyse détaillée
-                        </Text>
-                    </View>
-                </View>
+        {showTranscription && session.transcription && (
+          <GlassView variant="default" padding="md" radius="lg" style={styles.transcriptionContent}>
+            <Text style={[styles.transcriptionText, { color: colors.text.secondary }]}>
+              {session.transcription}
+            </Text>
+          </GlassView>
+        )}
 
-                {/* Séparateur visuel */}
-                <View style={[styles.divider, { backgroundColor: colors.glass.border }]} />
-
-                {/* Score Gauge */}
-                <ScoreGauge
-                    value={score.value}
-                    label={score.label}
-                    color={colors.text.primary}
-                />
-
-                {/* Quick Summary */}
-                <GlassView variant="default" style={styles.summaryContainer}>
-                    <Text style={[styles.summaryTitle, { color: colors.text.primary }]}>
-                        Résumé rapide
-                    </Text>
-                    <View style={styles.statsRow}>
-                        <StatBadge
-                            icon="check-circle"
-                            count={summary.validCount}
-                            label="Validés"
-                        />
-                        <StatBadge
-                            icon="error"
-                            count={summary.correctionsCount}
-                            label="À corriger"
-                        />
-                        <StatBadge
-                            icon="cancel"
-                            count={summary.missingCount}
-                            label="Manquants"
-                        />
-                    </View>
-                    <View style={[styles.summaryDivider, { backgroundColor: colors.glass.border }]} />
-                    <Text style={[styles.summaryText, { color: colors.text.secondary }]}>
-                        {summary.totalPoints} points évalués au total
-                    </Text>
-                </GlassView>
-
-                {/* Sections d'analyse détaillées */}
-                <View style={styles.sectionsContainer}>
-                    <Text style={[styles.sectionHeader, { color: colors.text.secondary }]}>
-                        Détails de l'analyse
-                    </Text>
-                    {themedSections.map((section) => (
-                        <AnalysisSection
-                            key={section.id}
-                            title={section.title}
-                            icon={section.icon}
-                            items={section.items}
-                            color={colors.text.primary}
-                            glowColor={undefined}
-                        />
-                    ))}
-                </View>
-
-                {/* Actions - HIGH CONTRAST BUTTONS */}
-                <View style={styles.actionsContainer}>
-                    {/* "Réessayer" - Outline/Glass style */}
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.buttonOutline,
-                            { 
-                                backgroundColor: colors.surface.glass,
-                                borderColor: colors.glass.borderLight,
-                            },
-                            pressed && styles.buttonPressed,
-                        ]}
-                        onPress={handleRetry}
-                    >
-                        <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
-                        <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
-                            Réessayer
-                        </Text>
-                    </Pressable>
-
-                    <View style={styles.actionSpacer} />
-
-                    {/* "Terminer" - HIGH CONTRAST */}
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.buttonPrimary,
-                            { backgroundColor: colors.text.primary },
-                            pressed && styles.buttonPrimaryPressed,
-                        ]}
-                        onPress={handleClose}
-                    >
-                        <MaterialIcons name="done" size={20} color={colors.text.inverse} />
-                        <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
-                            Terminer
-                        </Text>
-                    </Pressable>
-                </View>
-            </ScrollView>
+        {/* Action Buttons */}
+        <View style={styles.actions}>
+          <GlassButton
+            title={t('result.tryAgain')}
+            onPress={handleTryAgain}
+            variant="primary"
+            size="lg"
+            icon={<Ionicons name="refresh" size={20} color="#FFFFFF" />}
+            style={styles.primaryAction}
+          />
+          
+          <GlassButton
+            title={t('result.backToTopic')}
+            onPress={handleBackToTopic}
+            variant="secondary"
+            size="lg"
+            icon={<Ionicons name="arrow-back" size={20} color={colors.text.primary} />}
+            style={styles.secondaryAction}
+          />
         </View>
-    );
+
+        {/* Tips Section */}
+        <GlassView variant="subtle" padding="md" radius="lg" style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="bulb-outline" size={20} color={colors.warning} />
+            <Text style={[styles.tipsTitle, { color: colors.text.primary }]}>
+              {t('result.tips.title')}
+            </Text>
+          </View>
+          <Text style={[styles.tipsText, { color: colors.text.secondary }]}>
+            {score >= 80
+              ? t('result.tips.excellent')
+              : score >= 60
+              ? t('result.tips.good')
+              : t('result.tips.needsWork')}
+          </Text>
+        </GlassView>
+      </ScrollView>
+    </ScreenWrapper>
+  );
 }
-
-export const ResultScreen = memo(ResultScreenComponent);
-export default ResultScreen;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// STYLES (Static - colors applied inline)
-// ═══════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-
-    scrollView: {
-        flex: 1,
-    },
-
-    scrollContent: {
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xxl,
-    },
-
-    // Loading
-    loadingContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    loadingText: {
-        fontSize: 16,
-        marginTop: Spacing.md,
-    },
-
-    // Header
-    header: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: Spacing.lg,
-    },
-
-    closeButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        borderWidth: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: Spacing.md,
-    },
-
-    headerTextContainer: {
-        flex: 1,
-        paddingTop: Spacing.xs,
-    },
-
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        marginBottom: Spacing.xs,
-    },
-
-    subtitle: {
-        fontSize: 14,
-    },
-
-    divider: {
-        height: 1,
-        marginBottom: Spacing.lg,
-    },
-
-    // Summary
-    summaryContainer: {
-        marginBottom: Spacing.lg,
-        padding: Spacing.lg,
-    },
-
-    summaryTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: Spacing.md,
-    },
-
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: Spacing.md,
-    },
-
-    statBadge: {
-        alignItems: 'center',
-    },
-
-    statIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: Spacing.xs,
-    },
-
-    statCount: {
-        fontSize: 20,
-        fontWeight: '700',
-        marginBottom: 2,
-    },
-
-    statLabel: {
-        fontSize: 12,
-    },
-
-    summaryDivider: {
-        height: 1,
-        marginBottom: Spacing.md,
-    },
-
-    summaryText: {
-        fontSize: 14,
-        textAlign: 'center',
-    },
-
-    // Sections
-    sectionsContainer: {
-        marginBottom: Spacing.lg,
-    },
-
-    sectionHeader: {
-        fontSize: 12,
-        fontWeight: '600',
-        letterSpacing: 1,
-        textTransform: 'uppercase',
-        marginBottom: Spacing.md,
-    },
-
-    // Actions
-    actionsContainer: {
-        flexDirection: 'row',
-        marginTop: Spacing.md,
-    },
-
-    buttonOutline: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: Spacing.md,
-        borderRadius: BorderRadius.md,
-        borderWidth: 1,
-        gap: Spacing.xs,
-    },
-
-    buttonOutlineText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
-    buttonPressed: {
-        opacity: 0.8,
-    },
-
-    actionSpacer: {
-        width: Spacing.md,
-    },
-
-    buttonPrimary: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: Spacing.md,
-        borderRadius: BorderRadius.md,
-        gap: Spacing.xs,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
-    },
-
-    buttonPrimaryText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
-    buttonPrimaryPressed: {
-        opacity: 0.9,
-        transform: [{ scale: 0.98 }],
-    },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  loadingText: {
+    ...Typography.body.medium,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.md,
+  },
+  errorTitle: {
+    ...Typography.heading.h2,
+    textAlign: 'center',
+    marginTop: Spacing.md,
+  },
+  errorMessage: {
+    ...Typography.body.medium,
+    textAlign: 'center',
+  },
+  errorButton: {
+    marginTop: Spacing.lg,
+    minWidth: 160,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    ...Typography.heading.h3,
+    textAlign: 'center',
+    marginHorizontal: Spacing.sm,
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  scoreCard: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  resultLabel: {
+    ...Typography.body.medium,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.md,
+  },
+  gaugeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  statValue: {
+    ...Typography.heading.h3,
+    fontWeight: '700',
+  },
+  statLabel: {
+    ...Typography.body.small,
+    marginTop: 2,
+  },
+  sectionTitle: {
+    ...Typography.heading.h3,
+    marginBottom: Spacing.md,
+  },
+  transcriptionToggle: {
+    marginTop: Spacing.sm,
+  },
+  transcriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  transcriptionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  transcriptionTitle: {
+    ...Typography.body.medium,
+    fontWeight: '600',
+  },
+  transcriptionContent: {
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  transcriptionText: {
+    ...Typography.body.medium,
+    lineHeight: 22,
+  },
+  actions: {
+    marginTop: Spacing.xl,
+    gap: Spacing.md,
+  },
+  primaryAction: {
+    width: '100%',
+  },
+  secondaryAction: {
+    width: '100%',
+  },
+  tipsCard: {
+    marginTop: Spacing.xl,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  tipsTitle: {
+    ...Typography.body.medium,
+    fontWeight: '600',
+  },
+  tipsText: {
+    ...Typography.body.medium,
+    lineHeight: 22,
+  },
 });
+
+export default ResultScreen;
