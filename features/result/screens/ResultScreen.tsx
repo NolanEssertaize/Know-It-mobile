@@ -13,7 +13,6 @@ import {
     Pressable,
     StyleSheet,
     Platform,
-    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -58,7 +57,7 @@ function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
-    const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
+    const { score, sections, summary, handleClose, handleRetry, isFromHistory } = useResult();
 
     // Theme-aware sections
     const themedSections = useMemo(() => {
@@ -69,13 +68,23 @@ function ResultScreenComponent(): React.JSX.Element {
         }));
     }, [sections, colors.text.primary]);
 
-    if (isLoading) {
+    // Show empty state if no data (shouldn't happen in normal flow)
+    const hasData = summary.totalPoints > 0;
+    if (!hasData) {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
-                <ActivityIndicator size="large" color={colors.text.primary} />
+                <MaterialIcons name="error-outline" size={48} color={colors.text.muted} />
                 <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                    {t('result.loading')}
+                    {t('result.notFoundMessage')}
                 </Text>
+                <Pressable
+                    style={[styles.buttonPrimary, { backgroundColor: colors.text.primary, marginTop: Spacing.lg }]}
+                    onPress={handleClose}
+                >
+                    <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
+                        {t('result.actions.backToTopic')}
+                    </Text>
+                </Pressable>
             </View>
         );
     }

@@ -2,12 +2,17 @@
  * @file useResult.ts
  * @description Logic Controller pour l'écran de résultats
  * Utilise des noms d'icônes Material au lieu d'emojis
+ *
+ * Supports two scenarios:
+ * 1. Fresh recording: analysis data passed via URL params
+ * 2. Session history: only sessionId passed, data fetched from store
  */
 
 import { useMemo, useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { AnalysisResult } from '@/types';
 import { GlassColors } from '@/theme';
+import { useStore, selectCurrentTopic } from '@/store';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -42,6 +47,9 @@ export interface UseResultReturn {
     readonly score: ScoreData;
     readonly summary: SummaryData;
     readonly sections: readonly AnalysisSection[];
+    readonly transcription: string | undefined;
+    /** True if viewing a past session from history, false if fresh recording */
+    readonly isFromHistory: boolean;
 
     // Methods
     readonly handleClose: () => void;
@@ -88,18 +96,76 @@ function calculateSummary(analysis: AnalysisResult): SummaryData {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useResult(): UseResultReturn {
-    const params = useLocalSearchParams();
+    const params = useLocalSearchParams<{
+        topicId?: string;
+        sessionId?: string;
+        transcription?: string;
+        valid?: string;
+        corrections?: string;
+        missing?: string;
+    }>();
     const router = useRouter();
 
-    // Parse params
-    const analysis = useMemo(
-        (): AnalysisResult => ({
-            valid: parseJsonParam(params.valid, []),
-            corrections: parseJsonParam(params.corrections, []),
-            missing: parseJsonParam(params.missing, []),
-        }),
-        [params.valid, params.corrections, params.missing]
-    );
+    // Get current topic from store (for session history lookup)
+    const currentTopic = useStore(selectCurrentTopic);
+    const getTopicById = useStore((state) => state.getTopicById);
+
+    // Find session from store if needed
+    const sessionFromStore = useMemo(() => {
+        if (!params.sessionId) return null;
+
+        // First try currentTopic
+        if (currentTopic) {
+            const session = currentTopic.sessions.find((s) => s.id === params.sessionId);
+            if (session) return session;
+        }
+
+        // Fallback: try to find in topics list using topicId
+        if (params.topicId) {
+            const topic = getTopicById(params.topicId);
+            if (topic) {
+                return topic.sessions.find((s) => s.id === params.sessionId) || null;
+            }
+        }
+
+        return null;
+    }, [params.sessionId, params.topicId, currentTopic, getTopicById]);
+
+    // Determine if viewing from session history (no analysis params = from history)
+    const isFromHistory = useMemo(() => {
+        return !params.valid && !params.corrections && !params.missing && !!params.sessionId;
+    }, [params.valid, params.corrections, params.missing, params.sessionId]);
+
+    // Get analysis data: prefer URL params (fresh recording), fallback to store (session history)
+    const analysis = useMemo((): AnalysisResult => {
+        // Check if we have analysis data in URL params (from fresh recording)
+        const hasParamsData = params.valid || params.corrections || params.missing;
+
+        if (hasParamsData) {
+            // Fresh recording: parse from URL params
+            return {
+                valid: parseJsonParam(params.valid, []),
+                corrections: parseJsonParam(params.corrections, []),
+                missing: parseJsonParam(params.missing, []),
+            };
+        }
+
+        // Session history: get from store
+        if (sessionFromStore?.analysis) {
+            return sessionFromStore.analysis;
+        }
+
+        // Fallback: empty analysis
+        return { valid: [], corrections: [], missing: [] };
+    }, [params.valid, params.corrections, params.missing, sessionFromStore]);
+
+    // Get transcription: prefer URL params, fallback to store
+    const transcription = useMemo(() => {
+        if (params.transcription) {
+            return params.transcription;
+        }
+        return sessionFromStore?.transcription;
+    }, [params.transcription, sessionFromStore]);
 
     // Calculate score
     const score = useMemo(() => calculateScore(analysis), [analysis]);
@@ -138,15 +204,31 @@ export function useResult(): UseResultReturn {
         [analysis]
     );
 
-    // Handlers
+    // Handlers - different behavior for history vs fresh recording
     const handleClose = useCallback(() => {
-        router.back();
-        router.back(); // Retour à la liste des topics
-    }, [router]);
+        if (isFromHistory) {
+            // From history: go back to topic detail (one step)
+            router.back();
+        } else {
+            // From fresh recording: go back to topic detail (skip session screen)
+            router.back();
+            router.back();
+        }
+    }, [router, isFromHistory]);
 
     const handleRetry = useCallback(() => {
-        router.back(); // Retour à l'écran de session
-    }, [router]);
+        if (isFromHistory) {
+            // From history: start a new session
+            if (params.topicId) {
+                router.replace(`/${params.topicId}/session`);
+            } else {
+                router.back();
+            }
+        } else {
+            // From fresh recording: go back to session screen
+            router.back();
+        }
+    }, [router, isFromHistory, params.topicId]);
 
     return {
         // Data
@@ -154,6 +236,8 @@ export function useResult(): UseResultReturn {
         score,
         summary,
         sections,
+        transcription,
+        isFromHistory,
 
         // Methods
         handleClose,
