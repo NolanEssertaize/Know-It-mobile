@@ -10,7 +10,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage, type LanguageCode } from '@/i18n';
+import { useLanguage } from '@/i18n';
+
+// Hardcoded language display names to avoid import issues
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  fr: 'Français',
+};
 
 interface LanguageSwitcherProps {
   showIcon?: boolean;
@@ -19,11 +25,10 @@ interface LanguageSwitcherProps {
 function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { currentLanguage, availableLanguages, changeLanguage } = useLanguage();
+  const { currentLanguage, changeLanguage } = useLanguage();
 
-  const handleLanguageChange = async (code: LanguageCode) => {
-    await changeLanguage(code);
-  };
+  // Available language codes
+  const languageCodes = ['en', 'fr'] as const;
 
   return (
     <View style={styles.container}>
@@ -43,33 +48,33 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
         </View>
       )}
       <View style={styles.languageSelector}>
-        {availableLanguages.map((lang) => (
+        {languageCodes.map((code) => (
           <TouchableOpacity
-            key={lang.code}
+            key={code}
             style={[
               styles.languageOption,
               {
                 backgroundColor: colors.glass.background,
                 borderColor: colors.glass.border,
               },
-              currentLanguage === lang.code && {
+              currentLanguage === code && {
                 backgroundColor: colors.text.primary,
                 borderColor: colors.text.primary,
               },
             ]}
-            onPress={() => handleLanguageChange(lang.code)}
+            onPress={() => changeLanguage(code)}
             activeOpacity={0.7}
           >
             <Text
               style={[
                 styles.languageText,
                 { color: colors.text.primary },
-                currentLanguage === lang.code && {
+                currentLanguage === code && {
                   color: colors.text.inverse,
                 },
               ]}
             >
-              {lang.name}
+              {LANGUAGE_NAMES[code]}
             </Text>
           </TouchableOpacity>
         ))}
