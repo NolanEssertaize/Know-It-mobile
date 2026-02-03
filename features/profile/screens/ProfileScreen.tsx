@@ -29,6 +29,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme, ThemeSelector } from '@/theme';
@@ -37,6 +38,7 @@ import { useProfile, type ProfileTab } from '../hooks/useProfile';
 import { PasswordChangeModal } from '../components/PasswordChangeModal';
 import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import { LogoutConfirmationModal } from '../components/LogoutConfirmationModal';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -131,7 +133,8 @@ function ProfileScreenComponent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const logic = useProfile();
-    
+    const { t } = useTranslation();
+
     // Get theme
     const { colors, isDark } = useTheme();
 
@@ -415,69 +418,11 @@ function ProfileScreenComponent() {
             {/* Language */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Langue
+                    {t('profile.language')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={[styles.switchItem, styles.listItemLast]}>
-                        <View style={styles.switchLabel}>
-                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                Langue de l'interface
-                            </Text>
-                            <View style={styles.languageSelector}>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.languageOption,
-                                        { 
-                                            backgroundColor: colors.surface.glass,
-                                            borderColor: colors.glass.border,
-                                        },
-                                        logic.preferences.language === 'fr' && {
-                                            backgroundColor: colors.text.primary,
-                                            borderColor: colors.text.primary,
-                                        },
-                                    ]}
-                                    onPress={() => logic.setLanguage('fr')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.languageText,
-                                            { color: colors.text.secondary },
-                                            logic.preferences.language === 'fr' && {
-                                                color: colors.text.inverse,
-                                            },
-                                        ]}
-                                    >
-                                        Français
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.languageOption,
-                                        { 
-                                            backgroundColor: colors.surface.glass,
-                                            borderColor: colors.glass.border,
-                                        },
-                                        logic.preferences.language === 'en' && {
-                                            backgroundColor: colors.text.primary,
-                                            borderColor: colors.text.primary,
-                                        },
-                                    ]}
-                                    onPress={() => logic.setLanguage('en')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.languageText,
-                                            { color: colors.text.secondary },
-                                            logic.preferences.language === 'en' && {
-                                                color: colors.text.inverse,
-                                            },
-                                        ]}
-                                    >
-                                        English
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+                        <LanguageSwitcher showIcon={false} />
                     </View>
                 </GlassView>
             </View>

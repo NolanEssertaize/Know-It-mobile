@@ -1,0 +1,356 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "goBack": "Go Back",
+    "close": "Close",
+    "retry": "Retry",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "search": "Search",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "share": "Share",
+    "noData": "No data available",
+    "unknownError": "An unknown error occurred",
+    "comingSoon": "Coming Soon"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue learning",
+      "email": "Email address",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "signIn": "Sign In",
+      "signInWithGoogle": "Continue with Google",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign Up",
+      "forgotPassword": "Forgot password?",
+      "invalidCredentials": "Invalid email or password",
+      "loginSuccess": "Welcome back!",
+      "loginFailed": "Login failed. Please try again."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Start your learning journey",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your name",
+      "email": "Email address",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "createAccount": "Create Account",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign In",
+      "passwordMismatch": "Passwords do not match",
+      "weakPassword": "Password must be at least 8 characters",
+      "invalidEmail": "Please enter a valid email address",
+      "registrationSuccess": "Account created successfully!",
+      "registrationFailed": "Registration failed. Please try again."
+    },
+    "logout": "Log Out",
+    "logoutConfirm": "Are you sure you want to log out?"
+  },
+  "topics": {
+    "title": "Ready to learn?",
+    "subtitle": "Select a topic to start practicing",
+    "myTopics": "My Topics",
+    "topicsCount": "{{count}} topics",
+    "topicsCount_one": "{{count}} topic",
+    "swipeHint": "Swipe for more options",
+    "activeFilters": "Active filters",
+    "stats": {
+      "topics": "Topics",
+      "sessions": "Sessions",
+      "streak": "Streak"
+    },
+    "search": {
+      "placeholder": "Search topics...",
+      "noResults": "No topics found",
+      "noResultsDescription": "Try modifying your search or filters"
+    },
+    "card": {
+      "sessions": "sessions",
+      "session": "session",
+      "lastSession": "Last session",
+      "noSessions": "No sessions yet"
+    },
+    "add": {
+      "title": "Add New Topic",
+      "placeholder": "Topic name (e.g., React Hooks)",
+      "create": "Create Topic",
+      "cancel": "Cancel",
+      "success": "Topic created successfully!",
+      "error": "Failed to create topic"
+    },
+    "categories": {
+      "all": "All",
+      "recent": "Recent",
+      "favorites": "Favorites",
+      "programming": "Programming",
+      "science": "Science",
+      "languages": "Languages",
+      "history": "History",
+      "math": "Mathematics",
+      "other": "Other"
+    },
+    "empty": {
+      "title": "No topics found",
+      "description": "Create your first topic to start learning",
+      "descriptionWithFilters": "Try modifying your filters",
+      "createButton": "Create a topic"
+    },
+    "delete": {
+      "title": "Delete Topic",
+      "message": "Are you sure you want to delete this topic? This action cannot be undone.",
+      "success": "Topic deleted",
+      "error": "Failed to delete topic"
+    },
+    "filter": {
+      "all": "All"
+    },
+    "list": {
+      "title": "My Topics",
+      "item": "topic",
+      "items": "topics"
+    }
+  },
+  "topicDetail": {
+    "sessions": "Sessions",
+    "session": "Session",
+    "sessionsCount": "{{count}} session",
+    "sessionsCount_plural": "{{count}} sessions",
+    "avgScore": "Avg Score",
+    "history": "History",
+    "noTranscription": "No transcription available",
+    "empty": {
+      "title": "No sessions",
+      "description": "Start your first practice session",
+      "startButton": "Start a session",
+      "message": "Start your first practice session"
+    },
+    "edit": {
+      "title": "Edit Topic",
+      "placeholder": "Topic name"
+    },
+    "delete": {
+      "title": "Delete Topic",
+      "message": "Are you sure you want to delete this topic?"
+    },
+    "deleteSession": {
+      "title": "Delete Session",
+      "message": "Are you sure you want to delete this session?"
+    },
+    "errors": {
+      "updateFailed": "Failed to update topic",
+      "deleteFailed": "Failed to delete topic",
+      "deleteSessionFailed": "Failed to delete session"
+    },
+    "actions": {
+      "edit": "Edit Topic",
+      "delete": "Delete Topic",
+      "confirmDelete": "Are you sure you want to delete this topic?"
+    },
+    "history": {
+      "title": "Session History",
+      "session": "session",
+      "sessions": "sessions"
+    },
+    "startSession": "Start Session"
+  },
+  "session": {
+    "title": "Recording Session",
+    "recording": "Recording...",
+    "paused": "Paused",
+    "analyzing": "Analyzing...",
+    "ready": "Ready to record",
+    "status": {
+      "recording": "Recording...",
+      "paused": "Paused",
+      "analyzing": "Analyzing...",
+      "idle": "Ready to record",
+      "complete": "Recording complete"
+    },
+    "actions": {
+      "start": "Start Recording",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stop": "Stop",
+      "submit": "Submit for Analysis",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "permissionDenied": "Microphone permission denied",
+      "recordingFailed": "Recording failed. Please try again.",
+      "tooShort": "Recording is too short. Please record at least 10 seconds."
+    }
+  },
+  "result": {
+    "title": "Analysis Result",
+    "loading": "Loading results...",
+    "notFound": "Session Not Found",
+    "notFoundMessage": "We couldn't find this session. It may have been deleted.",
+    "yourScore": "Your Score",
+    "valid": "Valid",
+    "corrections": "Corrections",
+    "missing": "Missing",
+    "validPoints": "What you got right",
+    "correctionsNeeded": "Points to correct",
+    "missingPoints": "What was missing",
+    "detailedAnalysis": "Detailed Analysis",
+    "transcription": "Your Response",
+    "tryAgain": "Try Again",
+    "backToTopic": "Back to Topic",
+    "analysis": {
+      "title": "Your Analysis",
+      "valid": "What you got right",
+      "corrections": "Points to correct",
+      "missing": "What was missing",
+      "noValid": "No correct points identified",
+      "noCorrections": "No corrections needed",
+      "noMissing": "Nothing missing - great job!"
+    },
+    "score": {
+      "title": "Your Score",
+      "outOf": "out of 100"
+    },
+    "feedback": {
+      "excellent": "Excellent!",
+      "good": "Good job!",
+      "needsWork": "Keep practicing!",
+      "title": "Feedback"
+    },
+    "tips": {
+      "title": "Tips for Improvement",
+      "excellent": "Amazing work! You've mastered this topic. Try explaining it to someone else to reinforce your knowledge.",
+      "good": "You're on the right track! Focus on the corrections and missing points to improve your understanding.",
+      "needsWork": "Don't give up! Review the topic materials and focus on the key concepts. Practice makes perfect."
+    },
+    "share": {
+      "title": "Share Your Result",
+      "message": "I just scored {{score}}% on {{topic}} with KnowIt!\n\n{{valid}} valid points\n{{corrections}} corrections\n{{missing}} missing points"
+    },
+    "actions": {
+      "tryAgain": "Try Again",
+      "backToTopic": "Back to Topic",
+      "share": "Share Result"
+    },
+    "transcription": {
+      "title": "Your Response",
+      "show": "Show Transcription",
+      "hide": "Hide Transcription"
+    },
+    "errors": {
+      "shareFailed": "Failed to share result"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "guest": "Guest User",
+    "defaultName": "User",
+    "signInPrompt": "Sign in to sync your progress",
+    "editProfile": "Edit Profile",
+    "editProfileComingSoon": "Profile editing will be available soon.",
+    "statistics": "Statistics",
+    "topics": "Topics",
+    "sessions": "Sessions",
+    "avgScore": "Avg Score",
+    "streak": "Streak",
+    "totalStudyTime": "Total Study Time",
+    "minutesStudied": "{{count}} minute studied",
+    "minutesStudied_plural": "{{count}} minutes studied",
+    "hoursStudied": "{{count}} hour studied",
+    "hoursStudied_plural": "{{count}} hours studied",
+    "hoursMinutesStudied": "{{hours}}h {{minutes}}m studied",
+    "preferences": "Preferences",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "notifications": "Notifications",
+    "sounds": "Sounds",
+    "haptics": "Haptics",
+    "preferencesSaved": "Your preferences have been saved.",
+    "account": "Account",
+    "logout": "Log Out",
+    "logoutConfirmTitle": "Log Out",
+    "logoutConfirmMessage": "Are you sure you want to log out?",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete Account",
+    "deleteAccountMessage": "This will permanently delete all your data. This action cannot be undone.",
+    "deleteAccountRequestedTitle": "Request Submitted",
+    "deleteAccountRequestedMessage": "Your account deletion request has been submitted. You will receive an email confirmation shortly.",
+    "stats": {
+      "title": "Statistics",
+      "totalTopics": "Total Topics",
+      "totalSessions": "Total Sessions",
+      "averageScore": "Average Score",
+      "currentStreak": "Current Streak",
+      "days": "days"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "language": "Language",
+      "languageDescription": "Choose your preferred language",
+      "notifications": "Notifications",
+      "notificationsDescription": "Receive practice reminders"
+    },
+    "account": {
+      "title": "Account",
+      "email": "Email",
+      "changePassword": "Change Password",
+      "deleteAccount": "Delete Account",
+      "deleteAccountWarning": "This will permanently delete all your data"
+    },
+    "actions": {
+      "logout": "Log Out",
+      "saveChanges": "Save Changes",
+      "saved": "Changes saved"
+    },
+    "about": {
+      "title": "About",
+      "version": "Version",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "support": "Support"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "fr": "French"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error. Please check your connection.",
+    "server": "Server error. Please try again later.",
+    "auth": "Authentication error. Please log in again.",
+    "notFound": "Resource not found.",
+    "validation": "Please check your input.",
+    "saveFailed": "Failed to save. Please try again.",
+    "logoutFailed": "Failed to log out. Please try again."
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}} day ago",
+    "daysAgo_plural": "{{count}} days ago"
+  }
+}

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
@@ -56,6 +57,7 @@ const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps
 function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
+    const { t } = useTranslation();
     const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
 
     // Theme-aware sections
@@ -72,7 +74,7 @@ function ResultScreenComponent(): React.JSX.Element {
             <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
                 <ActivityIndicator size="large" color={colors.text.primary} />
                 <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                    Chargement des résultats...
+                    {t('result.loading')}
                 </Text>
             </View>
         );
@@ -104,10 +106,10 @@ function ResultScreenComponent(): React.JSX.Element {
                     </Pressable>
                     <View style={styles.headerTextContainer}>
                         <Text style={[styles.title, { color: colors.text.primary }]}>
-                            Session terminée
+                            {t('result.title')}
                         </Text>
                         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-                            Voici votre analyse détaillée
+                            {t('result.detailedAnalysis')}
                         </Text>
                     </View>
                 </View>
@@ -125,35 +127,35 @@ function ResultScreenComponent(): React.JSX.Element {
                 {/* Quick Summary */}
                 <GlassView variant="default" style={styles.summaryContainer}>
                     <Text style={[styles.summaryTitle, { color: colors.text.primary }]}>
-                        Résumé rapide
+                        {t('result.yourScore')}
                     </Text>
                     <View style={styles.statsRow}>
                         <StatBadge
                             icon="check-circle"
                             count={summary.validCount}
-                            label="Validés"
+                            label={t('result.valid')}
                         />
                         <StatBadge
                             icon="error"
                             count={summary.correctionsCount}
-                            label="À corriger"
+                            label={t('result.corrections')}
                         />
                         <StatBadge
                             icon="cancel"
                             count={summary.missingCount}
-                            label="Manquants"
+                            label={t('result.missing')}
                         />
                     </View>
                     <View style={[styles.summaryDivider, { backgroundColor: colors.glass.border }]} />
                     <Text style={[styles.summaryText, { color: colors.text.secondary }]}>
-                        {summary.totalPoints} points évalués au total
+                        {summary.totalPoints} {t('result.score.outOf').replace('out of 100', 'points')}
                     </Text>
                 </GlassView>
 
                 {/* Sections d'analyse détaillées */}
                 <View style={styles.sectionsContainer}>
                     <Text style={[styles.sectionHeader, { color: colors.text.secondary }]}>
-                        Détails de l'analyse
+                        {t('result.analysis.title')}
                     </Text>
                     {themedSections.map((section) => (
                         <AnalysisSection
@@ -183,7 +185,7 @@ function ResultScreenComponent(): React.JSX.Element {
                     >
                         <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
                         <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
-                            Réessayer
+                            {t('result.actions.tryAgain')}
                         </Text>
                     </Pressable>
 
@@ -200,7 +202,7 @@ function ResultScreenComponent(): React.JSX.Element {
                     >
                         <MaterialIcons name="done" size={20} color={colors.text.inverse} />
                         <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
-                            Terminer
+                            {t('result.actions.backToTopic')}
                         </Text>
                     </Pressable>
                 </View>

@@ -11,6 +11,9 @@
  * UPDATED: Added ThemeProvider for Light/Dark/System theme support
  */
 
+// CRITICAL: Initialize i18n before any other imports
+import '@/i18n';
+
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';

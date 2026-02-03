@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
@@ -41,6 +42,7 @@ import { CategoryFilter } from '../components/CategoryFilter';
 export const TopicsListScreen = memo(function TopicsListScreen() {
     const logic = useTopicsList();
     const { colors, isDark } = useTheme();
+    const { t } = useTranslation();
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER HELPERS
@@ -52,10 +54,10 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 {/* Titre de section */}
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
-                        Mes Sujets
+                        {t('topics.myTopics')}
                     </Text>
                     <Text style={[styles.sectionCount, { color: colors.text.muted }]}>
-                        {logic.filteredTopics.length} sujets
+                        {t('topics.topicsCount', { count: logic.filteredTopics.length })}
                     </Text>
                 </View>
 
@@ -63,25 +65,25 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 <View style={styles.swipeHintContainer}>
                     <MaterialIcons name="swipe" size={14} color={colors.text.muted} />
                     <Text style={[styles.swipeHint, { color: colors.text.muted }]}>
-                        Glissez pour plus d'options
+                        {t('topics.swipeHint')}
                     </Text>
                 </View>
 
                 {/* Indicateur de filtres actifs */}
                 {logic.hasActiveFilters && (
-                    <Pressable 
-                        onPress={logic.resetFilters} 
+                    <Pressable
+                        onPress={logic.resetFilters}
                         style={[styles.activeFiltersBar, { backgroundColor: colors.surface.glass }]}
                     >
                         <Text style={[styles.activeFiltersText, { color: colors.text.primary }]}>
-                            Filtres actifs
+                            {t('topics.activeFilters')}
                         </Text>
                         <MaterialCommunityIcons name="close-circle" size={16} color={colors.text.primary} />
                     </Pressable>
                 )}
             </View>
         ),
-        [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters, colors]
+        [logic.filteredTopics.length, logic.hasActiveFilters, logic.resetFilters, colors, t]
     );
 
     // FIX: Use correct method names and pass registerRef/unregisterRef
@@ -118,12 +120,12 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     />
                 </View>
                 <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>
-                    Aucun sujet trouvé
+                    {t('topics.empty.title')}
                 </Text>
                 <Text style={[styles.emptyDescription, { color: colors.text.secondary }]}>
                     {logic.hasActiveFilters
-                        ? 'Essayez de modifier vos filtres'
-                        : 'Créez votre premier sujet pour commencer'}
+                        ? t('topics.empty.descriptionWithFilters')
+                        : t('topics.empty.description')}
                 </Text>
                 {!logic.hasActiveFilters && (
                     <Pressable
@@ -132,13 +134,13 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.inverse} />
                         <Text style={[styles.emptyButtonText, { color: colors.text.inverse }]}>
-                            Créer un sujet
+                            {t('topics.empty.createButton')}
                         </Text>
                     </Pressable>
                 )}
             </View>
         ),
-        [logic.hasActiveFilters, logic.setShowAddModal, colors]
+        [logic.hasActiveFilters, logic.setShowAddModal, colors, t]
     );
 
     // FIX: Use item.topic.id for unique key
@@ -154,7 +156,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             <View style={styles.header}>
                 <View>
                     <Text style={[styles.title, { color: colors.text.primary }]}>
-                        Prêt à apprendre ?
+                        {t('topics.title')}
                     </Text>
                 </View>
                 <ProfileButton />
@@ -170,7 +172,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {logic.topicsCount}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sujets</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
                     </GlassView>
 
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
@@ -180,7 +182,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {logic.totalSessions}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Sessions</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
                     </GlassView>
 
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
@@ -190,7 +192,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {logic.streak}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>Streak</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.streak')}</Text>
                     </GlassView>
                 </View>
 
@@ -199,7 +201,7 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     <MaterialCommunityIcons name="magnify" size={22} color={colors.text.muted} />
                     <TextInput
                         style={[styles.searchInput, { color: colors.text.primary }]}
-                        placeholder="Rechercher un sujet..."
+                        placeholder={t('topics.search.placeholder')}
                         placeholderTextColor={colors.text.muted}
                         value={logic.searchText}
                         onChangeText={logic.setSearchText}

@@ -10,6 +10,7 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet, StatusBar } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
@@ -26,6 +27,7 @@ export const SessionScreen = memo(function SessionScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { colors, isDark } = useTheme();
+    const { t } = useTranslation();
 
     // ─────────────────────────────────────────────────────────────────────────
     // HELPERS
@@ -51,14 +53,14 @@ export const SessionScreen = memo(function SessionScreen() {
                 <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
                 <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
                     <Text style={[styles.errorText, { color: colors.text.secondary }]}>
-                        Topic introuvable
+                        {t('errors.notFound')}
                     </Text>
                     <Pressable
                         style={[styles.closeButtonLarge, { backgroundColor: colors.text.primary }]}
                         onPress={handleClose}
                     >
                         <Text style={[styles.closeButtonText, { color: colors.text.inverse }]}>
-                            Retour
+                            {t('common.goBack')}
                         </Text>
                     </Pressable>
                 </View>
@@ -78,10 +80,10 @@ export const SessionScreen = memo(function SessionScreen() {
                     <View style={styles.analyzingContainer}>
                         <ActivityIndicator size="large" color={colors.text.primary} />
                         <Text style={[styles.analyzingText, { color: colors.text.primary }]}>
-                            Analyse en cours...
+                            {t('session.status.analyzing')}
                         </Text>
                         <Text style={[styles.analyzingHint, { color: colors.text.secondary }]}>
-                            Votre explication est en train d'être analysée
+                            {t('session.analyzing')}
                         </Text>
                     </View>
                 </View>
@@ -105,7 +107,7 @@ export const SessionScreen = memo(function SessionScreen() {
                         <MaterialIcons name="close" size={24} color={colors.text.primary} />
                     </Pressable>
                     <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
-                        Session
+                        {t('session.title')}
                     </Text>
                     <View style={styles.placeholder} />
                 </View>
@@ -126,13 +128,13 @@ export const SessionScreen = memo(function SessionScreen() {
                                 <View style={[styles.recordingDot, { backgroundColor: colors.text.primary }]} />
                             )}
                             <Text style={[styles.statusText, { color: colors.text.primary }]}>
-                                {logic.isRecording ? 'Enregistrement...' : 'Prêt à enregistrer'}
+                                {logic.isRecording ? t('session.status.recording') : t('session.status.idle')}
                             </Text>
                         </View>
                         <Text style={[styles.statusHint, { color: colors.text.secondary }]}>
                             {logic.isRecording
-                                ? 'Expliquez le sujet avec vos mots'
-                                : 'Appuyez sur le bouton pour commencer'}
+                                ? t('session.recording')
+                                : t('session.ready')}
                         </Text>
                     </View>
 
