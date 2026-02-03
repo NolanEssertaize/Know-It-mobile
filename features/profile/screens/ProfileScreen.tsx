@@ -133,7 +133,7 @@ function ProfileScreenComponent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const logic = useProfile();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     // Get theme
     const { colors, isDark } = useTheme();
@@ -166,20 +166,20 @@ function ProfileScreenComponent() {
 
     const handleExportData = useCallback(() => {
         Alert.alert(
-            'Exporter mes données',
-            'Voulez-vous recevoir une copie de toutes vos données par email ?',
+            t('profile.alerts.exportTitle'),
+            t('profile.alerts.exportMessage'),
             [
-                { text: 'Annuler', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Exporter',
+                    text: t('profile.actions.exportData'),
                     onPress: async () => {
                         await logic.handleExportData();
-                        Alert.alert('Succès', 'Vos données vous seront envoyées par email');
+                        Alert.alert(t('common.success'), t('profile.alerts.exportSuccess'));
                     },
                 },
             ]
         );
-    }, [logic]);
+    }, [logic, t]);
 
     const handleLogoutConfirm = useCallback(async () => {
         try {
@@ -190,12 +190,12 @@ function ProfileScreenComponent() {
                     router.replace('/(auth)/login');
                 }, 300);
             } else if (result.error) {
-                Alert.alert('Erreur', result.error);
+                Alert.alert(t('common.error'), result.error);
             }
         } catch (error) {
-            Alert.alert('Erreur', 'Une erreur est survenue lors de la déconnexion');
+            Alert.alert(t('common.error'), t('errors.logoutFailed'));
         }
-    }, [logic, router, handleClose]);
+    }, [logic, router, handleClose, t]);
 
     const handleDeleteConfirm = useCallback(
         async (password: string) => {
@@ -203,10 +203,10 @@ function ProfileScreenComponent() {
             if (result.success) {
                 router.replace('/(auth)/login');
             } else if (result.error) {
-                Alert.alert('Erreur', result.error);
+                Alert.alert(t('common.error'), result.error);
             }
         },
-        [logic, router]
+        [logic, router, t]
     );
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ function ProfileScreenComponent() {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.text.primary} />
                     <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                        Chargement...
+                        {t('common.loading')}
                     </Text>
                 </View>
             </View>
@@ -236,7 +236,7 @@ function ProfileScreenComponent() {
             {/* Personal Information */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Informations personnelles
+                    {t('profile.sections.personalInfo')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     {/* Email */}
@@ -246,7 +246,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Email
+                                {t('profile.fields.email')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
                                 {logic.user?.email}
@@ -261,13 +261,13 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Nom complet
+                                {t('profile.fields.fullName')}
                             </Text>
                             <TextInput
                                 style={[styles.listItemInput, { color: colors.text.primary }]}
                                 value={logic.fullName}
                                 onChangeText={logic.setFullName}
-                                placeholder="Entrez votre nom"
+                                placeholder={t('profile.placeholders.enterName')}
                                 placeholderTextColor={colors.text.muted}
                             />
                         </View>
@@ -276,7 +276,7 @@ function ProfileScreenComponent() {
 
                 {/* Save Button */}
                 <PrimaryButton
-                    title="Enregistrer les modifications"
+                    title={t('profile.buttons.saveChanges')}
                     onPress={logic.handleUpdateProfile}
                     disabled={logic.fullName === logic.user?.fullName}
                     loading={logic.isLoading}
@@ -286,7 +286,7 @@ function ProfileScreenComponent() {
             {/* Security */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Sécurité
+                    {t('profile.sections.security')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity
@@ -299,10 +299,10 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Mot de passe
+                                {t('profile.fields.password')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
-                                Modifier le mot de passe
+                                {t('profile.actions.changePassword')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -313,7 +313,7 @@ function ProfileScreenComponent() {
             {/* RGPD Actions */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Données personnelles (RGPD)
+                    {t('profile.sections.gdpr')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity
@@ -326,7 +326,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Exporter mes données
+                                {t('profile.actions.exportData')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -342,7 +342,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Supprimer mon compte
+                                {t('profile.actions.deleteAccount')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -361,16 +361,16 @@ function ProfileScreenComponent() {
             {/* Notifications */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Notifications
+                    {t('profile.sections.notifications')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={[styles.switchItem, styles.listItemLast]}>
                         <View style={styles.switchLabel}>
                             <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                Notifications push
+                                {t('profile.preferences.pushNotifications')}
                             </Text>
                             <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
-                                Recevoir des rappels d'étude
+                                {t('profile.preferences.studyReminders')}
                             </Text>
                         </View>
                         <Switch
@@ -396,20 +396,20 @@ function ProfileScreenComponent() {
             {/* ═══════════════════════════════════════════════════════════════════ */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Apparence
+                    {t('profile.sections.appearance')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={styles.themeSection}>
                         <View style={styles.themeSectionHeader}>
                             <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                Thème
+                                {t('profile.preferences.theme')}
                             </Text>
                             <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
-                                Choisissez l'apparence de l'application
+                                {t('profile.preferences.themeDescription')}
                             </Text>
                         </View>
                         <View style={styles.themeSelectorContainer}>
-                            <ThemeSelector language="fr" />
+                            <ThemeSelector language={i18n.language} />
                         </View>
                     </View>
                 </GlassView>
@@ -430,16 +430,16 @@ function ProfileScreenComponent() {
             {/* Data & Storage */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Données & Stockage
+                    {t('profile.sections.dataStorage')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={styles.switchItem}>
                         <View style={styles.switchLabel}>
                             <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                Sauvegarde automatique
+                                {t('profile.preferences.autoSave')}
                             </Text>
                             <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
-                                Sauvegarder vos sessions en ligne
+                                {t('profile.preferences.autoSaveDescription')}
                             </Text>
                         </View>
                         <Switch
@@ -461,10 +461,10 @@ function ProfileScreenComponent() {
                     <View style={[styles.switchItem, styles.listItemLast]}>
                         <View style={styles.switchLabel}>
                             <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                Analytiques
+                                {t('profile.preferences.analytics')}
                             </Text>
                             <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
-                                Aider à améliorer l'application
+                                {t('profile.preferences.analyticsDescription')}
                             </Text>
                         </View>
                         <Switch
@@ -496,7 +496,7 @@ function ProfileScreenComponent() {
             {/* App Info */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Application
+                    {t('profile.sections.app')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <View style={styles.listItem}>
@@ -505,7 +505,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Version
+                                {t('profile.fields.version')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
                                 1.0.0 (Build 1)
@@ -519,10 +519,10 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Noter l'application
+                                {t('profile.actions.rateApp')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
-                                Laissez-nous un avis
+                                {t('profile.actions.leaveReview')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -534,10 +534,10 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Partager KnowIt
+                                {t('profile.actions.shareApp')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
-                                Invitez vos amis
+                                {t('profile.actions.inviteFriends')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -548,7 +548,7 @@ function ProfileScreenComponent() {
             {/* Legal */}
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    Légal
+                    {t('profile.sections.legal')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
                     <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
@@ -557,7 +557,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Conditions d'utilisation
+                                {t('profile.actions.termsOfService')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -569,7 +569,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Politique de confidentialité
+                                {t('profile.actions.privacyPolicy')}
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -581,7 +581,7 @@ function ProfileScreenComponent() {
                         </View>
                         <View style={styles.listItemContent}>
                             <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
-                                Nous contacter
+                                {t('profile.actions.contactUs')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
                                 support@knowit.app
@@ -595,10 +595,10 @@ function ProfileScreenComponent() {
             {/* Copyright */}
             <View style={styles.copyright}>
                 <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
-                    © 2026 KnowIt.
+                    {t('profile.footer.copyright')}
                 </Text>
                 <Text style={[styles.copyrightText, { color: colors.text.muted }]}>
-                    Tous droits réservés.
+                    {t('profile.footer.allRightsReserved')}
                 </Text>
             </View>
         </>
@@ -634,7 +634,7 @@ function ProfileScreenComponent() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
-                        Mon Profil
+                        {t('profile.header.title')}
                     </Text>
                     <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                         <MaterialIcons name="close" size={24} color={colors.text.primary} />
@@ -644,19 +644,19 @@ function ProfileScreenComponent() {
                 {/* Tabs */}
                 <View style={[styles.tabsContainer, { backgroundColor: colors.surface.glass }]}>
                     <TabButton
-                        label="Profil"
+                        label={t('profile.tabs.profile')}
                         icon="person"
                         isActive={logic.activeTab === 'profile'}
                         onPress={() => logic.setActiveTab('profile')}
                     />
                     <TabButton
-                        label="Préférences"
+                        label={t('profile.tabs.preferences')}
                         icon="tune"
                         isActive={logic.activeTab === 'preferences'}
                         onPress={() => logic.setActiveTab('preferences')}
                     />
                     <TabButton
-                        label="À propos"
+                        label={t('profile.tabs.about')}
                         icon="info"
                         isActive={logic.activeTab === 'about'}
                         onPress={() => logic.setActiveTab('about')}
@@ -678,7 +678,7 @@ function ProfileScreenComponent() {
                         <TouchableOpacity
                             style={[
                                 styles.logoutButton,
-                                { 
+                                {
                                     backgroundColor: colors.surface.glass,
                                     borderColor: colors.glass.border,
                                 },
@@ -688,7 +688,7 @@ function ProfileScreenComponent() {
                         >
                             <MaterialIcons name="logout" size={20} color={colors.text.primary} />
                             <Text style={[styles.logoutText, { color: colors.text.primary }]}>
-                                Déconnexion
+                                {t('profile.buttons.logout')}
                             </Text>
                         </TouchableOpacity>
                     </View>

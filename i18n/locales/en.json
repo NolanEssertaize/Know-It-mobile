@@ -22,7 +22,13 @@
     "share": "Share",
     "noData": "No data available",
     "unknownError": "An unknown error occurred",
-    "comingSoon": "Coming Soon"
+    "comingSoon": "Coming Soon",
+    "continue": "Continue",
+    "password": "Password",
+    "button": {
+      "stop": "STOP",
+      "speak": "SPEAK"
+    }
   },
   "auth": {
     "login": {
@@ -62,7 +68,8 @@
       "registrationFailed": "Registration failed. Please try again."
     },
     "logout": "Log Out",
-    "logoutConfirm": "Are you sure you want to log out?"
+    "logoutConfirm": "Are you sure you want to log out?",
+    "tagline": "Learn by explaining"
   },
   "topics": {
     "title": "Ready to learn?",
@@ -89,7 +96,7 @@
       "noSessions": "No sessions yet"
     },
     "add": {
-      "title": "Add New Topic",
+      "title": "New Topic",
       "placeholder": "Topic name (e.g., React Hooks)",
       "create": "Create Topic",
       "cancel": "Cancel",
@@ -157,7 +164,8 @@
     "errors": {
       "updateFailed": "Failed to update topic",
       "deleteFailed": "Failed to delete topic",
-      "deleteSessionFailed": "Failed to delete session"
+      "deleteSessionFailed": "Failed to delete session",
+      "notFound": "Topic not found"
     },
     "actions": {
       "edit": "Edit Topic",
@@ -177,6 +185,11 @@
     "paused": "Paused",
     "analyzing": "Analyzing...",
     "ready": "Ready to record",
+    "audioLevel": "AUDIO LEVEL",
+    "instructions": "Speak clearly and explain the topic as if you were teaching it to someone",
+    "button": {
+      "speak": "SPEAK"
+    },
     "status": {
       "recording": "Recording...",
       "paused": "Paused",
@@ -294,6 +307,70 @@
     "deleteAccountMessage": "This will permanently delete all your data. This action cannot be undone.",
     "deleteAccountRequestedTitle": "Request Submitted",
     "deleteAccountRequestedMessage": "Your account deletion request has been submitted. You will receive an email confirmation shortly.",
+    "header": {
+      "title": "My Profile"
+    },
+    "tabs": {
+      "profile": "Profile",
+      "preferences": "Preferences",
+      "about": "About"
+    },
+    "sections": {
+      "personalInfo": "Personal Information",
+      "security": "Security",
+      "gdpr": "Personal Data (GDPR)",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "dataStorage": "Data & Storage",
+      "app": "Application",
+      "legal": "Legal"
+    },
+    "fields": {
+      "email": "Email",
+      "fullName": "Full Name",
+      "password": "Password",
+      "version": "Version"
+    },
+    "placeholders": {
+      "enterName": "Enter your name"
+    },
+    "buttons": {
+      "saveChanges": "Save Changes",
+      "logout": "Log Out"
+    },
+    "actions": {
+      "logout": "Log Out",
+      "saveChanges": "Save Changes",
+      "saved": "Changes saved",
+      "changePassword": "Change Password",
+      "exportData": "Export My Data",
+      "deleteAccount": "Delete My Account",
+      "rateApp": "Rate the App",
+      "leaveReview": "Leave us a review",
+      "shareApp": "Share KnowIt",
+      "inviteFriends": "Invite your friends",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "contactUs": "Contact Us"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "themeDescription": "Choose app appearance",
+      "language": "Language",
+      "languageDescription": "Choose your preferred language",
+      "notifications": "Notifications",
+      "notificationsDescription": "Receive practice reminders",
+      "pushNotifications": "Push Notifications",
+      "studyReminders": "Receive study reminders",
+      "autoSave": "Auto Save",
+      "autoSaveDescription": "Save your sessions online",
+      "analytics": "Analytics",
+      "analyticsDescription": "Help improve the app"
+    },
     "stats": {
       "title": "Statistics",
       "totalTopics": "Total Topics",
@@ -302,17 +379,6 @@
       "currentStreak": "Current Streak",
       "days": "days"
     },
-    "preferences": {
-      "title": "Preferences",
-      "theme": "Theme",
-      "themeLight": "Light",
-      "themeDark": "Dark",
-      "themeSystem": "System",
-      "language": "Language",
-      "languageDescription": "Choose your preferred language",
-      "notifications": "Notifications",
-      "notificationsDescription": "Receive practice reminders"
-    },
     "account": {
       "title": "Account",
       "email": "Email",
@@ -320,17 +386,44 @@
       "deleteAccount": "Delete Account",
       "deleteAccountWarning": "This will permanently delete all your data"
     },
-    "actions": {
-      "logout": "Log Out",
-      "saveChanges": "Save Changes",
-      "saved": "Changes saved"
-    },
     "about": {
       "title": "About",
       "version": "Version",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "support": "Support"
+    },
+    "footer": {
+      "copyright": "© 2026 KnowIt.",
+      "allRightsReserved": "All rights reserved."
+    },
+    "alerts": {
+      "exportTitle": "Export My Data",
+      "exportMessage": "Do you want to receive a copy of all your data by email?",
+      "exportSuccess": "Your data will be sent to you by email"
+    },
+    "deleteAccountModal": {
+      "title": "Delete your account?",
+      "description": "This action is irreversible.\nAll your data will be permanently deleted.",
+      "instruction": "Type DELETE to confirm",
+      "confirmWord": "DELETE",
+      "passwordTitle": "Confirm with your password",
+      "passwordDescription": "For security reasons, please enter your password to confirm the deletion."
+    },
+    "logoutModal": {
+      "title": "Log out?",
+      "description": "You will need to log in again to access your data.",
+      "confirm": "Log Out"
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "currentPassword": "Current Password",
+      "currentPlaceholder": "Enter your current password",
+      "newPassword": "New Password",
+      "newPlaceholder": "Minimum 8 characters",
+      "confirmPassword": "Confirm Password",
+      "confirmPlaceholder": "Repeat new password",
+      "submit": "Change Password"
     }
   },
   "languages": {
