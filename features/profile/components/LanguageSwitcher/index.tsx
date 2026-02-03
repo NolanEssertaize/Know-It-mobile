@@ -4,15 +4,14 @@
  * Uses MaterialIcons "language" icon instead of emoji flags
  */
 
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 import { useTheme, Spacing, BorderRadius } from '@/theme';
-import { useLanguage } from '@/i18n';
 
-// Hardcoded language display names to avoid import issues
+// Hardcoded language display names
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   fr: 'Français',
@@ -24,11 +23,25 @@ interface LanguageSwitcherProps {
 
 function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'en');
+
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = (lng: string) => {
+      setCurrentLanguage(lng);
+    };
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, []);
+
+  const handleChangeLanguage = async (code: string) => {
+    await i18n.changeLanguage(code);
+  };
 
   // Available language codes
-  const languageCodes = ['en', 'fr'] as const;
+  const languageCodes = ['en', 'fr'];
 
   return (
     <View style={styles.container}>
@@ -39,10 +52,10 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
           </View>
           <View style={styles.labelContainer}>
             <Text style={[styles.title, { color: colors.text.primary }]}>
-              {t('profile.language')}
+              Language
             </Text>
             <Text style={[styles.description, { color: colors.text.secondary }]}>
-              {t('profile.preferences.languageDescription')}
+              Choose your preferred language
             </Text>
           </View>
         </View>
@@ -62,7 +75,7 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
                 borderColor: colors.text.primary,
               },
             ]}
-            onPress={() => changeLanguage(code)}
+            onPress={() => handleChangeLanguage(code)}
             activeOpacity={0.7}
           >
             <Text
