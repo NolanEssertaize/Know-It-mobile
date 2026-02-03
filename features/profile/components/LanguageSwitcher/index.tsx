@@ -63,7 +63,7 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
             <Text
               style={[
                 styles.languageText,
-                { color: colors.text.secondary },
+                { color: colors.text.primary },
                 currentLanguage === lang.code && {
                   color: colors.text.inverse,
                 },
