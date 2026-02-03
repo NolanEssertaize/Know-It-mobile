@@ -1,12 +1,17 @@
 /**
  * @file SessionHistoryCard.tsx
- * @description Carte d'historique de session - Theme Aware
+ * @description Carte d'historique de session - Theme Aware + i18n
+ *
+ * MERGED:
+ * - MAIN branch: All styles and component structure preserved
+ * - i18nV2 branch: Translation hooks injected for fallback text
  *
  * FIXED: Now uses useTheme() for dynamic colors (fixes white text on white theme)
  */
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { GlassCard } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
 import type { SessionItemData } from '../../hooks/useTopicDetail';
@@ -29,6 +34,7 @@ export const SessionHistoryCard = memo(function SessionHistoryCard({
                                                                        onPress,
                                                                    }: SessionHistoryCardProps) {
     const { session, formattedDate } = data;
+    const { t } = useTranslation();
     const { colors } = useTheme();
 
     return (
@@ -44,7 +50,7 @@ export const SessionHistoryCard = memo(function SessionHistoryCard({
                 numberOfLines={3}
                 style={[styles.transcription, { color: colors.text.primary }]}
             >
-                {session.transcription || 'Aucune transcription disponible'}
+                {session.transcription || t('topicDetail.noTranscription', 'Aucune transcription disponible')}
             </Text>
         </GlassCard>
     );
@@ -77,3 +83,5 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
 });
+
+export default SessionHistoryCard;

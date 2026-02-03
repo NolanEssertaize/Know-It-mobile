@@ -1,15 +1,10 @@
 /**
- * @file features/topics/index.ts
- * @description Topics feature exports
+ * @file index.ts
+ * @description Export de la feature Topics
  */
 
-// Screens
 export { TopicsListScreen } from './screens/TopicsListScreen';
-
-// Components
+export { useTopicsList, TOPIC_THEMES, CATEGORIES } from './hooks/useTopicsList';
 export { TopicCard } from './components/TopicCard';
 export { AddTopicModal } from './components/AddTopicModal';
 export { CategoryFilter } from './components/CategoryFilter';
-
-// Hooks
-export { useTopicsList, CATEGORIES, TOPIC_THEMES } from './hooks/useTopicsList';

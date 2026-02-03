@@ -65,13 +65,18 @@
   "topics": {
     "title": "Prêt à apprendre ?",
     "subtitle": "Sélectionne un sujet pour commencer",
+    "myTopics": "Mes Sujets",
+    "topicsCount": "{{count}} sujets",
+    "topicsCount_one": "{{count}} sujet",
+    "swipeHint": "Glissez pour plus d'options",
+    "activeFilters": "Filtres actifs",
     "stats": {
       "topics": "Sujets",
       "sessions": "Sessions",
-      "streak": "Jours consécutifs"
+      "streak": "Série"
     },
     "search": {
-      "placeholder": "Rechercher des sujets...",
+      "placeholder": "Rechercher un sujet...",
       "noResults": "Aucun sujet trouvé",
       "noResultsDescription": "Essaie de modifier ta recherche ou tes filtres"
     },
@@ -82,8 +87,8 @@
       "noSessions": "Aucune session"
     },
     "add": {
-      "title": "Ajouter un nouveau sujet",
-      "placeholder": "Entre le nom du sujet...",
+      "title": "Nouveau Sujet",
+      "placeholder": "Nom du sujet (ex: React Hooks)",
       "create": "Créer le sujet",
       "cancel": "Annuler",
       "success": "Sujet créé avec succès !",
@@ -91,6 +96,8 @@
     },
     "categories": {
       "all": "Tous",
+      "recent": "Récents",
+      "favorites": "Favoris",
       "programming": "Programmation",
       "science": "Sciences",
       "languages": "Langues",
@@ -109,72 +116,82 @@
       "message": "Es-tu sûr de vouloir supprimer ce sujet ? Cette action est irréversible.",
       "success": "Sujet supprimé",
       "error": "Échec de la suppression du sujet"
+    },
+    "filter": {
+      "all": "Tous"
+    },
+    "list": {
+      "title": "Mes Sujets",
+      "item": "sujet",
+      "items": "sujets"
     }
   },
   "topicDetail": {
     "sessions": "Sessions",
+    "session": "Session",
     "sessionsCount": "{{count}} session",
     "sessionsCount_plural": "{{count}} sessions",
+    "avgScore": "Score Moyen",
+    "history": "Historique",
+    "noTranscription": "Aucune transcription disponible",
     "empty": {
       "title": "Aucune session",
       "description": "Commence ta première session de pratique",
-      "startButton": "Démarrer une session"
+      "startButton": "Démarrer une session",
+      "message": "Commence ta première session de pratique"
+    },
+    "edit": {
+      "title": "Modifier le sujet",
+      "placeholder": "Nom du sujet"
+    },
+    "delete": {
+      "title": "Supprimer le sujet",
+      "message": "Es-tu sûr de vouloir supprimer ce sujet ?"
+    },
+    "deleteSession": {
+      "title": "Supprimer la session",
+      "message": "Es-tu sûr de vouloir supprimer cette session ?"
+    },
+    "errors": {
+      "updateFailed": "Échec de la mise à jour du sujet",
+      "deleteFailed": "Échec de la suppression du sujet",
+      "deleteSessionFailed": "Échec de la suppression de la session"
     },
     "actions": {
       "edit": "Modifier le sujet",
       "delete": "Supprimer le sujet",
-      "confirmDelete": "Es-tu sûr de vouloir supprimer ce sujet ?",
-      "startSession": "Démarrer une session"
+      "confirmDelete": "Es-tu sûr de vouloir supprimer ce sujet ?"
     },
-    "edit": {
-      "title": "Modifier le sujet",
-      "placeholder": "Nom du sujet",
-      "save": "Enregistrer",
-      "cancel": "Annuler",
-      "success": "Sujet mis à jour",
-      "error": "Échec de la mise à jour du sujet"
+    "history": {
+      "title": "Historique des sessions",
+      "session": "session",
+      "sessions": "sessions"
     },
-    "sessionCard": {
-      "score": "Score",
-      "duration": "Durée",
-      "viewDetails": "Voir les détails"
-    }
+    "startSession": "Démarrer une session"
   },
   "session": {
     "title": "Session d'enregistrement",
+    "recording": "Enregistrement...",
+    "paused": "En pause",
+    "analyzing": "Analyse...",
+    "ready": "Prêt à enregistrer",
     "status": {
-      "idle": "Prêt",
       "recording": "Enregistrement...",
-      "analyzing": "Analyse en cours...",
-      "completed": "Terminé",
-      "error": "Erreur"
+      "paused": "En pause",
+      "analyzing": "Analyse...",
+      "idle": "Prêt à enregistrer",
+      "complete": "Enregistrement terminé"
     },
-    "instructions": {
-      "title": "Comment pratiquer",
-      "step1": "Appuie sur le bouton pour commencer",
-      "step2": "Explique le sujet avec tes propres mots",
-      "step3": "Appuie sur stop quand tu as fini"
-    },
-    "controls": {
+    "actions": {
       "start": "Démarrer l'enregistrement",
-      "stop": "Arrêter l'enregistrement",
       "pause": "Pause",
       "resume": "Reprendre",
-      "cancel": "Annuler",
-      "submit": "Soumettre pour analyse"
+      "stop": "Arrêter",
+      "submit": "Soumettre pour analyse",
+      "cancel": "Annuler"
     },
-    "timer": {
-      "recording": "Enregistrement",
-      "elapsed": "Temps écoulé"
-    },
-    "tips": {
-      "title": "Conseils",
-      "speak": "Parle clairement et à un rythme naturel",
-      "explain": "Essaie d'expliquer comme si tu enseignais à quelqu'un",
-      "complete": "Couvre tous les concepts clés que tu connais"
-    },
-    "error": {
-      "permission": "Permission du microphone requise",
+    "errors": {
+      "permissionDenied": "Permission du microphone refusée",
       "recordingFailed": "Échec de l'enregistrement. Réessaie.",
       "tooShort": "L'enregistrement est trop court. Enregistre au moins 10 secondes."
     }
