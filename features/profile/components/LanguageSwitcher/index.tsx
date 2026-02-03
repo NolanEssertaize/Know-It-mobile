@@ -61,36 +61,48 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
         </View>
       )}
       <View style={styles.languageSelector}>
-        {languageCodes.map((code) => (
-          <TouchableOpacity
-            key={code}
-            style={[
-              styles.languageOption,
-              {
-                backgroundColor: colors.glass.background,
-                borderColor: colors.glass.border,
-              },
-              currentLanguage === code && {
-                backgroundColor: colors.text.primary,
-                borderColor: colors.text.primary,
-              },
-            ]}
-            onPress={() => handleChangeLanguage(code)}
-            activeOpacity={0.7}
+        <TouchableOpacity
+          style={[
+            styles.languageOption,
+            {
+              backgroundColor: currentLanguage === 'en' ? colors.text.primary : colors.glass.background,
+              borderColor: currentLanguage === 'en' ? colors.text.primary : colors.glass.border,
+            },
+          ]}
+          onPress={() => handleChangeLanguage('en')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '500',
+              color: currentLanguage === 'en' ? colors.text.inverse : colors.text.primary,
+            }}
           >
-            <Text
-              style={[
-                styles.languageText,
-                { color: colors.text.primary },
-                currentLanguage === code && {
-                  color: colors.text.inverse,
-                },
-              ]}
-            >
-              {LANGUAGE_NAMES[code]}
-            </Text>
-          </TouchableOpacity>
-        ))}
+            English
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.languageOption,
+            {
+              backgroundColor: currentLanguage === 'fr' ? colors.text.primary : colors.glass.background,
+              borderColor: currentLanguage === 'fr' ? colors.text.primary : colors.glass.border,
+            },
+          ]}
+          onPress={() => handleChangeLanguage('fr')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '500',
+              color: currentLanguage === 'fr' ? colors.text.inverse : colors.text.primary,
+            }}
+          >
+            Français
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -98,7 +110,7 @@ function LanguageSwitcherComponent({ showIcon = true }: LanguageSwitcherProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.sm,
+    width: '100%',
   },
   headerRow: {
     flexDirection: 'row',
@@ -126,19 +138,17 @@ const styles = StyleSheet.create({
   },
   languageSelector: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   languageOption: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     alignItems: 'center',
-  },
-  languageText: {
-    fontSize: 14,
-    fontWeight: '500',
+    justifyContent: 'center',
   },
 });
 
