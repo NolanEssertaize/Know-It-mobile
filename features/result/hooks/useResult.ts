@@ -8,11 +8,11 @@
  * 2. Session history: only sessionId passed, data fetched from store
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { AnalysisResult } from '@/types';
 import { GlassColors } from '@/theme';
-import { useStore, selectCurrentTopic } from '@/store';
+import { LLMService } from '@/shared/services';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -50,6 +50,8 @@ export interface UseResultReturn {
     readonly transcription: string | undefined;
     /** True if viewing a past session from history, false if fresh recording */
     readonly isFromHistory: boolean;
+    /** True while loading session data from API */
+    readonly isLoading: boolean;
 
     // Methods
     readonly handleClose: () => void;
@@ -106,66 +108,88 @@ export function useResult(): UseResultReturn {
     }>();
     const router = useRouter();
 
-    // Get current topic from store (for session history lookup)
-    const currentTopic = useStore(selectCurrentTopic);
-    const getTopicById = useStore((state) => state.getTopicById);
-
-    // Find session from store if needed
-    const sessionFromStore = useMemo(() => {
-        if (!params.sessionId) return null;
-
-        // First try currentTopic
-        if (currentTopic) {
-            const session = currentTopic.sessions.find((s) => s.id === params.sessionId);
-            if (session) return session;
-        }
-
-        // Fallback: try to find in topics list using topicId
-        if (params.topicId) {
-            const topic = getTopicById(params.topicId);
-            if (topic) {
-                return topic.sessions.find((s) => s.id === params.sessionId) || null;
-            }
-        }
-
-        return null;
-    }, [params.sessionId, params.topicId, currentTopic, getTopicById]);
+    // State for API-fetched session
+    const [fetchedSession, setFetchedSession] = useState<{
+        analysis: AnalysisResult;
+        transcription?: string;
+    } | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Determine if viewing from session history (no analysis params = from history)
     const isFromHistory = useMemo(() => {
         return !params.valid && !params.corrections && !params.missing && !!params.sessionId;
     }, [params.valid, params.corrections, params.missing, params.sessionId]);
 
-    // Get analysis data: prefer URL params (fresh recording), fallback to store (session history)
+    // Debug logging
+    console.log('[useResult] params:', {
+        topicId: params.topicId,
+        sessionId: params.sessionId,
+        hasValid: !!params.valid,
+        hasCorrections: !!params.corrections,
+        hasMissing: !!params.missing,
+        isFromHistory,
+    });
+
+    // Fetch session from API when viewing from history
+    useEffect(() => {
+        if (!isFromHistory || !params.sessionId) {
+            return;
+        }
+
+        console.log('[useResult] Fetching session from API:', params.sessionId);
+        setIsLoading(true);
+
+        LLMService.getSession(params.sessionId)
+            .then((session) => {
+                console.log('[useResult] Fetched session:', session.id, 'analysis:', session.analysis);
+                setFetchedSession({
+                    analysis: session.analysis || { valid: [], corrections: [], missing: [] },
+                    transcription: session.transcription || undefined,
+                });
+            })
+            .catch((error) => {
+                console.error('[useResult] Failed to fetch session:', error);
+                setFetchedSession(null);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }, [isFromHistory, params.sessionId]);
+
+    // Get analysis data: prefer URL params (fresh recording), fallback to API fetch (session history)
     const analysis = useMemo((): AnalysisResult => {
         // Check if we have analysis data in URL params (from fresh recording)
         const hasParamsData = params.valid || params.corrections || params.missing;
 
         if (hasParamsData) {
             // Fresh recording: parse from URL params
-            return {
+            const result = {
                 valid: parseJsonParam(params.valid, []),
                 corrections: parseJsonParam(params.corrections, []),
                 missing: parseJsonParam(params.missing, []),
             };
+            console.log('[useResult] Using URL params analysis:', result);
+            return result;
         }
 
-        // Session history: get from store
-        if (sessionFromStore?.analysis) {
-            return sessionFromStore.analysis;
+        // Session history: use fetched data from API
+        if (fetchedSession?.analysis) {
+            console.log('[useResult] Using API-fetched analysis:', fetchedSession.analysis);
+            return fetchedSession.analysis;
         }
 
-        // Fallback: empty analysis
+        // Fallback: empty analysis (while loading or if fetch failed)
+        console.log('[useResult] No analysis found, using empty fallback');
         return { valid: [], corrections: [], missing: [] };
-    }, [params.valid, params.corrections, params.missing, sessionFromStore]);
+    }, [params.valid, params.corrections, params.missing, fetchedSession]);
 
-    // Get transcription: prefer URL params, fallback to store
+    // Get transcription: prefer URL params, fallback to API fetch
     const transcription = useMemo(() => {
         if (params.transcription) {
             return params.transcription;
         }
-        return sessionFromStore?.transcription;
-    }, [params.transcription, sessionFromStore]);
+        return fetchedSession?.transcription;
+    }, [params.transcription, fetchedSession]);
 
     // Calculate score
     const score = useMemo(() => calculateScore(analysis), [analysis]);
@@ -238,6 +262,7 @@ export function useResult(): UseResultReturn {
         sections,
         transcription,
         isFromHistory,
+        isLoading,
 
         // Methods
         handleClose,

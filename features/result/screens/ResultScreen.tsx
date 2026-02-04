@@ -13,6 +13,7 @@ import {
     Pressable,
     StyleSheet,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -57,7 +58,8 @@ function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
-    const { score, sections, summary, handleClose, handleRetry, isFromHistory } = useResult();
+    const { score, sections, summary, handleClose, handleRetry, isFromHistory, isLoading, transcription } = useResult();
+    const [showTranscription, setShowTranscription] = React.useState(false);
 
     // Theme-aware sections
     const themedSections = useMemo(() => {
@@ -67,6 +69,18 @@ function ResultScreenComponent(): React.JSX.Element {
             glowColor: undefined,
         }));
     }, [sections, colors.text.primary]);
+
+    // Show loading state while fetching session from API
+    if (isLoading) {
+        return (
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
+                <ActivityIndicator size="large" color={colors.text.primary} />
+                <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                    {t('result.loading')}
+                </Text>
+            </View>
+        );
+    }
 
     // Show empty state if no data (shouldn't happen in normal flow)
     const hasData = summary.totalPoints > 0;
@@ -177,6 +191,45 @@ function ResultScreenComponent(): React.JSX.Element {
                         />
                     ))}
                 </View>
+
+                {/* Transcription Section */}
+                {transcription && (
+                    <View style={styles.transcriptionContainer}>
+                        <Pressable
+                            style={[
+                                styles.transcriptionHeader,
+                                {
+                                    backgroundColor: colors.surface.glass,
+                                    borderColor: colors.glass.border,
+                                },
+                            ]}
+                            onPress={() => setShowTranscription(!showTranscription)}
+                        >
+                            <View style={styles.transcriptionHeaderLeft}>
+                                <MaterialIcons
+                                    name="record-voice-over"
+                                    size={20}
+                                    color={colors.text.primary}
+                                />
+                                <Text style={[styles.transcriptionTitle, { color: colors.text.primary }]}>
+                                    {t('result.transcription.title')}
+                                </Text>
+                            </View>
+                            <MaterialIcons
+                                name={showTranscription ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                                size={24}
+                                color={colors.text.secondary}
+                            />
+                        </Pressable>
+                        {showTranscription && (
+                            <GlassView variant="default" style={styles.transcriptionContent}>
+                                <Text style={[styles.transcriptionText, { color: colors.text.primary }]}>
+                                    {transcription}
+                                </Text>
+                            </GlassView>
+                        )}
+                    </View>
+                )}
 
                 {/* Actions - HIGH CONTRAST BUTTONS */}
                 <View style={styles.actionsContainer}>
@@ -352,6 +405,42 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         textTransform: 'uppercase',
         marginBottom: Spacing.md,
+    },
+
+    // Transcription
+    transcriptionContainer: {
+        marginBottom: Spacing.lg,
+    },
+
+    transcriptionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+    },
+
+    transcriptionHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+
+    transcriptionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    transcriptionContent: {
+        marginTop: Spacing.sm,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+    },
+
+    transcriptionText: {
+        fontSize: 14,
+        lineHeight: 22,
     },
 
     // Actions

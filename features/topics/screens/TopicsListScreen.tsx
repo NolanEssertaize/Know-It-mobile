@@ -33,6 +33,7 @@ import { Spacing, BorderRadius, useTheme } from '@/theme';
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
 import { AddTopicModal } from '../components/AddTopicModal';
+import { EditTopicModal } from '../components/EditTopicModal';
 import { CategoryFilter } from '../components/CategoryFilter';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -93,18 +94,18 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 data={item}
                 onPress={() => logic.handleCardPress(item.topic.id)}
                 onEdit={() => logic.handleEdit(item.topic.id)}
-                onShare={() => logic.handleShare(item.topic.id)}
+                onFavorite={() => logic.handleFavorite(item.topic.id)}
                 onDelete={() => logic.handleDelete(item.topic.id)}
                 registerRef={(ref) => logic.registerSwipeableRef(item.topic.id, ref)}
                 unregisterRef={() => logic.unregisterSwipeableRef(item.topic.id)}
             />
         ),
         [
-            logic.handleCardPress, 
-            logic.handleEdit, 
-            logic.handleShare, 
-            logic.handleDelete, 
-            logic.registerSwipeableRef, 
+            logic.handleCardPress,
+            logic.handleEdit,
+            logic.handleFavorite,
+            logic.handleDelete,
+            logic.registerSwipeableRef,
             logic.unregisterSwipeableRef
         ]
     );
@@ -266,6 +267,15 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 onChangeText={logic.setNewTopicText}
                 onSubmit={logic.handleAddTopic}
                 onClose={() => logic.setShowAddModal(false)}
+            />
+
+            {/* Edit Topic Modal */}
+            <EditTopicModal
+                visible={logic.editingTopicId !== null}
+                value={logic.editTopicText}
+                onChangeText={logic.setEditTopicText}
+                onSubmit={logic.handleEditSubmit}
+                onClose={logic.handleEditCancel}
             />
         </ScreenWrapper>
     );

@@ -34,6 +34,7 @@ export interface Topic {
     readonly title: string;
     readonly createdAt: string;
     readonly sessions: Session[];
+    readonly isFavorite: boolean;
 }
 
 /**
@@ -60,6 +61,7 @@ function mapTopicReadToTopic(topic: TopicRead): Topic {
         title: topic.title,
         createdAt: topic.created_at,
         sessions: [],
+        isFavorite: topic.is_favorite ?? false,
     };
 }
 
@@ -72,6 +74,7 @@ function mapTopicDetailToTopic(topic: TopicDetail): Topic {
         title: topic.title,
         createdAt: topic.created_at,
         sessions: topic.sessions?.map(mapSessionReadToSession) || [],
+        isFavorite: topic.is_favorite ?? false,
     };
 }
 
@@ -79,12 +82,23 @@ function mapTopicDetailToTopic(topic: TopicDetail): Topic {
  * Convert API SessionRead to frontend Session
  */
 function mapSessionReadToSession(session: SessionRead): Session {
+    // Ensure analysis has the correct structure with default empty arrays
+    const analysis: AnalysisResult = session.analysis
+        ? {
+            valid: session.analysis.valid || [],
+            corrections: session.analysis.corrections || [],
+            missing: session.analysis.missing || [],
+        }
+        : { valid: [], corrections: [], missing: [] };
+
+    console.log('[Store] Mapping session:', session.id, 'analysis:', analysis);
+
     return {
         id: session.id,
         date: session.date,
         audioUri: session.audio_uri || undefined,
         transcription: session.transcription || undefined,
-        analysis: session.analysis,
+        analysis,
     };
 }
 
@@ -112,6 +126,8 @@ interface TopicsActions {
     addTopic: (title: string) => Promise<Topic | null>;
     /** Update topic title */
     updateTopicTitle: (topicId: string, newTitle: string) => Promise<void>;
+    /** Toggle topic favorite status */
+    toggleFavorite: (topicId: string) => Promise<void>;
     /** Delete a topic */
     deleteTopic: (topicId: string) => Promise<void>;
     /** Add a session to a topic (after recording) */
@@ -301,6 +317,57 @@ export const useStore = create<Store>((set, get) => ({
                 : 'Failed to update topic';
 
             console.error('[Store] Failed to update topic:', message);
+            set({ error: message });
+        }
+    },
+
+    /**
+     * Toggle topic favorite status via API
+     */
+    toggleFavorite: async (topicId: string) => {
+        const topic = get().topics.find((t) => t.id === topicId);
+        if (!topic) return;
+
+        const newFavoriteStatus = !topic.isFavorite;
+        console.log(`[Store] Toggling favorite for topic ${topicId} to: ${newFavoriteStatus}`);
+        set({ error: null });
+
+        // Optimistic update
+        set((state) => ({
+            topics: state.topics.map((t) =>
+                t.id === topicId
+                    ? { ...t, isFavorite: newFavoriteStatus }
+                    : t
+            ),
+            currentTopic: state.currentTopic?.id === topicId
+                ? { ...state.currentTopic, isFavorite: newFavoriteStatus }
+                : state.currentTopic,
+        }));
+
+        try {
+            await TopicsService.updateTopic(topicId, {
+                is_favorite: newFavoriteStatus,
+            });
+
+            console.log('[Store] Topic favorite status updated');
+        } catch (error) {
+            // Revert on failure
+            set((state) => ({
+                topics: state.topics.map((t) =>
+                    t.id === topicId
+                        ? { ...t, isFavorite: !newFavoriteStatus }
+                        : t
+                ),
+                currentTopic: state.currentTopic?.id === topicId
+                    ? { ...state.currentTopic, isFavorite: !newFavoriteStatus }
+                    : state.currentTopic,
+            }));
+
+            const message = error instanceof ApiException
+                ? error.message
+                : 'Failed to update favorite status';
+
+            console.error('[Store] Failed to toggle favorite:', message);
             set({ error: message });
         }
     },
