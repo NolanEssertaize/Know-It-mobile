@@ -66,7 +66,7 @@ export interface UseTopicsListReturn {
     handleAddTopic: () => void;
     handleCardPress: (topicId: string) => void;
     handleEdit: (topicId: string) => void;
-    handleShare: (topicId: string) => void;
+    handleFavorite: (topicId: string) => void;
     handleDelete: (topicId: string) => void;
     closeAllSwipeables: (exceptId?: string) => void;
     registerSwipeableRef: (id: string, ref: SwipeableMethods) => void;
@@ -108,7 +108,7 @@ export function useTopicsList(): UseTopicsListReturn {
     const error = useStore(selectError);
 
     // Store actions
-    const { addTopic, deleteTopic, loadTopics } = useStore();
+    const { addTopic, deleteTopic, loadTopics, toggleFavorite } = useStore();
 
     // État local
     const [searchText, setSearchText] = useState('');
@@ -238,24 +238,24 @@ export function useTopicsList(): UseTopicsListReturn {
         [openSwipeableId, closeAllSwipeables, router]
     );
 
-    // Edit handler
+    // Edit handler - opens edit modal (handled by screen)
     const handleEdit = useCallback(
         (topicId: string) => {
             console.log('Edit topic:', topicId);
             closeAllSwipeables();
-            // TODO: Implémenter l'édition
+            // Edit modal is handled by the screen component
         },
         [closeAllSwipeables]
     );
 
-    // Share handler
-    const handleShare = useCallback(
+    // Favorite handler - toggle favorite status
+    const handleFavorite = useCallback(
         (topicId: string) => {
-            console.log('Share topic:', topicId);
+            console.log('Toggle favorite for topic:', topicId);
             closeAllSwipeables();
-            // TODO: Implémenter le partage
+            toggleFavorite(topicId);
         },
-        [closeAllSwipeables]
+        [closeAllSwipeables, toggleFavorite]
     );
 
     // Delete handler
@@ -302,7 +302,7 @@ export function useTopicsList(): UseTopicsListReturn {
         handleAddTopic,
         handleCardPress,
         handleEdit,
-        handleShare,
+        handleFavorite,
         handleDelete,
         closeAllSwipeables,
         registerSwipeableRef,

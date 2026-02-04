@@ -134,6 +134,7 @@ export interface TopicRead {
   readonly title: string;
   readonly created_at: string;
   readonly session_count: number;
+  readonly is_favorite?: boolean;
 }
 
 export interface TopicDetail {
@@ -141,10 +142,12 @@ export interface TopicDetail {
   readonly title: string;
   readonly created_at: string;
   readonly sessions: SessionRead[];
+  readonly is_favorite?: boolean;
 }
 
 export interface TopicUpdate {
   readonly title?: string | null;
+  readonly is_favorite?: boolean | null;
 }
 
 export interface TopicList {

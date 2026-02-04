@@ -1,23 +1,36 @@
 /**
  * @file ScoreGauge.tsx
- * @description Composant d'affichage du score - Theme Aware
+ * @description Composant d'affichage du score avec animation circulaire SVG
  *
- * FIXED: Now accepts color prop from parent (which uses useTheme)
+ * FIXED: Now uses SVG for proper circular progress animation
  */
 
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
+import Animated, {
+    useSharedValue,
+    useAnimatedProps,
+    withTiming,
+    Easing,
+    useDerivedValue,
+    runOnJS,
+} from 'react-native-reanimated';
 import { GlassView } from '@/shared/components';
 import { Spacing, BorderRadius } from '@/theme';
-import { useScoreGaugeAnimation } from '@/features/result/hooks/useScoreGauge';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CIRCLE_SIZE = 180;
-const CIRCLE_STROKE = 10;
+const STROKE_WIDTH = 10;
+const RADIUS = (CIRCLE_SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const ANIMATION_DURATION = 1500;
+
+// Create animated circle component
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -37,28 +50,68 @@ export interface ScoreGaugeProps {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ScoreGaugeComponent({ value, label, color }: ScoreGaugeProps): React.JSX.Element {
-    const { displayValue, rotation } = useScoreGaugeAnimation(value);
+    const progress = useSharedValue(0);
+    const [displayValue, setDisplayValue] = React.useState(0);
 
-    // Animated style for progress ring
-    const animatedProgressStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${rotation.value - 45}deg` }],
-    }));
+    // Animate progress when value changes
+    useEffect(() => {
+        // Reset to 0 first
+        progress.value = 0;
+        setDisplayValue(0);
+
+        // Small delay before starting animation
+        const timeout = setTimeout(() => {
+            progress.value = withTiming(value / 100, {
+                duration: ANIMATION_DURATION,
+                easing: Easing.out(Easing.cubic),
+            });
+        }, 100);
+
+        return () => clearTimeout(timeout);
+    }, [value, progress]);
+
+    // Update display value based on progress
+    useDerivedValue(() => {
+        const currentValue = Math.round(progress.value * 100);
+        runOnJS(setDisplayValue)(currentValue);
+    }, [progress]);
+
+    // Animated props for the progress circle
+    const animatedProps = useAnimatedProps(() => {
+        const strokeDashoffset = CIRCUMFERENCE * (1 - progress.value);
+        return {
+            strokeDashoffset,
+        };
+    });
 
     return (
         <GlassView variant="default" style={styles.container}>
             {/* Score Circle Display */}
             <View style={styles.circleContainer}>
-                {/* Background Circle Track */}
-                <View style={[styles.circleTrack, { borderColor: `${color}20` }]} />
-
-                {/* Animated Progress Ring */}
-                <Animated.View
-                    style={[
-                        styles.progressRing,
-                        { borderTopColor: color, borderRightColor: color },
-                        animatedProgressStyle
-                    ]}
-                />
+                <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={styles.svg}>
+                    {/* Background Circle Track */}
+                    <Circle
+                        cx={CIRCLE_SIZE / 2}
+                        cy={CIRCLE_SIZE / 2}
+                        r={RADIUS}
+                        stroke={`${color}20`}
+                        strokeWidth={STROKE_WIDTH}
+                        fill="none"
+                    />
+                    {/* Animated Progress Circle */}
+                    <AnimatedCircle
+                        cx={CIRCLE_SIZE / 2}
+                        cy={CIRCLE_SIZE / 2}
+                        r={RADIUS}
+                        stroke={color}
+                        strokeWidth={STROKE_WIDTH}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={CIRCUMFERENCE}
+                        animatedProps={animatedProps}
+                        transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
+                    />
+                </Svg>
 
                 {/* Center Score Display */}
                 <View style={styles.centerContent}>
@@ -95,22 +148,8 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
 
-    circleTrack: {
+    svg: {
         position: 'absolute',
-        width: CIRCLE_SIZE,
-        height: CIRCLE_SIZE,
-        borderRadius: CIRCLE_SIZE / 2,
-        borderWidth: CIRCLE_STROKE,
-    },
-
-    progressRing: {
-        position: 'absolute',
-        width: CIRCLE_SIZE,
-        height: CIRCLE_SIZE,
-        borderRadius: CIRCLE_SIZE / 2,
-        borderWidth: CIRCLE_STROKE,
-        borderLeftColor: 'transparent',
-        borderBottomColor: 'transparent',
     },
 
     centerContent: {

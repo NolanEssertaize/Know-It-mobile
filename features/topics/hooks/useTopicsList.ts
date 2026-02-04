@@ -11,7 +11,7 @@
  */
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Keyboard } from 'react-native';
+import { Keyboard, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useStore, selectTopics, selectIsLoading, selectError } from '@/store/useStore';
@@ -64,6 +64,10 @@ export interface UseTopicsListReturn {
     error: string | null;
     streak: number;
 
+    // Edit modal data
+    editingTopicId: string | null;
+    editTopicText: string;
+
     // Methods
     setSearchText: (text: string) => void;
     setSelectedCategory: (category: string) => void;
@@ -72,13 +76,18 @@ export interface UseTopicsListReturn {
     handleAddTopic: () => void;
     handleCardPress: (topicId: string) => void;
     handleEdit: (topicId: string) => void;
-    handleShare: (topicId: string) => void;
+    handleFavorite: (topicId: string) => void;
     handleDelete: (topicId: string) => void;
     closeAllSwipeables: (exceptId?: string) => void;
     registerSwipeableRef: (id: string, ref: SwipeableMethods) => void;
     unregisterSwipeableRef: (id: string) => void;
     resetFilters: () => void;
     refreshTopics: () => Promise<void>;
+
+    // Edit modal methods
+    setEditTopicText: (text: string) => void;
+    handleEditSubmit: () => void;
+    handleEditCancel: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -166,7 +175,7 @@ export function useTopicsList(): UseTopicsListReturn {
     const error = useStore(selectError);
 
     // Store actions
-    const { addTopic, deleteTopic, loadTopics } = useStore();
+    const { addTopic, deleteTopic, loadTopics, toggleFavorite, updateTopicTitle } = useStore();
 
     // État local
     const [searchText, setSearchText] = useState('');
@@ -174,6 +183,10 @@ export function useTopicsList(): UseTopicsListReturn {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newTopicText, setNewTopicText] = useState('');
     const [openSwipeableId, setOpenSwipeableId] = useState<string | null>(null);
+
+    // Edit modal state
+    const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+    const [editTopicText, setEditTopicText] = useState('');
 
     // Debounce du texte de recherche
     const debouncedSearchText = useDebounce(searchText, DEBOUNCE_DELAY);
@@ -217,13 +230,15 @@ export function useTopicsList(): UseTopicsListReturn {
             result = result.filter((t) => t.title && t.title.toLowerCase().includes(query));
         }
 
-        // Tri par catégorie
+        // Filter/sort by category
         if (selectedCategory === 'recent') {
             result.sort((a, b) => {
                 const dateA = (a.sessions && a.sessions[0]?.date) || '';
                 const dateB = (b.sessions && b.sessions[0]?.date) || '';
                 return new Date(dateB).getTime() - new Date(dateA).getTime();
             });
+        } else if (selectedCategory === 'favorites') {
+            result = result.filter((t) => t.isFavorite);
         }
 
         // Enrichissement
@@ -305,28 +320,64 @@ export function useTopicsList(): UseTopicsListReturn {
 
     const handleEdit = useCallback(
         (topicId: string) => {
-            console.log('Edit topic:', topicId);
+            const topic = topics.find((t) => t.id === topicId);
+            if (!topic) return;
+
             closeAllSwipeables();
-            // TODO: Implement edit
+            setEditingTopicId(topicId);
+            setEditTopicText(topic.title);
         },
-        [closeAllSwipeables]
+        [closeAllSwipeables, topics]
     );
 
-    const handleShare = useCallback(
+    const handleEditSubmit = useCallback(() => {
+        if (editingTopicId && editTopicText.trim()) {
+            updateTopicTitle(editingTopicId, editTopicText.trim());
+        }
+        setEditingTopicId(null);
+        setEditTopicText('');
+    }, [editingTopicId, editTopicText, updateTopicTitle]);
+
+    const handleEditCancel = useCallback(() => {
+        setEditingTopicId(null);
+        setEditTopicText('');
+    }, []);
+
+    const handleFavorite = useCallback(
         (topicId: string) => {
-            console.log('Share topic:', topicId);
-            closeAllSwipeables();
-            // TODO: Implement share
+            console.log('Toggle favorite for topic:', topicId);
+            // Don't close swipeable - let user see the star change
+            toggleFavorite(topicId);
         },
-        [closeAllSwipeables]
+        [toggleFavorite]
     );
 
     const handleDelete = useCallback(
         (topicId: string) => {
-            deleteTopic(topicId);
-            closeAllSwipeables();
+            const topic = topics.find((t) => t.id === topicId);
+            const topicName = topic?.title || 'ce sujet';
+
+            Alert.alert(
+                'Supprimer le sujet',
+                `Voulez-vous vraiment supprimer "${topicName}" ? Cette action est irréversible et toutes les sessions associées seront perdues.`,
+                [
+                    {
+                        text: 'Annuler',
+                        style: 'cancel',
+                        onPress: () => closeAllSwipeables(),
+                    },
+                    {
+                        text: 'Supprimer',
+                        style: 'destructive',
+                        onPress: () => {
+                            deleteTopic(topicId);
+                            closeAllSwipeables();
+                        },
+                    },
+                ]
+            );
         },
-        [deleteTopic, closeAllSwipeables]
+        [deleteTopic, closeAllSwipeables, topics]
     );
 
     const registerSwipeableRef = useCallback((id: string, ref: SwipeableMethods) => {
@@ -356,6 +407,8 @@ export function useTopicsList(): UseTopicsListReturn {
         isLoading,
         error,
         streak,
+        editingTopicId,
+        editTopicText,
         setSearchText,
         setSelectedCategory,
         setShowAddModal,
@@ -363,12 +416,15 @@ export function useTopicsList(): UseTopicsListReturn {
         handleAddTopic,
         handleCardPress,
         handleEdit,
-        handleShare,
+        handleFavorite,
         handleDelete,
         closeAllSwipeables,
         registerSwipeableRef,
         unregisterSwipeableRef,
         resetFilters,
         refreshTopics,
+        setEditTopicText,
+        handleEditSubmit,
+        handleEditCancel,
     };
 }

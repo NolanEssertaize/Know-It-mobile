@@ -1,0 +1,449 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "back": "Retour",
+    "goBack": "Revenir",
+    "close": "Fermer",
+    "retry": "Réessayer",
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "search": "Rechercher",
+    "add": "Ajouter",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "share": "Partager",
+    "noData": "Aucune donnée disponible",
+    "unknownError": "Une erreur inconnue s'est produite",
+    "comingSoon": "Bientôt disponible",
+    "continue": "Continuer",
+    "password": "Mot de passe",
+    "button": {
+      "stop": "STOP",
+      "speak": "PARLER"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Connecte-toi pour continuer à apprendre",
+      "email": "Adresse email",
+      "emailPlaceholder": "Entre ton email",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Entre ton mot de passe",
+      "signIn": "Se connecter",
+      "signInWithGoogle": "Continuer avec Google",
+      "noAccount": "Tu n'as pas de compte ?",
+      "signUp": "S'inscrire",
+      "forgotPassword": "Mot de passe oublié ?",
+      "invalidCredentials": "Email ou mot de passe invalide",
+      "loginSuccess": "Bon retour !",
+      "loginFailed": "Échec de la connexion. Réessaie."
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Commence ton parcours d'apprentissage",
+      "fullName": "Nom complet",
+      "fullNamePlaceholder": "Entre ton nom",
+      "email": "Adresse email",
+      "emailPlaceholder": "Entre ton email",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Crée un mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Confirme ton mot de passe",
+      "createAccount": "Créer le compte",
+      "hasAccount": "Tu as déjà un compte ?",
+      "signIn": "Se connecter",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "weakPassword": "Le mot de passe doit contenir au moins 8 caractères",
+      "invalidEmail": "Entre une adresse email valide",
+      "registrationSuccess": "Compte créé avec succès !",
+      "registrationFailed": "Échec de l'inscription. Réessaie."
+    },
+    "logout": "Se déconnecter",
+    "logoutConfirm": "Es-tu sûr de vouloir te déconnecter ?",
+    "tagline": "Apprendre en expliquant"
+  },
+  "topics": {
+    "title": "Pret a apprendre ?",
+    "subtitle": "Selectionne un sujet pour commencer",
+    "myTopics": "Mes Sujets",
+    "topicsCount": "{{count}} sujets",
+    "topicsCount_one": "{{count}} sujet",
+    "swipeHint": "Glissez pour plus d'options",
+    "activeFilters": "Filtres actifs",
+    "stats": {
+      "topics": "Sujets",
+      "sessions": "Sessions",
+      "streak": "Serie"
+    },
+    "search": {
+      "placeholder": "Rechercher un sujet...",
+      "noResults": "Aucun sujet trouve",
+      "noResultsDescription": "Essaie de modifier ta recherche ou tes filtres"
+    },
+    "card": {
+      "sessions": "sessions",
+      "session": "session",
+      "lastSession": "Derniere session",
+      "noSessions": "Aucune session"
+    },
+    "add": {
+      "title": "Nouveau Sujet",
+      "placeholder": "Nom du sujet (ex: React Hooks)",
+      "create": "Creer le sujet",
+      "cancel": "Annuler",
+      "success": "Sujet cree avec succes !",
+      "error": "Echec de la creation du sujet"
+    },
+    "categories": {
+      "all": "Tous",
+      "recent": "Recents",
+      "favorites": "Favoris",
+      "programming": "Programmation",
+      "science": "Sciences",
+      "languages": "Langues",
+      "history": "Histoire",
+      "math": "Mathematiques",
+      "other": "Autre"
+    },
+    "empty": {
+      "title": "Aucun sujet trouve",
+      "description": "Cree ton premier sujet pour commencer a apprendre",
+      "descriptionWithFilters": "Essaie de modifier tes filtres",
+      "createButton": "Creer un sujet"
+    },
+    "delete": {
+      "title": "Supprimer le sujet",
+      "message": "Es-tu sur de vouloir supprimer ce sujet ? Cette action est irreversible.",
+      "success": "Sujet supprime",
+      "error": "Echec de la suppression du sujet"
+    },
+    "filter": {
+      "all": "Tous"
+    },
+    "list": {
+      "title": "Mes Sujets",
+      "item": "sujet",
+      "items": "sujets"
+    }
+  },
+  "topicDetail": {
+    "sessions": "Sessions",
+    "session": "Session",
+    "sessionsCount": "{{count}} session",
+    "sessionsCount_plural": "{{count}} sessions",
+    "avgScore": "Score Moyen",
+    "history": "Historique",
+    "noTranscription": "Aucune transcription disponible",
+    "empty": {
+      "title": "Aucune session",
+      "description": "Commence ta première session de pratique",
+      "startButton": "Démarrer une session",
+      "message": "Commence ta première session de pratique"
+    },
+    "edit": {
+      "title": "Modifier le sujet",
+      "placeholder": "Nom du sujet"
+    },
+    "delete": {
+      "title": "Supprimer le sujet",
+      "message": "Es-tu sûr de vouloir supprimer ce sujet ?"
+    },
+    "deleteSession": {
+      "title": "Supprimer la session",
+      "message": "Es-tu sûr de vouloir supprimer cette session ?"
+    },
+    "errors": {
+      "updateFailed": "Échec de la mise à jour du sujet",
+      "deleteFailed": "Échec de la suppression du sujet",
+      "deleteSessionFailed": "Échec de la suppression de la session",
+      "notFound": "Topic introuvable"
+    },
+    "actions": {
+      "edit": "Modifier le sujet",
+      "delete": "Supprimer le sujet",
+      "confirmDelete": "Es-tu sûr de vouloir supprimer ce sujet ?"
+    },
+    "history": {
+      "title": "Historique des sessions",
+      "session": "session",
+      "sessions": "sessions"
+    },
+    "startSession": "Démarrer une session"
+  },
+  "session": {
+    "title": "Session d'enregistrement",
+    "recording": "Enregistrement...",
+    "paused": "En pause",
+    "analyzing": "Analyse...",
+    "ready": "Prêt à enregistrer",
+    "audioLevel": "NIVEAU AUDIO",
+    "instructions": "Parlez clairement et expliquez le sujet comme si vous l'enseigniez à quelqu'un",
+    "button": {
+      "speak": "PARLER"
+    },
+    "status": {
+      "recording": "Enregistrement...",
+      "paused": "En pause",
+      "analyzing": "Analyse...",
+      "idle": "Prêt à enregistrer",
+      "complete": "Enregistrement terminé"
+    },
+    "actions": {
+      "start": "Démarrer l'enregistrement",
+      "pause": "Pause",
+      "resume": "Reprendre",
+      "stop": "Arrêter",
+      "submit": "Soumettre pour analyse",
+      "cancel": "Annuler"
+    },
+    "errors": {
+      "permissionDenied": "Permission du microphone refusée",
+      "recordingFailed": "Échec de l'enregistrement. Réessaie.",
+      "tooShort": "L'enregistrement est trop court. Enregistre au moins 10 secondes."
+    }
+  },
+  "result": {
+    "title": "Resultat de l'analyse",
+    "loading": "Chargement des resultats...",
+    "notFound": "Session introuvable",
+    "notFoundMessage": "Nous n'avons pas trouve cette session. Elle a peut-etre ete supprimee.",
+    "yourScore": "Ton score",
+    "valid": "Valide",
+    "corrections": "Corrections",
+    "missing": "Manquant",
+    "validPoints": "Ce que tu as bien compris",
+    "correctionsNeeded": "Points a corriger",
+    "missingPoints": "Ce qui manquait",
+    "detailedAnalysis": "Analyse detaillee",
+    "transcription": "Ta reponse",
+    "tryAgain": "Reessayer",
+    "backToTopic": "Retour au sujet",
+    "analysis": {
+      "title": "Ton analyse",
+      "valid": "Ce que tu as bien compris",
+      "corrections": "Points a corriger",
+      "missing": "Ce qui manquait",
+      "noValid": "Aucun point correct identifie",
+      "noCorrections": "Aucune correction necessaire",
+      "noMissing": "Rien ne manque - excellent travail !"
+    },
+    "score": {
+      "title": "Ton score",
+      "outOf": "sur 100"
+    },
+    "feedback": {
+      "excellent": "Excellent !",
+      "good": "Bon travail !",
+      "needsWork": "Continue a pratiquer !",
+      "title": "Retour"
+    },
+    "tips": {
+      "title": "Conseils pour progresser",
+      "excellent": "Super travail ! Tu maitrises ce sujet. Essaie de l'expliquer a quelqu'un pour renforcer tes connaissances.",
+      "good": "Tu es sur la bonne voie ! Concentre-toi sur les corrections et les points manquants pour ameliorer ta comprehension.",
+      "needsWork": "N'abandonne pas ! Revois les supports du sujet et concentre-toi sur les concepts cles. C'est en pratiquant qu'on progresse."
+    },
+    "share": {
+      "title": "Partager ton resultat",
+      "message": "Je viens d'obtenir {{score}}% sur {{topic}} avec KnowIt !\n\n{{valid}} points valides\n{{corrections}} corrections\n{{missing}} points manquants"
+    },
+    "actions": {
+      "tryAgain": "Reessayer",
+      "backToTopic": "Retour au sujet",
+      "share": "Partager le resultat"
+    },
+    "transcription": {
+      "title": "Ta reponse",
+      "show": "Afficher la transcription",
+      "hide": "Masquer la transcription"
+    },
+    "errors": {
+      "shareFailed": "Echec du partage"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "guest": "Utilisateur invité",
+    "defaultName": "Utilisateur",
+    "signInPrompt": "Connecte-toi pour synchroniser ta progression",
+    "editProfile": "Modifier le profil",
+    "editProfileComingSoon": "La modification du profil sera bientôt disponible.",
+    "statistics": "Statistiques",
+    "topics": "Sujets",
+    "sessions": "Sessions",
+    "avgScore": "Score moy.",
+    "streak": "Série",
+    "totalStudyTime": "Temps d'étude total",
+    "minutesStudied": "{{count}} minute étudiée",
+    "minutesStudied_plural": "{{count}} minutes étudiées",
+    "hoursStudied": "{{count}} heure étudiée",
+    "hoursStudied_plural": "{{count}} heures étudiées",
+    "hoursMinutesStudied": "{{hours}}h {{minutes}}m étudiées",
+    "preferences": "Préférences",
+    "language": "Langue",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Système",
+    "notifications": "Notifications",
+    "sounds": "Sons",
+    "haptics": "Vibrations",
+    "preferencesSaved": "Tes préférences ont été enregistrées.",
+    "account": "Compte",
+    "logout": "Se déconnecter",
+    "logoutConfirmTitle": "Se déconnecter",
+    "logoutConfirmMessage": "Es-tu sûr de vouloir te déconnecter ?",
+    "deleteAccount": "Supprimer le compte",
+    "deleteAccountTitle": "Supprimer le compte",
+    "deleteAccountMessage": "Cela supprimera définitivement toutes tes données. Cette action est irréversible.",
+    "deleteAccountRequestedTitle": "Demande envoyée",
+    "deleteAccountRequestedMessage": "Ta demande de suppression de compte a été envoyée. Tu recevras un email de confirmation sous peu.",
+    "header": {
+      "title": "Mon Profil"
+    },
+    "tabs": {
+      "profile": "Profil",
+      "preferences": "Préférences",
+      "about": "À propos"
+    },
+    "sections": {
+      "personalInfo": "Informations personnelles",
+      "security": "Sécurité",
+      "gdpr": "Données personnelles (RGPD)",
+      "notifications": "Notifications",
+      "appearance": "Apparence",
+      "dataStorage": "Données & Stockage",
+      "app": "Application",
+      "legal": "Légal"
+    },
+    "fields": {
+      "email": "Email",
+      "fullName": "Nom complet",
+      "password": "Mot de passe",
+      "version": "Version"
+    },
+    "placeholders": {
+      "enterName": "Entrez votre nom"
+    },
+    "buttons": {
+      "saveChanges": "Enregistrer les modifications",
+      "logout": "Déconnexion"
+    },
+    "actions": {
+      "logout": "Se déconnecter",
+      "saveChanges": "Enregistrer les modifications",
+      "saved": "Modifications enregistrées",
+      "changePassword": "Modifier le mot de passe",
+      "exportData": "Exporter mes données",
+      "deleteAccount": "Supprimer mon compte",
+      "rateApp": "Noter l'application",
+      "leaveReview": "Laissez-nous un avis",
+      "shareApp": "Partager KnowIt",
+      "inviteFriends": "Invitez vos amis",
+      "termsOfService": "Conditions d'utilisation",
+      "privacyPolicy": "Politique de confidentialité",
+      "contactUs": "Nous contacter"
+    },
+    "preferences": {
+      "title": "Préférences",
+      "theme": "Thème",
+      "themeLight": "Clair",
+      "themeDark": "Sombre",
+      "themeSystem": "Système",
+      "themeDescription": "Choisissez l'apparence de l'application",
+      "language": "Langue",
+      "languageDescription": "Choisis ta langue préférée",
+      "notifications": "Notifications",
+      "notificationsDescription": "Recevoir des rappels de pratique",
+      "pushNotifications": "Notifications push",
+      "studyReminders": "Recevoir des rappels d'étude",
+      "autoSave": "Sauvegarde automatique",
+      "autoSaveDescription": "Sauvegarder vos sessions en ligne",
+      "analytics": "Analytiques",
+      "analyticsDescription": "Aider à améliorer l'application"
+    },
+    "stats": {
+      "title": "Statistiques",
+      "totalTopics": "Sujets totaux",
+      "totalSessions": "Sessions totales",
+      "averageScore": "Score moyen",
+      "currentStreak": "Série en cours",
+      "days": "jours"
+    },
+    "account": {
+      "title": "Compte",
+      "email": "Email",
+      "changePassword": "Changer le mot de passe",
+      "deleteAccount": "Supprimer le compte",
+      "deleteAccountWarning": "Cela supprimera définitivement toutes tes données"
+    },
+    "about": {
+      "title": "À propos",
+      "version": "Version",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "support": "Support"
+    },
+    "footer": {
+      "copyright": "© 2026 KnowIt.",
+      "allRightsReserved": "Tous droits réservés."
+    },
+    "alerts": {
+      "exportTitle": "Exporter mes données",
+      "exportMessage": "Voulez-vous recevoir une copie de toutes vos données par email ?",
+      "exportSuccess": "Vos données vous seront envoyées par email"
+    },
+    "deleteAccountModal": {
+      "title": "Supprimer votre compte ?",
+      "description": "Cette action est irréversible.\nToutes vos données seront définitivement supprimées.",
+      "instruction": "Tapez SUPPRIMER pour confirmer",
+      "confirmWord": "SUPPRIMER",
+      "passwordTitle": "Confirmer avec votre mot de passe",
+      "passwordDescription": "Pour des raisons de sécurité, veuillez entrer votre mot de passe pour confirmer la suppression."
+    },
+    "logoutModal": {
+      "title": "Se déconnecter ?",
+      "description": "Vous devrez vous reconnecter pour accéder à vos données.",
+      "confirm": "Se déconnecter"
+    },
+    "changePassword": {
+      "title": "Changer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "currentPlaceholder": "Entrez votre mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "newPlaceholder": "Minimum 8 caractères",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPlaceholder": "Répétez le nouveau mot de passe",
+      "submit": "Changer le mot de passe"
+    }
+  },
+  "languages": {
+    "en": "Anglais",
+    "fr": "Francais"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite",
+    "network": "Erreur réseau. Vérifie ta connexion.",
+    "server": "Erreur serveur. Réessaie plus tard.",
+    "auth": "Erreur d'authentification. Reconnecte-toi.",
+    "notFound": "Ressource non trouvée.",
+    "validation": "Vérifie ta saisie.",
+    "saveFailed": "Échec de l'enregistrement. Réessaie.",
+    "logoutFailed": "Échec de la déconnexion. Réessaie."
+  },
+  "dates": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo": "il y a {{count}} jour",
+    "daysAgo_plural": "il y a {{count}} jours"
+  }
+}

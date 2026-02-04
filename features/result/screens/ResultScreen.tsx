@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
@@ -56,7 +57,9 @@ const StatBadge = memo(function StatBadge({ icon, count, label }: StatBadgeProps
 function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
-    const { score, sections, summary, handleClose, handleRetry, isLoading } = useResult();
+    const { t } = useTranslation();
+    const { score, sections, summary, handleClose, handleRetry, isFromHistory, isLoading, transcription } = useResult();
+    const [showTranscription, setShowTranscription] = React.useState(false);
 
     // Theme-aware sections
     const themedSections = useMemo(() => {
@@ -67,13 +70,35 @@ function ResultScreenComponent(): React.JSX.Element {
         }));
     }, [sections, colors.text.primary]);
 
+    // Show loading state while fetching session from API
     if (isLoading) {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
                 <ActivityIndicator size="large" color={colors.text.primary} />
                 <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                    Chargement des résultats...
+                    {t('result.loading')}
                 </Text>
+            </View>
+        );
+    }
+
+    // Show empty state if no data (shouldn't happen in normal flow)
+    const hasData = summary.totalPoints > 0;
+    if (!hasData) {
+        return (
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background.primary }]}>
+                <MaterialIcons name="error-outline" size={48} color={colors.text.muted} />
+                <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+                    {t('result.notFoundMessage')}
+                </Text>
+                <Pressable
+                    style={[styles.buttonPrimary, { backgroundColor: colors.text.primary, marginTop: Spacing.lg }]}
+                    onPress={handleClose}
+                >
+                    <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
+                        {t('result.actions.backToTopic')}
+                    </Text>
+                </Pressable>
             </View>
         );
     }
@@ -104,10 +129,10 @@ function ResultScreenComponent(): React.JSX.Element {
                     </Pressable>
                     <View style={styles.headerTextContainer}>
                         <Text style={[styles.title, { color: colors.text.primary }]}>
-                            Session terminée
+                            {t('result.title')}
                         </Text>
                         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-                            Voici votre analyse détaillée
+                            {t('result.detailedAnalysis')}
                         </Text>
                     </View>
                 </View>
@@ -125,35 +150,35 @@ function ResultScreenComponent(): React.JSX.Element {
                 {/* Quick Summary */}
                 <GlassView variant="default" style={styles.summaryContainer}>
                     <Text style={[styles.summaryTitle, { color: colors.text.primary }]}>
-                        Résumé rapide
+                        {t('result.yourScore')}
                     </Text>
                     <View style={styles.statsRow}>
                         <StatBadge
                             icon="check-circle"
                             count={summary.validCount}
-                            label="Validés"
+                            label={t('result.valid')}
                         />
                         <StatBadge
                             icon="error"
                             count={summary.correctionsCount}
-                            label="À corriger"
+                            label={t('result.corrections')}
                         />
                         <StatBadge
                             icon="cancel"
                             count={summary.missingCount}
-                            label="Manquants"
+                            label={t('result.missing')}
                         />
                     </View>
                     <View style={[styles.summaryDivider, { backgroundColor: colors.glass.border }]} />
                     <Text style={[styles.summaryText, { color: colors.text.secondary }]}>
-                        {summary.totalPoints} points évalués au total
+                        {summary.totalPoints} {t('result.score.outOf').replace('out of 100', 'points')}
                     </Text>
                 </GlassView>
 
                 {/* Sections d'analyse détaillées */}
                 <View style={styles.sectionsContainer}>
                     <Text style={[styles.sectionHeader, { color: colors.text.secondary }]}>
-                        Détails de l'analyse
+                        {t('result.analysis.title')}
                     </Text>
                     {themedSections.map((section) => (
                         <AnalysisSection
@@ -166,6 +191,45 @@ function ResultScreenComponent(): React.JSX.Element {
                         />
                     ))}
                 </View>
+
+                {/* Transcription Section */}
+                {transcription && (
+                    <View style={styles.transcriptionContainer}>
+                        <Pressable
+                            style={[
+                                styles.transcriptionHeader,
+                                {
+                                    backgroundColor: colors.surface.glass,
+                                    borderColor: colors.glass.border,
+                                },
+                            ]}
+                            onPress={() => setShowTranscription(!showTranscription)}
+                        >
+                            <View style={styles.transcriptionHeaderLeft}>
+                                <MaterialIcons
+                                    name="record-voice-over"
+                                    size={20}
+                                    color={colors.text.primary}
+                                />
+                                <Text style={[styles.transcriptionTitle, { color: colors.text.primary }]}>
+                                    {t('result.transcription.title')}
+                                </Text>
+                            </View>
+                            <MaterialIcons
+                                name={showTranscription ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                                size={24}
+                                color={colors.text.secondary}
+                            />
+                        </Pressable>
+                        {showTranscription && (
+                            <GlassView variant="default" style={styles.transcriptionContent}>
+                                <Text style={[styles.transcriptionText, { color: colors.text.primary }]}>
+                                    {transcription}
+                                </Text>
+                            </GlassView>
+                        )}
+                    </View>
+                )}
 
                 {/* Actions - HIGH CONTRAST BUTTONS */}
                 <View style={styles.actionsContainer}>
@@ -183,7 +247,7 @@ function ResultScreenComponent(): React.JSX.Element {
                     >
                         <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
                         <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
-                            Réessayer
+                            {t('result.actions.tryAgain')}
                         </Text>
                     </Pressable>
 
@@ -200,7 +264,7 @@ function ResultScreenComponent(): React.JSX.Element {
                     >
                         <MaterialIcons name="done" size={20} color={colors.text.inverse} />
                         <Text style={[styles.buttonPrimaryText, { color: colors.text.inverse }]}>
-                            Terminer
+                            {t('result.actions.backToTopic')}
                         </Text>
                     </Pressable>
                 </View>
@@ -341,6 +405,42 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         textTransform: 'uppercase',
         marginBottom: Spacing.md,
+    },
+
+    // Transcription
+    transcriptionContainer: {
+        marginBottom: Spacing.lg,
+    },
+
+    transcriptionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+    },
+
+    transcriptionHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+
+    transcriptionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    transcriptionContent: {
+        marginTop: Spacing.sm,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+    },
+
+    transcriptionText: {
+        fontSize: 14,
+        lineHeight: 22,
     },
 
     // Actions

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, User } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
@@ -28,6 +29,7 @@ import { useTheme, Spacing, BorderRadius } from '@/theme';
 export const RegisterScreen = memo(function RegisterScreen() {
     const router = useRouter();
     const { colors } = useTheme();
+    const { t } = useTranslation();
 
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
@@ -55,7 +57,7 @@ export const RegisterScreen = memo(function RegisterScreen() {
         if (result.success) {
             router.replace('/');
         } else if (result.error) {
-            Alert.alert('Registration Failed', result.error);
+            Alert.alert(t('auth.register.registrationFailed'), result.error);
         }
     };
 
@@ -69,23 +71,23 @@ export const RegisterScreen = memo(function RegisterScreen() {
 
     return (
         <AuthLayout
-            title="Create Account"
-            subtitle="Start your learning journey today"
+            title={t('auth.register.title')}
+            subtitle={t('auth.register.subtitle')}
             footer={
                 <View style={styles.footerContent}>
                     <Text style={[styles.footerText, { color: colors.text.secondary }]}>
-                        Already have an account?
+                        {t('auth.register.hasAccount')}
                     </Text>
                     <TouchableOpacity onPress={onLoginPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>Sign In</Text>
+                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>{t('auth.register.signIn')}</Text>
                     </TouchableOpacity>
                 </View>
             }
         >
             {/* Full Name Input */}
             <GlassInput
-                label="Full Name"
-                placeholder="Enter your name"
+                label={t('auth.register.fullName')}
+                placeholder={t('auth.register.fullNamePlaceholder')}
                 value={fullName}
                 onChangeText={setFullName}
                 error={validationErrors.fullName}
@@ -100,8 +102,8 @@ export const RegisterScreen = memo(function RegisterScreen() {
             {/* Email Input */}
             <GlassInput
                 ref={emailInputRef}
-                label="Email"
-                placeholder="Enter your email"
+                label={t('auth.register.email')}
+                placeholder={t('auth.register.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 error={validationErrors.email}
@@ -118,8 +120,8 @@ export const RegisterScreen = memo(function RegisterScreen() {
             {/* Password Input */}
             <GlassInput
                 ref={passwordInputRef}
-                label="Password"
-                placeholder="Create a password"
+                label={t('auth.register.password')}
+                placeholder={t('auth.register.passwordPlaceholder')}
                 value={password}
                 onChangeText={setPassword}
                 error={validationErrors.password}
@@ -134,8 +136,8 @@ export const RegisterScreen = memo(function RegisterScreen() {
             {/* Confirm Password Input */}
             <GlassInput
                 ref={confirmPasswordInputRef}
-                label="Confirm Password"
-                placeholder="Confirm your password"
+                label={t('auth.register.confirmPassword')}
+                placeholder={t('auth.register.confirmPasswordPlaceholder')}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 error={validationErrors.confirmPassword}
@@ -150,7 +152,7 @@ export const RegisterScreen = memo(function RegisterScreen() {
             {/* Password Requirements Hint */}
             <View style={styles.hintContainer}>
                 <Text style={[styles.hintText, { color: colors.text.muted }]}>
-                    Password must be at least 8 characters
+                    {t('auth.register.weakPassword')}
                 </Text>
             </View>
 
@@ -178,7 +180,7 @@ export const RegisterScreen = memo(function RegisterScreen() {
                         <ActivityIndicator size="small" color={colors.text.primary} />
                     ) : (
                         <Text style={[styles.registerButtonText, { color: colors.text.inverse }]}>
-                            Create Account
+                            {t('auth.register.createAccount')}
                         </Text>
                     )}
                 </View>

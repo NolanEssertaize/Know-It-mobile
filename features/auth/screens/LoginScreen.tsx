@@ -16,6 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Mail, Lock } from 'lucide-react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
@@ -30,6 +31,7 @@ export const LoginScreen = memo(function LoginScreen() {
     const router = useRouter();
     const passwordInputRef = useRef<TextInput>(null);
     const { colors } = useTheme();
+    const { t } = useTranslation();
 
     const {
         email,
@@ -49,7 +51,7 @@ export const LoginScreen = memo(function LoginScreen() {
         if (result.success) {
             router.replace('/');
         } else if (result.error) {
-            Alert.alert('Login Failed', result.error);
+            Alert.alert(t('auth.login.loginFailed'), result.error);
         }
     };
 
@@ -63,23 +65,23 @@ export const LoginScreen = memo(function LoginScreen() {
 
     return (
         <AuthLayout
-            title="Welcome Back"
-            subtitle="Sign in to continue your learning journey"
+            title={t('auth.login.title')}
+            subtitle={t('auth.login.subtitle')}
             footer={
                 <View style={styles.footerContent}>
                     <Text style={[styles.footerText, { color: colors.text.secondary }]}>
-                        Don't have an account?
+                        {t('auth.login.noAccount')}
                     </Text>
                     <TouchableOpacity onPress={onRegisterPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>Sign Up</Text>
+                        <Text style={[styles.footerLink, { color: colors.text.primary }]}>{t('auth.login.signUp')}</Text>
                     </TouchableOpacity>
                 </View>
             }
         >
             {/* Email Input */}
             <GlassInput
-                label="Email"
-                placeholder="Enter your email"
+                label={t('auth.login.email')}
+                placeholder={t('auth.login.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 error={validationErrors.email}
@@ -96,8 +98,8 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Password Input */}
             <GlassInput
                 ref={passwordInputRef}
-                label="Password"
-                placeholder="Enter your password"
+                label={t('auth.login.password')}
+                placeholder={t('auth.login.passwordPlaceholder')}
                 value={password}
                 onChangeText={setPassword}
                 error={validationErrors.password}
@@ -112,7 +114,7 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Forgot Password Link */}
             <TouchableOpacity style={styles.forgotPasswordContainer}>
                 <Text style={[styles.forgotPasswordText, { color: colors.text.muted }]}>
-                    Forgot Password?
+                    {t('auth.login.forgotPassword')}
                 </Text>
             </TouchableOpacity>
 
@@ -140,7 +142,7 @@ export const LoginScreen = memo(function LoginScreen() {
                         <ActivityIndicator size="small" color={colors.text.primary} />
                     ) : (
                         <Text style={[styles.loginButtonText, { color: colors.text.inverse }]}>
-                            Sign In
+                            {t('auth.login.signIn')}
                         </Text>
                     )}
                 </View>
@@ -149,7 +151,7 @@ export const LoginScreen = memo(function LoginScreen() {
             {/* Divider */}
             <View style={styles.dividerContainer}>
                 <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
-                <Text style={[styles.dividerText, { color: colors.text.muted }]}>or continue with</Text>
+                <Text style={[styles.dividerText, { color: colors.text.muted }]}>{t('auth.login.signInWithGoogle').replace('Continue with Google', 'or continue with')}</Text>
                 <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
             </View>
 

@@ -6,7 +6,7 @@
  */
 
 import React, { memo, type ReactNode } from 'react';
-import { View, type ViewProps, type StyleProp, type ViewStyle, StyleSheet } from 'react-native';
+import { View, Pressable, type ViewProps, type StyleProp, type ViewStyle, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useTheme, BorderRadius, Shadows } from '@/theme';
 
@@ -146,16 +146,31 @@ export const GlassView = memo(function GlassView({
 // VARIANTES SPÉCIALISÉES
 // ═══════════════════════════════════════════════════════════════════════════
 
+export interface GlassCardProps extends Omit<GlassViewProps, 'borderRadius'> {
+  onPress?: () => void;
+}
+
 export const GlassCard = memo(function GlassCard({
   children,
   style,
+  onPress,
   ...props
-}: Omit<GlassViewProps, 'borderRadius'>) {
-  return (
+}: GlassCardProps) {
+  const content = (
     <GlassView borderRadius="lg" showBorder style={[styles.card, style]} {...props}>
       {children}
     </GlassView>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.cardPressed}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return content;
 });
 
 export const GlassInputContainer = memo(function GlassInputContainer({
@@ -221,6 +236,9 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 16,
+  },
+  cardPressed: {
+    opacity: 0.8,
   },
   inputContainer: {
     paddingHorizontal: 16,

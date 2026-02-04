@@ -30,7 +30,7 @@ interface TopicCardProps {
     data: TopicItemData;
     onPress: () => void;
     onEdit: () => void;
-    onShare: () => void;
+    onFavorite: () => void;
     onDelete: () => void;
     registerRef: (ref: SwipeableMethods) => void;
     unregisterRef: () => void;
@@ -43,18 +43,20 @@ interface TopicCardProps {
 interface RightActionsProps {
     progress: SharedValue<number>;
     onEdit: () => void;
-    onShare: () => void;
+    onFavorite: () => void;
     onDelete: () => void;
+    isFavorite: boolean;
 }
 
 const RightActions = memo(function RightActions({
     progress,
     onEdit,
-    onShare,
+    onFavorite,
     onDelete,
+    isFavorite,
 }: RightActionsProps) {
     const { colors } = useTheme();
-    
+
     const animatedStyle = useAnimatedStyle(() => ({
         opacity: interpolate(progress.value, [0, 1], [0, 1]),
         transform: [
@@ -70,7 +72,7 @@ const RightActions = memo(function RightActions({
             <Pressable
                 style={({ pressed }) => [
                     styles.actionButton,
-                    { 
+                    {
                         backgroundColor: colors.surface.glass,
                         borderWidth: 1,
                         borderColor: colors.glass.borderLight,
@@ -82,20 +84,24 @@ const RightActions = memo(function RightActions({
                 <MaterialIcons name="edit" size={20} color={colors.text.primary} />
             </Pressable>
 
-            {/* Share Button */}
+            {/* Favorite Button */}
             <Pressable
                 style={({ pressed }) => [
                     styles.actionButton,
-                    { 
+                    {
                         backgroundColor: colors.surface.glass,
                         borderWidth: 1,
                         borderColor: colors.glass.borderLight,
                     },
                     pressed && styles.actionButtonPressed,
                 ]}
-                onPress={onShare}
+                onPress={onFavorite}
             >
-                <MaterialIcons name="share" size={20} color={colors.text.primary} />
+                <MaterialIcons
+                    name={isFavorite ? "star" : "star-outline"}
+                    size={22}
+                    color={isFavorite ? '#FFD700' : colors.text.primary}
+                />
             </Pressable>
 
             {/* Delete Button - HIGH CONTRAST */}
@@ -121,7 +127,7 @@ export const TopicCard = memo(function TopicCard({
     data,
     onPress,
     onEdit,
-    onShare,
+    onFavorite,
     onDelete,
     registerRef,
     unregisterRef,
@@ -190,11 +196,12 @@ export const TopicCard = memo(function TopicCard({
             <RightActions
                 progress={progress}
                 onEdit={onEdit}
-                onShare={onShare}
+                onFavorite={onFavorite}
                 onDelete={onDelete}
+                isFavorite={topic.isFavorite}
             />
         ),
-        [onEdit, onShare, onDelete]
+        [onEdit, onFavorite, onDelete, topic.isFavorite]
     );
 
     return (

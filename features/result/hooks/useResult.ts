@@ -2,12 +2,17 @@
  * @file useResult.ts
  * @description Logic Controller pour l'écran de résultats
  * Utilise des noms d'icônes Material au lieu d'emojis
+ *
+ * Supports two scenarios:
+ * 1. Fresh recording: analysis data passed via URL params
+ * 2. Session history: only sessionId passed, data fetched from store
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { AnalysisResult } from '@/types';
 import { GlassColors } from '@/theme';
+import { LLMService } from '@/shared/services';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -42,6 +47,11 @@ export interface UseResultReturn {
     readonly score: ScoreData;
     readonly summary: SummaryData;
     readonly sections: readonly AnalysisSection[];
+    readonly transcription: string | undefined;
+    /** True if viewing a past session from history, false if fresh recording */
+    readonly isFromHistory: boolean;
+    /** True while loading session data from API */
+    readonly isLoading: boolean;
 
     // Methods
     readonly handleClose: () => void;
@@ -88,18 +98,98 @@ function calculateSummary(analysis: AnalysisResult): SummaryData {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useResult(): UseResultReturn {
-    const params = useLocalSearchParams();
+    const params = useLocalSearchParams<{
+        topicId?: string;
+        sessionId?: string;
+        transcription?: string;
+        valid?: string;
+        corrections?: string;
+        missing?: string;
+    }>();
     const router = useRouter();
 
-    // Parse params
-    const analysis = useMemo(
-        (): AnalysisResult => ({
-            valid: parseJsonParam(params.valid, []),
-            corrections: parseJsonParam(params.corrections, []),
-            missing: parseJsonParam(params.missing, []),
-        }),
-        [params.valid, params.corrections, params.missing]
-    );
+    // State for API-fetched session
+    const [fetchedSession, setFetchedSession] = useState<{
+        analysis: AnalysisResult;
+        transcription?: string;
+    } | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Determine if viewing from session history (no analysis params = from history)
+    const isFromHistory = useMemo(() => {
+        return !params.valid && !params.corrections && !params.missing && !!params.sessionId;
+    }, [params.valid, params.corrections, params.missing, params.sessionId]);
+
+    // Debug logging
+    console.log('[useResult] params:', {
+        topicId: params.topicId,
+        sessionId: params.sessionId,
+        hasValid: !!params.valid,
+        hasCorrections: !!params.corrections,
+        hasMissing: !!params.missing,
+        isFromHistory,
+    });
+
+    // Fetch session from API when viewing from history
+    useEffect(() => {
+        if (!isFromHistory || !params.sessionId) {
+            return;
+        }
+
+        console.log('[useResult] Fetching session from API:', params.sessionId);
+        setIsLoading(true);
+
+        LLMService.getSession(params.sessionId)
+            .then((session) => {
+                console.log('[useResult] Fetched session:', session.id, 'analysis:', session.analysis);
+                setFetchedSession({
+                    analysis: session.analysis || { valid: [], corrections: [], missing: [] },
+                    transcription: session.transcription || undefined,
+                });
+            })
+            .catch((error) => {
+                console.error('[useResult] Failed to fetch session:', error);
+                setFetchedSession(null);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }, [isFromHistory, params.sessionId]);
+
+    // Get analysis data: prefer URL params (fresh recording), fallback to API fetch (session history)
+    const analysis = useMemo((): AnalysisResult => {
+        // Check if we have analysis data in URL params (from fresh recording)
+        const hasParamsData = params.valid || params.corrections || params.missing;
+
+        if (hasParamsData) {
+            // Fresh recording: parse from URL params
+            const result = {
+                valid: parseJsonParam(params.valid, []),
+                corrections: parseJsonParam(params.corrections, []),
+                missing: parseJsonParam(params.missing, []),
+            };
+            console.log('[useResult] Using URL params analysis:', result);
+            return result;
+        }
+
+        // Session history: use fetched data from API
+        if (fetchedSession?.analysis) {
+            console.log('[useResult] Using API-fetched analysis:', fetchedSession.analysis);
+            return fetchedSession.analysis;
+        }
+
+        // Fallback: empty analysis (while loading or if fetch failed)
+        console.log('[useResult] No analysis found, using empty fallback');
+        return { valid: [], corrections: [], missing: [] };
+    }, [params.valid, params.corrections, params.missing, fetchedSession]);
+
+    // Get transcription: prefer URL params, fallback to API fetch
+    const transcription = useMemo(() => {
+        if (params.transcription) {
+            return params.transcription;
+        }
+        return fetchedSession?.transcription;
+    }, [params.transcription, fetchedSession]);
 
     // Calculate score
     const score = useMemo(() => calculateScore(analysis), [analysis]);
@@ -138,15 +228,31 @@ export function useResult(): UseResultReturn {
         [analysis]
     );
 
-    // Handlers
+    // Handlers - different behavior for history vs fresh recording
     const handleClose = useCallback(() => {
-        router.back();
-        router.back(); // Retour à la liste des topics
-    }, [router]);
+        if (isFromHistory) {
+            // From history: go back to topic detail (one step)
+            router.back();
+        } else {
+            // From fresh recording: go back to topic detail (skip session screen)
+            router.back();
+            router.back();
+        }
+    }, [router, isFromHistory]);
 
     const handleRetry = useCallback(() => {
-        router.back(); // Retour à l'écran de session
-    }, [router]);
+        if (isFromHistory) {
+            // From history: start a new session
+            if (params.topicId) {
+                router.replace(`/${params.topicId}/session`);
+            } else {
+                router.back();
+            }
+        } else {
+            // From fresh recording: go back to session screen
+            router.back();
+        }
+    }, [router, isFromHistory, params.topicId]);
 
     return {
         // Data
@@ -154,6 +260,9 @@ export function useResult(): UseResultReturn {
         score,
         summary,
         sections,
+        transcription,
+        isFromHistory,
+        isLoading,
 
         // Methods
         handleClose,

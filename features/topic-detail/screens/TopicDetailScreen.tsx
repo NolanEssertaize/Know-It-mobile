@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
 
@@ -34,6 +35,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
+    const { t } = useTranslation();
 
     const logic = useTopicDetail(topicId ?? '');
 
@@ -87,7 +89,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                 <View style={styles.statsSummary}>
                     <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>{logic.sessions.length}</Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Sessions</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('topicDetail.sessions')}</Text>
                     </View>
                     <View style={[styles.statItem, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border, borderWidth: 1, borderRadius: BorderRadius.md }]}>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
@@ -102,13 +104,13 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                                 : 0}
                             %
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Score Moyen</Text>
+                        <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('topicDetail.avgScore')}</Text>
                     </View>
                 </View>
 
                 {/* Section header */}
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Historique</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{t('topicDetail.history')}</Text>
                 </View>
             </View>
         ),
@@ -137,13 +139,13 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                         color={colors.text.muted}
                     />
                 </View>
-                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>Aucune session</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>{t('topicDetail.empty.title')}</Text>
                 <Text style={[styles.emptySubtitle, { color: colors.text.secondary }]}>
-                    Commencez à enregistrer vos explications pour ce sujet
+                    {t('topicDetail.empty.message')}
                 </Text>
             </View>
         ),
-        [colors]
+        [colors, t]
     );
 
     const keyExtractor = useCallback((item: SessionItemData) => item.session.id, []);
@@ -158,7 +160,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.text.primary} />
                     <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
-                        Chargement...
+                        {t('common.loading')}
                     </Text>
                 </View>
             </ScreenWrapper>
@@ -182,7 +184,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                         Topic introuvable
                     </Text>
                     <GlassButton
-                        title="Retour"
+                        title={t('common.goBack')}
                         variant="primary"
                         onPress={handleBack}
                         style={styles.retryButton}
@@ -240,7 +242,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                     ]}
                 >
                     <MaterialCommunityIcons name="microphone" size={24} color={colors.text.inverse} />
-                    <Text style={[styles.fabText, { color: colors.text.inverse }]}>Nouvelle Session</Text>
+                    <Text style={[styles.fabText, { color: colors.text.inverse }]}>{t('topicDetail.startSession')}</Text>
                 </Pressable>
             </View>
         </ScreenWrapper>
