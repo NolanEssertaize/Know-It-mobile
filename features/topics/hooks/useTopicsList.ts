@@ -63,6 +63,7 @@ export interface UseTopicsListReturn {
     isLoading: boolean;
     error: string | null;
     streak: number;
+    streakActiveToday: boolean;
 
     // Edit modal data
     editingTopicId: string | null;
@@ -114,8 +115,8 @@ function useDebounce<T>(value: T, delay: number): T {
 // HELPER - Calculate streak from sessions
 // ═══════════════════════════════════════════════════════════════════════════
 
-function calculateStreak(topics: Topic[]): number {
-    if (!topics || !Array.isArray(topics)) return 0;
+function calculateStreak(topics: Topic[]): { streak: number; activeToday: boolean } {
+    if (!topics || !Array.isArray(topics)) return { streak: 0, activeToday: false };
 
     const allSessionDates: Date[] = [];
 
@@ -129,7 +130,7 @@ function calculateStreak(topics: Topic[]): number {
         }
     });
 
-    if (allSessionDates.length === 0) return 0;
+    if (allSessionDates.length === 0) return { streak: 0, activeToday: false };
 
     // Sort dates descending
     allSessionDates.sort((a, b) => b.getTime() - a.getTime());
@@ -145,6 +146,9 @@ function calculateStreak(topics: Topic[]): number {
         uniqueDays.add(dayKey);
     });
 
+    const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+    const activeToday = uniqueDays.has(todayKey);
+
     const sortedDays = Array.from(uniqueDays).sort().reverse();
 
     for (let i = 0; i < sortedDays.length; i++) {
@@ -159,7 +163,7 @@ function calculateStreak(topics: Topic[]): number {
         }
     }
 
-    return streak;
+    return { streak, activeToday };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -258,7 +262,7 @@ export function useTopicsList(): UseTopicsListReturn {
     );
 
     // Streak
-    const streak = useMemo(() => calculateStreak(topics), [topics]);
+    const { streak, activeToday: streakActiveToday } = useMemo(() => calculateStreak(topics), [topics]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // HANDLERS
@@ -407,6 +411,7 @@ export function useTopicsList(): UseTopicsListReturn {
         isLoading,
         error,
         streak,
+        streakActiveToday,
         editingTopicId,
         editTopicText,
         setSearchText,

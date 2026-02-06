@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(npm install)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd i18n integration with English/French support\n\n- Add i18next and react-i18next dependencies\n- Create i18n infrastructure \\(config, hook, locale files\\)\n- Add LanguageSwitcher component with MaterialIcons \\(no emoji\\)\n- Update all screens with t\\(\\) translation calls\n- Integrate language switcher in ProfileScreen preferences\n\nScreens updated: Login, Register, Profile, TopicsList,\nTopicDetail, Session, Result\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(tree:*)",
+      "Bash(findstr:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:shopify.github.io)"
+    ]
+  }
+}

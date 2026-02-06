@@ -142,11 +142,12 @@ function AuthNavigator({ children }: { children: React.ReactNode }) {
         if (!navigationState?.key) return;
 
         const inAuthGroup = segments[0] === '(auth)';
+        const inTabsGroup = segments[0] === '(tabs)';
 
         if (!isAuthenticated && !inAuthGroup) {
             router.replace('/(auth)/login');
         } else if (isAuthenticated && inAuthGroup) {
-            router.replace('/');
+            router.replace('/(tabs)');
         }
     }, [isAuthenticated, segments, navigationState?.key, router]);
 
@@ -174,7 +175,12 @@ function ThemedAppContent() {
                     }}
                 >
                     <Stack.Screen name="(auth)" />
-                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen
+                        name="profile"
+                        options={{ presentation: 'modal', animation: 'slide_from_left' }}
+                    />
                     <Stack.Screen
                         name="[topicId]/index"
                         options={{ animation: 'slide_from_right' }}
@@ -186,6 +192,18 @@ function ThemedAppContent() {
                     <Stack.Screen
                         name="[topicId]/result"
                         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                    />
+                    <Stack.Screen
+                        name="[topicId]/flashcards-editor"
+                        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                    />
+                    <Stack.Screen
+                        name="flashcard-review"
+                        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+                    />
+                    <Stack.Screen
+                        name="flashcards-manage"
+                        options={{ presentation: 'modal', animation: 'slide_from_right' }}
                     />
                 </Stack>
             </AuthNavigator>

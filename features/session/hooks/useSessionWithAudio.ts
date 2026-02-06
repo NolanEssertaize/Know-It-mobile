@@ -141,6 +141,8 @@ export function useSessionWithAudio(): UseSessionWithAudioReturn {
                     router.replace({
                         pathname: `/${topicId}/result`,
                         params: {
+                            topicId: topic.id,
+                            topicTitle: topic.title,
                             sessionId: newSession.id,
                             audioUri: uri,
                             transcription: result.transcription,

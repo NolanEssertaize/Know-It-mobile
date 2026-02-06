@@ -1,6 +1,10 @@
 /**
  * @file index.tsx
- * @description Route principale - Liste des sujets
+ * @description Root redirect to tabs
  */
 
-export { TopicsListScreen as default } from '@/features/topics/screens/TopicsListScreen';
+import { Redirect } from 'expo-router';
+
+export default function Index() {
+    return <Redirect href="/(tabs)" />;
+}

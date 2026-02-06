@@ -10,7 +10,7 @@
  * - Correct keyExtractor using item.topic.id
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -25,10 +25,89 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
+import { StreakFlame } from '../components/StreakFlame';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KPI COLORS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const KPI_COLORS = {
+    topics: {
+        icon: '#34C759',
+        background: 'rgba(52, 199, 89, 0.12)',
+    },
+    sessions: {
+        icon: '#007AFF',
+        background: 'rgba(0, 122, 255, 0.12)',
+    },
+    streakActive: {
+        icon: '#FF3B30',
+        background: 'rgba(255, 59, 48, 0.12)',
+    },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STREAK ICON — Skia fire burst on focus, then stays red
+// ═══════════════════════════════════════════════════════════════════════════
+
+const StreakIcon = memo(function StreakIcon({
+    active,
+    defaultColor,
+}: {
+    active: boolean;
+    defaultColor: string;
+}) {
+    const [burstKey, setBurstKey] = useState(0);
+    const [showBurst, setShowBurst] = useState(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (active) {
+                setShowBurst(true);
+                setBurstKey((k) => k + 1);
+            }
+        }, [active]),
+    );
+
+    return (
+        <View style={streakStyles.wrapper}>
+            {/* Static icon — always rendered underneath */}
+            <MaterialCommunityIcons
+                name="fire"
+                size={22}
+                color={active ? KPI_COLORS.streakActive.icon : defaultColor}
+            />
+            {/* Skia flame overlay — covers the icon during animation */}
+            {showBurst && (
+                <View style={streakStyles.canvasWrapper}>
+                    <StreakFlame
+                        key={burstKey}
+                        onDone={() => setShowBurst(false)}
+                    />
+                </View>
+            )}
+        </View>
+    );
+});
+
+const streakStyles = StyleSheet.create({
+    wrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+    },
+    canvasWrapper: {
+        position: 'absolute',
+        bottom: -30,
+        alignItems: 'center',
+    },
+});
 
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
@@ -44,6 +123,17 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
     const logic = useTopicsList();
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
+    const params = useLocalSearchParams<{ showAddModal?: string }>();
+    const router = useRouter();
+
+    // Handle showAddModal param from tab bar + button
+    useEffect(() => {
+        if (params.showAddModal === 'true') {
+            logic.setShowAddModal(true);
+            // Clear the param to prevent re-opening on re-render
+            router.setParams({ showAddModal: undefined });
+        }
+    }, [params.showAddModal]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER HELPERS
@@ -166,9 +256,10 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
             {/* Stats Cards */}
             <View style={styles.statsContainer}>
                 <View style={styles.statsRow}>
+                    {/* Topics — Green */}
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="book-multiple" size={22} color={colors.text.primary} />
+                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.topics.background }]}>
+                            <MaterialCommunityIcons name="book-multiple" size={22} color={KPI_COLORS.topics.icon} />
                         </View>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {logic.topicsCount}
@@ -176,9 +267,10 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
                     </GlassView>
 
+                    {/* Sessions — Blue */}
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="microphone" size={22} color={colors.text.primary} />
+                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.sessions.background }]}>
+                            <MaterialCommunityIcons name="microphone" size={22} color={KPI_COLORS.sessions.icon} />
                         </View>
                         <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {logic.totalSessions}
@@ -186,11 +278,29 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                         <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
                     </GlassView>
 
+                    {/* Streak — Dark by default, Red flame when active today */}
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="fire" size={22} color={colors.text.primary} />
+                        <View style={[
+                            styles.statIconContainer,
+                            {
+                                backgroundColor: logic.streakActiveToday
+                                    ? KPI_COLORS.streakActive.background
+                                    : colors.surface.glass,
+                            },
+                        ]}>
+                            <StreakIcon
+                                active={logic.streakActiveToday}
+                                defaultColor={colors.text.primary}
+                            />
                         </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                        <Text style={[
+                            styles.statValue,
+                            {
+                                color: logic.streakActiveToday
+                                    ? KPI_COLORS.streakActive.icon
+                                    : colors.text.primary,
+                            },
+                        ]}>
                             {logic.streak}
                         </Text>
                         <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.streak')}</Text>
@@ -245,20 +355,6 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     }
                 />
             )}
-
-            {/* FAB - Theme Aware */}
-            <View style={styles.fabContainer}>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.fab,
-                        { backgroundColor: colors.text.primary },
-                        pressed && styles.fabPressed,
-                    ]}
-                    onPress={() => logic.setShowAddModal(true)}
-                >
-                    <MaterialIcons name="add" size={28} color={colors.text.inverse} />
-                </Pressable>
-            </View>
 
             {/* Add Topic Modal - CORRECT PROPS matching AddTopicModal interface */}
             <AddTopicModal
@@ -325,6 +421,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     statValue: {
         fontSize: 24,
@@ -434,33 +531,6 @@ const styles = StyleSheet.create({
     emptyButtonText: {
         fontSize: 14,
         fontWeight: '600',
-    },
-    fabContainer: {
-        position: 'absolute',
-        bottom: 24,
-        right: 16,
-    },
-    fab: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 8,
-            },
-        }),
-    },
-    fabPressed: {
-        opacity: 0.8,
-        transform: [{ scale: 0.95 }],
     },
 });
 

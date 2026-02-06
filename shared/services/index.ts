@@ -16,5 +16,8 @@ export { TopicsService } from './TopicsService';
 export { LLMService } from './LLMService';
 export type { AnalysisResult, TranscriptionResponse, SessionRead } from './LLMService';
 
+// Flashcards Service
+export { FlashcardsService } from './FlashcardsService';
+
 // Storage Service (keep existing if present)
 // export { StorageService } from './StorageService';
