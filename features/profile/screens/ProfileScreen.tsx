@@ -25,8 +25,9 @@ import {
     Dimensions,
     Pressable,
     StatusBar,
+    Linking,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +40,9 @@ import { PasswordChangeModal } from '../components/PasswordChangeModal';
 import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import { LogoutConfirmationModal } from '../components/LogoutConfirmationModal';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useSubscription, PlanBadge, UsageProgressBar } from '@/features/subscription';
+import { IAPService } from '@/shared/services';
+import { useSubscriptionStore } from '@/store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,7 +59,7 @@ interface TabButtonProps {
 
 const TabButton = memo(function TabButton({ label, icon, isActive, onPress }: TabButtonProps) {
     const { colors, isDark } = useTheme();
-    
+
     return (
         <TouchableOpacity
             style={[
@@ -67,19 +71,23 @@ const TabButton = memo(function TabButton({ label, icon, isActive, onPress }: Ta
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <MaterialIcons
-                name={icon}
-                size={20}
-                color={isActive ? colors.text.inverse : colors.text.muted}
-            />
-            <Text
-                style={[
-                    styles.tabText,
-                    { color: isActive ? colors.text.inverse : colors.text.muted },
-                ]}
-            >
-                {label}
-            </Text>
+            {isActive ? (
+                <Text
+                    style={[
+                        styles.tabText,
+                        { color: colors.text.inverse },
+                    ]}
+                    numberOfLines={1}
+                >
+                    {label}
+                </Text>
+            ) : (
+                <MaterialIcons
+                    name={icon}
+                    size={22}
+                    color={colors.text.muted}
+                />
+            )}
         </TouchableOpacity>
     );
 });
@@ -132,7 +140,8 @@ const PrimaryButton = memo(function PrimaryButton({
 function ProfileScreenComponent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const logic = useProfile();
+    const { tab } = useLocalSearchParams<{ tab?: string }>();
+    const logic = useProfile(tab as ProfileTab | undefined);
     const { t, i18n } = useTranslation();
 
     // Get theme
@@ -488,6 +497,162 @@ function ProfileScreenComponent() {
     );
 
     // ─────────────────────────────────────────────────────────────────────────
+    // RENDER SUBSCRIPTION TAB
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const sub = useSubscription();
+    const showPaywall = useSubscriptionStore((s) => s.showPaywall);
+
+    const handleManageSubscription = useCallback(() => {
+        const url = Platform.OS === 'ios'
+            ? 'https://apps.apple.com/account/subscriptions'
+            : 'https://play.google.com/store/account/subscriptions';
+        Linking.openURL(url);
+    }, []);
+
+    const handleRestorePurchases = useCallback(async () => {
+        try {
+            const purchases = await IAPService.restorePurchases();
+            if (purchases.length === 0) {
+                Alert.alert(t('common.ok'), t('subscription.purchase.nothingToRestore'));
+                return;
+            }
+            const latest = purchases[purchases.length - 1];
+            const receiptData = latest.purchaseToken ?? '';
+            if (receiptData) {
+                const success = await useSubscriptionStore.getState().verifyPurchase(
+                    Platform.OS as 'ios' | 'android',
+                    receiptData,
+                    latest.productId,
+                );
+                if (success) {
+                    await IAPService.finishPurchase(latest);
+                    Alert.alert(t('common.success'), t('subscription.purchase.restored'));
+                } else {
+                    Alert.alert(t('common.error'), t('subscription.purchase.verifyFailed'));
+                }
+            }
+        } catch {
+            Alert.alert(t('common.error'), t('subscription.purchase.failed'));
+        }
+    }, [t]);
+
+    const renderSubscriptionTab = () => (
+        <>
+            {/* Plan Badge */}
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    {t('subscription.currentPlan')}
+                </Text>
+                <GlassView variant="default" style={styles.sectionCard}>
+                    <View style={[styles.listItem, styles.listItemLast]}>
+                        <PlanBadge planType={sub.planType} />
+                    </View>
+                </GlassView>
+            </View>
+
+            {/* Expired Banner */}
+            {sub.isExpired && (
+                <View style={styles.section}>
+                    <GlassView variant="default" style={[styles.sectionCard, { borderColor: '#FF3B30', borderWidth: 1 }]}>
+                        <View style={[styles.listItem, styles.listItemLast]}>
+                            <View style={[styles.listItemIcon, { backgroundColor: 'rgba(255, 59, 48, 0.12)' }]}>
+                                <MaterialIcons name="warning" size={20} color="#FF3B30" />
+                            </View>
+                            <View style={styles.listItemContent}>
+                                <Text style={[styles.listItemValue, { color: '#FF3B30' }]}>
+                                    {t('subscription.expired')}
+                                </Text>
+                                <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                    {t('subscription.expiredBanner')}
+                                </Text>
+                            </View>
+                        </View>
+                    </GlassView>
+                </View>
+            )}
+
+            {/* Usage Section */}
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                    {t('subscription.usage.sessions')} & {t('subscription.usage.generations')}
+                </Text>
+                <GlassView variant="default" style={[styles.sectionCard, { padding: Spacing.md }]}>
+                    <UsageProgressBar
+                        label={t('subscription.usage.sessions')}
+                        used={sub.sessionsUsed}
+                        limit={sub.sessionsLimit}
+                        color={sub.sessionsColor}
+                        progress={sub.sessionsProgress}
+                    />
+                    <UsageProgressBar
+                        label={t('subscription.usage.generations')}
+                        used={sub.generationsUsed}
+                        limit={sub.generationsLimit}
+                        color={sub.generationsColor}
+                        progress={sub.generationsProgress}
+                    />
+                </GlassView>
+            </View>
+
+            {/* Expiration */}
+            {sub.isPaid && sub.expiresAt && !sub.isExpired && (
+                <View style={styles.section}>
+                    <GlassView variant="default" style={styles.sectionCard}>
+                        <View style={[styles.listItem, styles.listItemLast]}>
+                            <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                                <MaterialIcons name="event" size={20} color={colors.text.primary} />
+                            </View>
+                            <View style={styles.listItemContent}>
+                                <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
+                                    {t('subscription.expires', { date: new Date(sub.expiresAt).toLocaleDateString() })}
+                                </Text>
+                            </View>
+                        </View>
+                    </GlassView>
+                </View>
+            )}
+
+            {/* Buttons */}
+            <View style={styles.section}>
+                {sub.canUpgrade && (
+                    <PrimaryButton
+                        title={t('subscription.upgrade')}
+                        onPress={showPaywall}
+                    />
+                )}
+
+                <TouchableOpacity
+                    style={[
+                        styles.logoutButton,
+                        {
+                            backgroundColor: colors.surface.glass,
+                            borderColor: colors.glass.border,
+                            marginTop: Spacing.sm,
+                        },
+                    ]}
+                    onPress={handleRestorePurchases}
+                    activeOpacity={0.7}
+                >
+                    <MaterialIcons name="restore" size={20} color={colors.text.primary} />
+                    <Text style={[styles.logoutText, { color: colors.text.primary }]}>
+                        {t('subscription.restore')}
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={{ alignItems: 'center', marginTop: Spacing.md }}
+                    onPress={handleManageSubscription}
+                >
+                    <Text style={{ color: colors.text.secondary, fontSize: 14 }}>
+                        {t('subscription.manage')}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </>
+    );
+
+    // ─────────────────────────────────────────────────────────────────────────
     // RENDER ABOUT TAB
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -656,6 +821,12 @@ function ProfileScreenComponent() {
                         onPress={() => logic.setActiveTab('preferences')}
                     />
                     <TabButton
+                        label={t('subscription.tab')}
+                        icon="credit-card"
+                        isActive={logic.activeTab === 'subscription'}
+                        onPress={() => logic.setActiveTab('subscription')}
+                    />
+                    <TabButton
                         label={t('profile.tabs.about')}
                         icon="info"
                         isActive={logic.activeTab === 'about'}
@@ -671,6 +842,7 @@ function ProfileScreenComponent() {
                 >
                     {logic.activeTab === 'profile' && renderProfileTab()}
                     {logic.activeTab === 'preferences' && renderPreferencesTab()}
+                    {logic.activeTab === 'subscription' && renderSubscriptionTab()}
                     {logic.activeTab === 'about' && renderAboutTab()}
 
                     {/* Logout Button */}

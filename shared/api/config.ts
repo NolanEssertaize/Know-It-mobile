@@ -62,6 +62,12 @@ export const API_ENDPOINTS = {
     CREATE: `${API_VERSION}/decks`,
     GET: (deckId: string) => `${API_VERSION}/decks/${deckId}`,
   },
+  // Subscriptions
+  SUBSCRIPTIONS: {
+    INFO: `${API_VERSION}/subscriptions`,
+    USAGE: `${API_VERSION}/subscriptions/usage`,
+    VERIFY: `${API_VERSION}/subscriptions/verify`,
+  },
 } as const;
 
 /**

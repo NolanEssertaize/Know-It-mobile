@@ -67,3 +67,13 @@ export type {
   ApiError,
   PaginationParams,
 } from './types';
+
+// Subscription Types
+export type {
+  PlanType,
+  SubscriptionStatus,
+  SubscriptionInfo,
+  UsageInfo,
+  VerifyReceiptRequest,
+  VerifyReceiptResponse,
+} from './types/subscription';

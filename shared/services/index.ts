@@ -19,5 +19,12 @@ export type { AnalysisResult, TranscriptionResponse, SessionRead } from './LLMSe
 // Flashcards Service
 export { FlashcardsService } from './FlashcardsService';
 
+// Subscription Service
+export { SubscriptionService } from './SubscriptionService';
+
+// IAP Service
+export { IAPService } from './IAPService';
+export type { Purchase, PurchaseError, ProductSubscription, EventSubscription } from './IAPService';
+
 // Storage Service (keep existing if present)
 // export { StorageService } from './StorageService';

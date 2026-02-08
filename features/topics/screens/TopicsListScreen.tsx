@@ -2,7 +2,7 @@
  * @file TopicsListScreen.tsx
  * @description Écran principal - Liste des sujets - Theme Aware
  *
- * FIXED: 
+ * FIXED:
  * - All colors now use useTheme() hook
  * - Correct prop names for AddTopicModal (value, onChangeText, etc.)
  * - Correct prop names for TopicCard (registerRef, unregisterRef)
@@ -10,7 +10,7 @@
  * - Correct keyExtractor using item.topic.id
  */
 
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -19,101 +19,24 @@ import {
     Pressable,
     RefreshControl,
     ActivityIndicator,
-    Platform,
     StyleSheet,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
-import { StreakFlame } from '../components/StreakFlame';
-
-// ═══════════════════════════════════════════════════════════════════════════
-// KPI COLORS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const KPI_COLORS = {
-    topics: {
-        icon: '#34C759',
-        background: 'rgba(52, 199, 89, 0.12)',
-    },
-    sessions: {
-        icon: '#007AFF',
-        background: 'rgba(0, 122, 255, 0.12)',
-    },
-    streakActive: {
-        icon: '#FF3B30',
-        background: 'rgba(255, 59, 48, 0.12)',
-    },
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// STREAK ICON — Skia fire burst on focus, then stays red
-// ═══════════════════════════════════════════════════════════════════════════
-
-const StreakIcon = memo(function StreakIcon({
-    active,
-    defaultColor,
-}: {
-    active: boolean;
-    defaultColor: string;
-}) {
-    const [burstKey, setBurstKey] = useState(0);
-    const [showBurst, setShowBurst] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            if (active) {
-                setShowBurst(true);
-                setBurstKey((k) => k + 1);
-            }
-        }, [active]),
-    );
-
-    return (
-        <View style={streakStyles.wrapper}>
-            {/* Static icon — always rendered underneath */}
-            <MaterialCommunityIcons
-                name="fire"
-                size={22}
-                color={active ? KPI_COLORS.streakActive.icon : defaultColor}
-            />
-            {/* Skia flame overlay — covers the icon during animation */}
-            {showBurst && (
-                <View style={streakStyles.canvasWrapper}>
-                    <StreakFlame
-                        key={burstKey}
-                        onDone={() => setShowBurst(false)}
-                    />
-                </View>
-            )}
-        </View>
-    );
-});
-
-const streakStyles = StyleSheet.create({
-    wrapper: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 40,
-        height: 40,
-    },
-    canvasWrapper: {
-        position: 'absolute',
-        bottom: -30,
-        alignItems: 'center',
-    },
-});
+import { UsageIndicator } from '@/features/subscription';
 
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
 import { AddTopicModal } from '../components/AddTopicModal';
 import { EditTopicModal } from '../components/EditTopicModal';
 import { CategoryFilter } from '../components/CategoryFilter';
+import { StatsRow } from '../components/StatsRow';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPOSANT
@@ -121,7 +44,7 @@ import { CategoryFilter } from '../components/CategoryFilter';
 
 export const TopicsListScreen = memo(function TopicsListScreen() {
     const logic = useTopicsList();
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const { t } = useTranslation();
     const params = useLocalSearchParams<{ showAddModal?: string }>();
     const router = useRouter();
@@ -253,59 +176,19 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 <ProfileButton />
             </View>
 
-            {/* Stats Cards */}
+            {/* Stats Cards + Search + Filters */}
             <View style={styles.statsContainer}>
-                <View style={styles.statsRow}>
-                    {/* Topics — Green */}
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.topics.background }]}>
-                            <MaterialCommunityIcons name="book-multiple" size={22} color={KPI_COLORS.topics.icon} />
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.topicsCount}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
-                    </GlassView>
+                <StatsRow
+                    topicsCount={logic.topicsCount}
+                    totalSessions={logic.totalSessions}
+                    streak={logic.streak}
+                    streakActiveToday={logic.streakActiveToday}
+                    streakAtRisk={logic.streakAtRisk}
+                    yesterdayStreak={logic.yesterdayStreak}
+                />
 
-                    {/* Sessions — Blue */}
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.sessions.background }]}>
-                            <MaterialCommunityIcons name="microphone" size={22} color={KPI_COLORS.sessions.icon} />
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.totalSessions}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
-                    </GlassView>
-
-                    {/* Streak — Dark by default, Red flame when active today */}
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[
-                            styles.statIconContainer,
-                            {
-                                backgroundColor: logic.streakActiveToday
-                                    ? KPI_COLORS.streakActive.background
-                                    : colors.surface.glass,
-                            },
-                        ]}>
-                            <StreakIcon
-                                active={logic.streakActiveToday}
-                                defaultColor={colors.text.primary}
-                            />
-                        </View>
-                        <Text style={[
-                            styles.statValue,
-                            {
-                                color: logic.streakActiveToday
-                                    ? KPI_COLORS.streakActive.icon
-                                    : colors.text.primary,
-                            },
-                        ]}>
-                            {logic.streak}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.streak')}</Text>
-                    </GlassView>
-                </View>
+                {/* Usage Indicator */}
+                <UsageIndicator />
 
                 {/* Recherche */}
                 <GlassView style={styles.searchContainer}>
@@ -390,10 +273,6 @@ const styles = StyleSheet.create({
         paddingTop: Spacing.md,
         paddingBottom: Spacing.sm,
     },
-    greeting: {
-        fontSize: 14,
-        marginBottom: 4,
-    },
     title: {
         fontSize: 28,
         fontWeight: '700',
@@ -401,37 +280,6 @@ const styles = StyleSheet.create({
     statsContainer: {
         paddingHorizontal: Spacing.lg,
         marginBottom: Spacing.md,
-    },
-    statsRow: {
-        flexDirection: 'row',
-        gap: Spacing.sm,
-        marginBottom: Spacing.lg,
-    },
-    statCard: {
-        flex: 1,
-        padding: Spacing.md,
-        borderRadius: BorderRadius.lg,
-        alignItems: 'center',
-        gap: Spacing.xs,
-        borderWidth: 1,
-    },
-    statIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: '700',
-    },
-    statLabel: {
-        fontSize: 10,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
     searchContainer: {
         flexDirection: 'row',

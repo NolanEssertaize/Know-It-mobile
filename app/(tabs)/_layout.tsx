@@ -51,7 +51,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 {Platform.OS === 'ios' ? (
                     <BlurView
                         intensity={80}
-                        tint={isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterial'}
+                        tint={isDark ? 'systemChromeMaterialDark' : 'light'}
                         style={StyleSheet.absoluteFill}
                     />
                 ) : (

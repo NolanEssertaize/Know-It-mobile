@@ -14,15 +14,17 @@
 // CRITICAL: Initialize i18n before any other imports
 import '@/i18n';
 
-import { useEffect, useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet, AppState } from 'react-native';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useSubscriptionStore } from '@/store';
 import { api } from '@/shared/api';
+import { IAPService } from '@/shared/services';
 import { ThemeProvider, useTheme } from '@/theme';
+import { PaywallModal } from '@/features/subscription';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -160,6 +162,41 @@ function AuthNavigator({ children }: { children: React.ReactNode }) {
  */
 function ThemedAppContent() {
     const { colors, isDark } = useTheme();
+    const { isAuthenticated } = useAuthStore();
+    const appState = useRef(AppState.currentState);
+
+    // Initialize subscription store after auth
+    useEffect(() => {
+        if (isAuthenticated) {
+            // IAP initialization may fail in Expo Go (Nitro Modules not available)
+            IAPService.initialize().catch(() =>
+                console.warn('[Layout] IAP not available (Expo Go?)')
+            );
+            useSubscriptionStore.getState().refreshAll();
+        } else {
+            useSubscriptionStore.getState().reset();
+        }
+
+        return () => {
+            IAPService.cleanup().catch(() => {});
+        };
+    }, [isAuthenticated]);
+
+    // Refresh usage when app comes to foreground
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (
+                appState.current.match(/inactive|background/) &&
+                nextAppState === 'active' &&
+                isAuthenticated
+            ) {
+                useSubscriptionStore.getState().fetchUsage();
+            }
+            appState.current = nextAppState;
+        });
+
+        return () => subscription.remove();
+    }, [isAuthenticated]);
 
     return (
         <ConnectionGate>
@@ -206,6 +243,7 @@ function ThemedAppContent() {
                         options={{ presentation: 'modal', animation: 'slide_from_right' }}
                     />
                 </Stack>
+                <PaywallModal />
             </AuthNavigator>
         </ConnectionGate>
     );

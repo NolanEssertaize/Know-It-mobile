@@ -82,7 +82,8 @@
     "stats": {
       "topics": "Topics",
       "sessions": "Sessions",
-      "streak": "Streak"
+      "streak": "Streak",
+      "streakWarning": "You're about to lose your streak! Do a session or review your cards."
     },
     "search": {
       "placeholder": "Search topics...",
@@ -483,6 +484,45 @@
       "addCard": "Add a card",
       "save": "Save"
     }
+  },
+  "subscription": {
+    "tab": "Subscription",
+    "currentPlan": "Current Plan",
+    "plans": {
+      "free": "Free",
+      "student": "Student",
+      "unlimited": "Unlimited"
+    },
+    "usage": {
+      "sessions": "Sessions",
+      "generations": "Generations",
+      "used": "{{used}} / {{limit}} used today",
+      "remaining": "{{count}} remaining"
+    },
+    "upgrade": "Upgrade Plan",
+    "restore": "Restore Purchases",
+    "manage": "Manage Subscription",
+    "popular": "Popular",
+    "perMonth": "{{price}}/month",
+    "expires": "Expires {{date}}",
+    "expired": "Your subscription has expired",
+    "expiredBanner": "Your subscription has expired. Renew to keep your limits.",
+    "paywall": {
+      "title": "Upgrade Your Learning",
+      "subtitle": "Choose the plan that fits your needs",
+      "close": "Not now"
+    },
+    "purchase": {
+      "loading": "Processing purchase...",
+      "success": "Subscription activated!",
+      "failed": "Purchase failed. Please try again.",
+      "verifyFailed": "Could not verify purchase. Tap Restore Purchases to try again.",
+      "restoring": "Restoring purchases...",
+      "restored": "Purchases restored successfully",
+      "nothingToRestore": "No purchases to restore"
+    },
+    "sessionsPerDay": "{{count}} sessions/day",
+    "generationsPerDay": "{{count}} generations/day"
   },
   "languages": {
     "en": "English",
