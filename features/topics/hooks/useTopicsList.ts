@@ -63,6 +63,9 @@ export interface UseTopicsListReturn {
     isLoading: boolean;
     error: string | null;
     streak: number;
+    streakActiveToday: boolean;
+    streakAtRisk: boolean;
+    yesterdayStreak: number;
 
     // Edit modal data
     editingTopicId: string | null;
@@ -114,8 +117,13 @@ function useDebounce<T>(value: T, delay: number): T {
 // HELPER - Calculate streak from sessions
 // ═══════════════════════════════════════════════════════════════════════════
 
-function calculateStreak(topics: Topic[]): number {
-    if (!topics || !Array.isArray(topics)) return 0;
+function calculateStreak(topics: Topic[]): {
+    streak: number;
+    activeToday: boolean;
+    streakAtRisk: boolean;
+    yesterdayStreak: number;
+} {
+    if (!topics || !Array.isArray(topics)) return { streak: 0, activeToday: false, streakAtRisk: false, yesterdayStreak: 0 };
 
     const allSessionDates: Date[] = [];
 
@@ -129,7 +137,7 @@ function calculateStreak(topics: Topic[]): number {
         }
     });
 
-    if (allSessionDates.length === 0) return 0;
+    if (allSessionDates.length === 0) return { streak: 0, activeToday: false, streakAtRisk: false, yesterdayStreak: 0 };
 
     // Sort dates descending
     allSessionDates.sort((a, b) => b.getTime() - a.getTime());
@@ -145,6 +153,9 @@ function calculateStreak(topics: Topic[]): number {
         uniqueDays.add(dayKey);
     });
 
+    const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+    const activeToday = uniqueDays.has(todayKey);
+
     const sortedDays = Array.from(uniqueDays).sort().reverse();
 
     for (let i = 0; i < sortedDays.length; i++) {
@@ -159,7 +170,31 @@ function calculateStreak(topics: Topic[]): number {
         }
     }
 
-    return streak;
+    // Calculate yesterday streak (streak counting from yesterday)
+    let yesterdayStreak = 0;
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
+    const activeYesterday = uniqueDays.has(yesterdayKey);
+
+    if (activeYesterday) {
+        for (let i = 0; i < sortedDays.length; i++) {
+            const expectedDate = new Date(yesterday);
+            expectedDate.setDate(yesterday.getDate() - i);
+            const expectedKey = `${expectedDate.getFullYear()}-${expectedDate.getMonth()}-${expectedDate.getDate()}`;
+
+            if (sortedDays.includes(expectedKey)) {
+                yesterdayStreak++;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // At risk = not active today but had activity yesterday (streak to lose)
+    const streakAtRisk = !activeToday && yesterdayStreak > 0;
+
+    return { streak, activeToday, streakAtRisk, yesterdayStreak };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -258,7 +293,7 @@ export function useTopicsList(): UseTopicsListReturn {
     );
 
     // Streak
-    const streak = useMemo(() => calculateStreak(topics), [topics]);
+    const { streak, activeToday: streakActiveToday, streakAtRisk, yesterdayStreak } = useMemo(() => calculateStreak(topics), [topics]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // HANDLERS
@@ -407,6 +442,9 @@ export function useTopicsList(): UseTopicsListReturn {
         isLoading,
         error,
         streak,
+        streakActiveToday,
+        streakAtRisk,
+        yesterdayStreak,
         editingTopicId,
         editTopicText,
         setSearchText,

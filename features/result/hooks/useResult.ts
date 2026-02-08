@@ -52,10 +52,13 @@ export interface UseResultReturn {
     readonly isFromHistory: boolean;
     /** True while loading session data from API */
     readonly isLoading: boolean;
+    readonly topicId: string | undefined;
+    readonly topicTitle: string | undefined;
 
     // Methods
     readonly handleClose: () => void;
     readonly handleRetry: () => void;
+    readonly handleGenerateFlashcards: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -100,6 +103,7 @@ function calculateSummary(analysis: AnalysisResult): SummaryData {
 export function useResult(): UseResultReturn {
     const params = useLocalSearchParams<{
         topicId?: string;
+        topicTitle?: string;
         sessionId?: string;
         transcription?: string;
         valid?: string;
@@ -254,6 +258,34 @@ export function useResult(): UseResultReturn {
         }
     }, [router, isFromHistory, params.topicId]);
 
+    const handleGenerateFlashcards = useCallback(() => {
+        // Build content string from analysis
+        const contentParts: string[] = [];
+
+        if (analysis.valid.length > 0) {
+            contentParts.push('Valid points:\n' + analysis.valid.map(p => `- ${p}`).join('\n'));
+        }
+        if (analysis.corrections.length > 0) {
+            contentParts.push('Points to correct:\n' + analysis.corrections.map(p => `- ${p}`).join('\n'));
+        }
+        if (analysis.missing.length > 0) {
+            contentParts.push('Missing points:\n' + analysis.missing.map(p => `- ${p}`).join('\n'));
+        }
+
+        const content = contentParts.join('\n\n');
+        const topicTitle = params.topicTitle || 'Topic';
+
+        // Navigate to flashcards editor
+        router.push({
+            pathname: `/${params.topicId}/flashcards-editor`,
+            params: {
+                topicId: params.topicId,
+                topicTitle,
+                content,
+            },
+        });
+    }, [analysis, params.topicId, params.topicTitle, router]);
+
     return {
         // Data
         analysis,
@@ -263,9 +295,12 @@ export function useResult(): UseResultReturn {
         transcription,
         isFromHistory,
         isLoading,
+        topicId: params.topicId,
+        topicTitle: params.topicTitle,
 
         // Methods
         handleClose,
         handleRetry,
+        handleGenerateFlashcards,
     };
 }

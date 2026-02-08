@@ -6,3 +6,4 @@
 export * from './GlassView';
 export * from './GlassButton';
 export * from './ScreenWrapper';
+export * from './SwipeableTabView';

@@ -57,6 +57,8 @@ export function useSession(): UseSessionReturn {
         router.replace({
           pathname: `/${topicId}/result`,
           params: {
+            topicId: topicId,
+            topicTitle: topic?.title ?? 'Topic',
             valid: JSON.stringify([
               'Point clé 1 correctement énoncé',
               'Bonne compréhension du concept',

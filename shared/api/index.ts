@@ -43,9 +43,37 @@ export type {
   TopicUpdate,
   TopicList,
   TopicError,
+  // Flashcards
+  GeneratedCard,
+  GenerateFlashcardsRequest,
+  GenerateFlashcardsResponse,
+  DeckCreate,
+  DeckRead,
+  FlashcardBulkCreate,
+  BulkCreateResponse,
+  FlashcardRead,
+  ReviewDifficulty,
+  FlashcardWithReview,
+  DueCardsResponse,
+  AllDueCardsResponse,
+  TimelinePeriod,
+  FlashcardTimelineResponse,
+  ReviewSubmission,
+  ReviewResult,
+  DeckWithStats,
   // Generic
   ValidationError,
   HTTPValidationError,
   ApiError,
   PaginationParams,
 } from './types';
+
+// Subscription Types
+export type {
+  PlanType,
+  SubscriptionStatus,
+  SubscriptionInfo,
+  UsageInfo,
+  VerifyReceiptRequest,
+  VerifyReceiptResponse,
+} from './types/subscription';

@@ -242,6 +242,30 @@ export async function apiRequest<T>(
       }
     }
 
+    // Handle 429 - distinguish quota exceeded from generic rate limit
+    if (response.status === 429) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = typeof errorData.detail === 'string' ? errorData.detail : '';
+
+      if (detail.toLowerCase().includes('limit')) {
+        // Quota exceeded — show paywall, don't retry
+        console.log('[ApiClient] Quota exceeded, showing paywall');
+        try {
+          const { useSubscriptionStore } = require('@/store/useSubscriptionStore');
+          useSubscriptionStore.getState().showPaywall();
+        } catch (e) {
+          // Store may not be available yet
+        }
+        throw new ApiException(
+          'QUOTA_EXCEEDED',
+          errorData.error || detail || 'Daily limit reached',
+          429,
+          false,
+        );
+      }
+      // Generic rate limit — fall through to retry logic below
+    }
+
     // Handle retryable errors
     if (!response.ok && isRetryableError(response.status)) {
       if (retryCount < RETRY_CONFIG.maxRetries) {

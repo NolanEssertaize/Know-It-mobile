@@ -2,7 +2,7 @@
  * @file TopicsListScreen.tsx
  * @description Écran principal - Liste des sujets - Theme Aware
  *
- * FIXED: 
+ * FIXED:
  * - All colors now use useTheme() hook
  * - Correct prop names for AddTopicModal (value, onChangeText, etc.)
  * - Correct prop names for TopicCard (registerRef, unregisterRef)
@@ -10,7 +10,7 @@
  * - Correct keyExtractor using item.topic.id
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -19,22 +19,24 @@ import {
     Pressable,
     RefreshControl,
     ActivityIndicator,
-    Platform,
     StyleSheet,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
+import { UsageIndicator } from '@/features/subscription';
 
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
 import { AddTopicModal } from '../components/AddTopicModal';
 import { EditTopicModal } from '../components/EditTopicModal';
 import { CategoryFilter } from '../components/CategoryFilter';
+import { StatsRow } from '../components/StatsRow';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPOSANT
@@ -42,8 +44,19 @@ import { CategoryFilter } from '../components/CategoryFilter';
 
 export const TopicsListScreen = memo(function TopicsListScreen() {
     const logic = useTopicsList();
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const { t } = useTranslation();
+    const params = useLocalSearchParams<{ showAddModal?: string }>();
+    const router = useRouter();
+
+    // Handle showAddModal param from tab bar + button
+    useEffect(() => {
+        if (params.showAddModal === 'true') {
+            logic.setShowAddModal(true);
+            // Clear the param to prevent re-opening on re-render
+            router.setParams({ showAddModal: undefined });
+        }
+    }, [params.showAddModal]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER HELPERS
@@ -163,39 +176,19 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 <ProfileButton />
             </View>
 
-            {/* Stats Cards */}
+            {/* Stats Cards + Search + Filters */}
             <View style={styles.statsContainer}>
-                <View style={styles.statsRow}>
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="book-multiple" size={22} color={colors.text.primary} />
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.topicsCount}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
-                    </GlassView>
+                <StatsRow
+                    topicsCount={logic.topicsCount}
+                    totalSessions={logic.totalSessions}
+                    streak={logic.streak}
+                    streakActiveToday={logic.streakActiveToday}
+                    streakAtRisk={logic.streakAtRisk}
+                    yesterdayStreak={logic.yesterdayStreak}
+                />
 
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="microphone" size={22} color={colors.text.primary} />
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.totalSessions}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
-                    </GlassView>
-
-                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                        <View style={[styles.statIconContainer, { backgroundColor: colors.surface.glass }]}>
-                            <MaterialCommunityIcons name="fire" size={22} color={colors.text.primary} />
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                            {logic.streak}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.streak')}</Text>
-                    </GlassView>
-                </View>
+                {/* Usage Indicator */}
+                <UsageIndicator />
 
                 {/* Recherche */}
                 <GlassView style={styles.searchContainer}>
@@ -246,20 +239,6 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                 />
             )}
 
-            {/* FAB - Theme Aware */}
-            <View style={styles.fabContainer}>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.fab,
-                        { backgroundColor: colors.text.primary },
-                        pressed && styles.fabPressed,
-                    ]}
-                    onPress={() => logic.setShowAddModal(true)}
-                >
-                    <MaterialIcons name="add" size={28} color={colors.text.inverse} />
-                </Pressable>
-            </View>
-
             {/* Add Topic Modal - CORRECT PROPS matching AddTopicModal interface */}
             <AddTopicModal
                 visible={logic.showAddModal}
@@ -294,10 +273,6 @@ const styles = StyleSheet.create({
         paddingTop: Spacing.md,
         paddingBottom: Spacing.sm,
     },
-    greeting: {
-        fontSize: 14,
-        marginBottom: 4,
-    },
     title: {
         fontSize: 28,
         fontWeight: '700',
@@ -305,36 +280,6 @@ const styles = StyleSheet.create({
     statsContainer: {
         paddingHorizontal: Spacing.lg,
         marginBottom: Spacing.md,
-    },
-    statsRow: {
-        flexDirection: 'row',
-        gap: Spacing.sm,
-        marginBottom: Spacing.lg,
-    },
-    statCard: {
-        flex: 1,
-        padding: Spacing.md,
-        borderRadius: BorderRadius.lg,
-        alignItems: 'center',
-        gap: Spacing.xs,
-        borderWidth: 1,
-    },
-    statIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: '700',
-    },
-    statLabel: {
-        fontSize: 10,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
     searchContainer: {
         flexDirection: 'row',
@@ -434,33 +379,6 @@ const styles = StyleSheet.create({
     emptyButtonText: {
         fontSize: 14,
         fontWeight: '600',
-    },
-    fabContainer: {
-        position: 'absolute',
-        bottom: 24,
-        right: 16,
-    },
-    fab: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 8,
-            },
-        }),
-    },
-    fabPressed: {
-        opacity: 0.8,
-        transform: [{ scale: 0.95 }],
     },
 });
 

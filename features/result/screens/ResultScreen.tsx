@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
@@ -58,7 +59,7 @@ function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
-    const { score, sections, summary, handleClose, handleRetry, isFromHistory, isLoading, transcription } = useResult();
+    const { score, sections, summary, handleClose, handleRetry, handleGenerateFlashcards, isFromHistory, isLoading, transcription } = useResult();
     const [showTranscription, setShowTranscription] = React.useState(false);
 
     // Theme-aware sections
@@ -231,13 +232,13 @@ function ResultScreenComponent(): React.JSX.Element {
                     </View>
                 )}
 
-                {/* Actions - HIGH CONTRAST BUTTONS */}
+                {/* Actions - THREE BUTTONS: Reessayer | Flashcards | Terminer */}
                 <View style={styles.actionsContainer}>
                     {/* "Réessayer" - Outline/Glass style */}
                     <Pressable
                         style={({ pressed }) => [
                             styles.buttonOutline,
-                            { 
+                            {
                                 backgroundColor: colors.surface.glass,
                                 borderColor: colors.glass.borderLight,
                             },
@@ -248,6 +249,26 @@ function ResultScreenComponent(): React.JSX.Element {
                         <MaterialIcons name="refresh" size={20} color={colors.text.primary} />
                         <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
                             {t('result.actions.tryAgain')}
+                        </Text>
+                    </Pressable>
+
+                    <View style={styles.actionSpacer} />
+
+                    {/* "Flashcards" - Outline/Glass style */}
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.buttonOutline,
+                            {
+                                backgroundColor: colors.surface.glass,
+                                borderColor: colors.glass.borderLight,
+                            },
+                            pressed && styles.buttonPressed,
+                        ]}
+                        onPress={handleGenerateFlashcards}
+                    >
+                        <MaterialCommunityIcons name="cards-outline" size={20} color={colors.text.primary} />
+                        <Text style={[styles.buttonOutlineText, { color: colors.text.primary }]}>
+                            {t('result.actions.flashcards')}
                         </Text>
                     </Pressable>
 

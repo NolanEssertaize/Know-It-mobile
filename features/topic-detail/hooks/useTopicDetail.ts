@@ -179,9 +179,9 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
     const handleSessionPress = useCallback((sessionId: string) => {
         if (topicId) {
             console.log('[useTopicDetail] Opening session:', sessionId);
-            router.push(`/${topicId}/result?sessionId=${sessionId}`);
+            router.push(`/${topicId}/result?sessionId=${sessionId}&topicId=${topicId}&topicTitle=${encodeURIComponent(topic?.title || 'Topic')}`);
         }
-    }, [topicId, router]);
+    }, [topicId, topic?.title, router]);
 
     /**
      * Show edit modal

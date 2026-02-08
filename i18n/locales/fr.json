@@ -82,7 +82,8 @@
     "stats": {
       "topics": "Sujets",
       "sessions": "Sessions",
-      "streak": "Serie"
+      "streak": "Serie",
+      "streakWarning": "Tu es sur le point de perdre ta série ! Fais une session ou révise tes cartes."
     },
     "search": {
       "placeholder": "Rechercher un sujet...",
@@ -258,8 +259,9 @@
     },
     "actions": {
       "tryAgain": "Reessayer",
-      "backToTopic": "Retour au sujet",
-      "share": "Partager le resultat"
+      "backToTopic": "Terminer",
+      "share": "Partager le resultat",
+      "flashcards": "Flashcards"
     },
     "transcription": {
       "title": "Ta reponse",
@@ -426,6 +428,102 @@
       "submit": "Changer le mot de passe"
     }
   },
+  "flashcards": {
+    "title": "Flashcards",
+    "cards": "cartes",
+    "dueToday": "À revoir aujourd'hui",
+    "readyToReview": "{{count}} cartes à revoir",
+    "empty": {
+      "title": "Aucun paquet",
+      "description": "Crée des flashcards depuis tes sessions d'étude pour commencer à réviser"
+    },
+    "daily": {
+      "loading": "Chargement de tes cartes...",
+      "allDone": "Terminé !",
+      "noDue": "Aucune carte à revoir",
+      "comeBackLater": "Tu as révisé toutes tes cartes pour aujourd'hui. Reviens plus tard !",
+      "manageDecks": "Gérer les paquets",
+      "timeline": "Calendrier",
+      "nextDue": "Prochaines cartes {{when}}"
+    },
+    "timeline": {
+      "title": "Calendrier des révisions",
+      "subtitle": "{{count}} cartes programmées",
+      "error": "Échec du chargement du calendrier",
+      "empty": "Aucune révision programmée",
+      "cardsToReview": "{{count}} carte à revoir",
+      "cardsToReview_plural": "{{count}} cartes à revoir"
+    },
+    "manage": {
+      "title": "Gérer les paquets"
+    },
+    "review": {
+      "loading": "Chargement des cartes...",
+      "allDone": "Terminé !",
+      "noCardsDue": "Aucune carte à revoir pour le moment",
+      "sessionComplete": "Session terminée !",
+      "cardsReviewed": "Cartes révisées",
+      "good": "Correct",
+      "hard": "Difficile",
+      "forgot": "Oublié",
+      "accuracy": "Précision",
+      "reviewAgain": "Recommencer",
+      "checkNewCards": "Vérifier les nouvelles cartes",
+      "finish": "Terminer",
+      "swipeHint": "Touche pour retourner, glisse pour répondre"
+    },
+    "editor": {
+      "title": "Revoir les Flashcards",
+      "subtitle": "{{count}} cartes générées",
+      "generating": "Génération des flashcards...",
+      "card": "Carte",
+      "front": "Question",
+      "back": "Réponse",
+      "frontPlaceholder": "Entrez la question...",
+      "backPlaceholder": "Entrez la réponse...",
+      "addCard": "Ajouter une carte",
+      "save": "Enregistrer"
+    }
+  },
+  "subscription": {
+    "tab": "Abonnement",
+    "currentPlan": "Plan actuel",
+    "plans": {
+      "free": "Gratuit",
+      "student": "Étudiant",
+      "unlimited": "Illimité"
+    },
+    "usage": {
+      "sessions": "Sessions",
+      "generations": "Générations",
+      "used": "{{used}} / {{limit}} utilisés aujourd'hui",
+      "remaining": "{{count}} restant(s)"
+    },
+    "upgrade": "Changer de plan",
+    "restore": "Restaurer les achats",
+    "manage": "Gérer l'abonnement",
+    "popular": "Populaire",
+    "perMonth": "{{price}}/mois",
+    "expires": "Expire le {{date}}",
+    "expired": "Votre abonnement a expiré",
+    "expiredBanner": "Votre abonnement a expiré. Renouvelez pour garder vos limites.",
+    "paywall": {
+      "title": "Améliorez votre apprentissage",
+      "subtitle": "Choisissez le plan qui vous convient",
+      "close": "Pas maintenant"
+    },
+    "purchase": {
+      "loading": "Traitement de l'achat...",
+      "success": "Abonnement activé !",
+      "failed": "Échec de l'achat. Veuillez réessayer.",
+      "verifyFailed": "Impossible de vérifier l'achat. Appuyez sur Restaurer les achats.",
+      "restoring": "Restauration des achats...",
+      "restored": "Achats restaurés avec succès",
+      "nothingToRestore": "Aucun achat à restaurer"
+    },
+    "sessionsPerDay": "{{count}} sessions/jour",
+    "generationsPerDay": "{{count}} générations/jour"
+  },
   "languages": {
     "en": "Anglais",
     "fr": "Francais"
@@ -445,5 +543,11 @@
     "yesterday": "Hier",
     "daysAgo": "il y a {{count}} jour",
     "daysAgo_plural": "il y a {{count}} jours"
+  },
+  "relativeTime": {
+    "inOneHour": "dans 1 heure",
+    "inHours": "dans {{count}} heures",
+    "tomorrow": "demain",
+    "inDays": "dans {{count}} jours"
   }
 }

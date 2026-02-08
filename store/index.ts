@@ -23,5 +23,15 @@ export {
   selectTopicById,
 } from './useStore';
 
+// Subscription Store
+export {
+  useSubscriptionStore,
+  selectPlanType,
+  selectUsage,
+  selectIsPaywallVisible,
+  selectSubscriptionStatus,
+  selectIsActive,
+} from './useSubscriptionStore';
+
 // Types
 export type { Topic, Session } from './useStore';

@@ -20,7 +20,7 @@ import type { UserUpdate, PasswordChange } from '@/shared/api';
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type ProfileTab = 'profile' | 'preferences' | 'about';
+export type ProfileTab = 'profile' | 'preferences' | 'subscription' | 'about';
 
 export interface UserProfile {
     id: string;
@@ -110,7 +110,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 // HOOK
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function useProfile(): UseProfileReturn {
+export function useProfile(initialTab?: ProfileTab): UseProfileReturn {
     // ─────────────────────────────────────────────────────────────────────────
     // AUTH STORE
     // ─────────────────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export function useProfile(): UseProfileReturn {
     // STATE
     // ─────────────────────────────────────────────────────────────────────────
 
-    const [activeTab, setActiveTab] = useState<ProfileTab>('profile');
+    const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? 'profile');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

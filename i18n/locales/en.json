@@ -82,7 +82,8 @@
     "stats": {
       "topics": "Topics",
       "sessions": "Sessions",
-      "streak": "Streak"
+      "streak": "Streak",
+      "streakWarning": "You're about to lose your streak! Do a session or review your cards."
     },
     "search": {
       "placeholder": "Search topics...",
@@ -258,8 +259,9 @@
     },
     "actions": {
       "tryAgain": "Try Again",
-      "backToTopic": "Back to Topic",
-      "share": "Share Result"
+      "backToTopic": "Finish",
+      "share": "Share Result",
+      "flashcards": "Flashcards"
     },
     "transcription": {
       "title": "Your Response",
@@ -426,6 +428,102 @@
       "submit": "Change Password"
     }
   },
+  "flashcards": {
+    "title": "Flashcards",
+    "cards": "cards",
+    "dueToday": "Due Today",
+    "readyToReview": "{{count}} cards ready to review",
+    "empty": {
+      "title": "No Decks Yet",
+      "description": "Create flashcards from your study sessions to start reviewing"
+    },
+    "daily": {
+      "loading": "Loading your cards...",
+      "allDone": "All Done!",
+      "noDue": "No cards due",
+      "comeBackLater": "You've reviewed all your cards for today. Come back later for more!",
+      "manageDecks": "Manage Decks",
+      "timeline": "Timeline",
+      "nextDue": "Next cards due {{when}}"
+    },
+    "timeline": {
+      "title": "Review Timeline",
+      "subtitle": "{{count}} cards scheduled for review",
+      "error": "Failed to load timeline",
+      "empty": "No upcoming reviews scheduled",
+      "cardsToReview": "{{count}} card to review",
+      "cardsToReview_plural": "{{count}} cards to review"
+    },
+    "manage": {
+      "title": "Manage Decks"
+    },
+    "review": {
+      "loading": "Loading cards...",
+      "allDone": "All Done!",
+      "noCardsDue": "No cards due for review right now",
+      "sessionComplete": "Session Complete!",
+      "cardsReviewed": "Cards Reviewed",
+      "good": "Good",
+      "hard": "Hard",
+      "forgot": "Forgot",
+      "accuracy": "Accuracy",
+      "reviewAgain": "Review Again",
+      "checkNewCards": "Check for New Cards",
+      "finish": "Finish",
+      "swipeHint": "Tap to flip, swipe to answer"
+    },
+    "editor": {
+      "title": "Review Flashcards",
+      "subtitle": "{{count}} cards generated",
+      "generating": "Generating flashcards...",
+      "card": "Card",
+      "front": "Question",
+      "back": "Answer",
+      "frontPlaceholder": "Enter the question...",
+      "backPlaceholder": "Enter the answer...",
+      "addCard": "Add a card",
+      "save": "Save"
+    }
+  },
+  "subscription": {
+    "tab": "Subscription",
+    "currentPlan": "Current Plan",
+    "plans": {
+      "free": "Free",
+      "student": "Student",
+      "unlimited": "Unlimited"
+    },
+    "usage": {
+      "sessions": "Sessions",
+      "generations": "Generations",
+      "used": "{{used}} / {{limit}} used today",
+      "remaining": "{{count}} remaining"
+    },
+    "upgrade": "Upgrade Plan",
+    "restore": "Restore Purchases",
+    "manage": "Manage Subscription",
+    "popular": "Popular",
+    "perMonth": "{{price}}/month",
+    "expires": "Expires {{date}}",
+    "expired": "Your subscription has expired",
+    "expiredBanner": "Your subscription has expired. Renew to keep your limits.",
+    "paywall": {
+      "title": "Upgrade Your Learning",
+      "subtitle": "Choose the plan that fits your needs",
+      "close": "Not now"
+    },
+    "purchase": {
+      "loading": "Processing purchase...",
+      "success": "Subscription activated!",
+      "failed": "Purchase failed. Please try again.",
+      "verifyFailed": "Could not verify purchase. Tap Restore Purchases to try again.",
+      "restoring": "Restoring purchases...",
+      "restored": "Purchases restored successfully",
+      "nothingToRestore": "No purchases to restore"
+    },
+    "sessionsPerDay": "{{count}} sessions/day",
+    "generationsPerDay": "{{count}} generations/day"
+  },
   "languages": {
     "en": "English",
     "fr": "French"
@@ -445,5 +543,11 @@
     "yesterday": "Yesterday",
     "daysAgo": "{{count}} day ago",
     "daysAgo_plural": "{{count}} days ago"
+  },
+  "relativeTime": {
+    "inOneHour": "in 1 hour",
+    "inHours": "in {{count}} hours",
+    "tomorrow": "tomorrow",
+    "inDays": "in {{count}} days"
   }
 }
