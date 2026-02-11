@@ -54,6 +54,9 @@ export const API_ENDPOINTS = {
     DUE: `${API_VERSION}/flashcards/due`,
     TIMELINE: `${API_VERSION}/flashcards/timeline`,
     REVIEW: (flashcardId: string) => `${API_VERSION}/flashcards/${flashcardId}/review`,
+    CREATE: `${API_VERSION}/flashcards`,
+    UPDATE: (id: string) => `${API_VERSION}/flashcards/${id}`,
+    DELETE: (id: string) => `${API_VERSION}/flashcards/${id}`,
   },
 
   // Decks
@@ -61,10 +64,10 @@ export const API_ENDPOINTS = {
     LIST: `${API_VERSION}/decks`,
     CREATE: `${API_VERSION}/decks`,
     GET: (deckId: string) => `${API_VERSION}/decks/${deckId}`,
+    TIMELINE: (deckId: string) => `${API_VERSION}/decks/${deckId}/timeline`,
   },
   // Subscriptions
   SUBSCRIPTIONS: {
-    INFO: `${API_VERSION}/subscriptions`,
     USAGE: `${API_VERSION}/subscriptions/usage`,
     VERIFY: `${API_VERSION}/subscriptions/verify`,
   },

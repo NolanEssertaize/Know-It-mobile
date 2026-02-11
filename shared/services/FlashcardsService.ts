@@ -13,8 +13,12 @@ import type {
   DeckWithStats,
   AllDueCardsResponse,
   FlashcardTimelineResponse,
+  FlashcardRead,
+  FlashcardCreate,
+  FlashcardUpdate,
   ReviewDifficulty,
   ReviewResult,
+  DelayLabel,
 } from '@/shared/api';
 
 export const FlashcardsService = {
@@ -63,7 +67,7 @@ export const FlashcardsService = {
    */
   async bulkCreateFlashcards(
     deckId: string,
-    cards: { front: string; back: string }[],
+    cards: { front: string; back: string; delay?: DelayLabel }[],
   ): Promise<BulkCreateResponse> {
     console.log(`[FlashcardsService] Bulk creating ${cards.length} flashcards in deck: ${deckId}`);
 
@@ -151,5 +155,70 @@ export const FlashcardsService = {
 
     console.log(`[FlashcardsService] Fetched timeline with ${response.total_upcoming} upcoming cards`);
     return response;
+  },
+
+  /**
+   * Get deck-specific timeline
+   * @param deckId - Deck ID
+   * @returns Timeline periods for this deck
+   */
+  async getDeckTimeline(deckId: string): Promise<FlashcardTimelineResponse> {
+    console.log(`[FlashcardsService] Fetching timeline for deck: ${deckId}`);
+
+    const response = await api.get<FlashcardTimelineResponse>(
+      API_ENDPOINTS.DECKS.TIMELINE(deckId),
+    );
+
+    console.log(`[FlashcardsService] Fetched deck timeline with ${response.total_upcoming} upcoming cards`);
+    return response;
+  },
+
+  /**
+   * Create a single flashcard
+   * @param data - Flashcard creation data
+   * @returns Created flashcard
+   */
+  async createFlashcard(data: FlashcardCreate): Promise<FlashcardRead> {
+    console.log(`[FlashcardsService] Creating flashcard in deck: ${data.deck_id}`);
+
+    const response = await api.post<FlashcardRead>(
+      API_ENDPOINTS.FLASHCARDS.CREATE,
+      data,
+    );
+
+    console.log(`[FlashcardsService] Flashcard created with ID: ${response.id}`);
+    return response;
+  },
+
+  /**
+   * Update a flashcard
+   * @param id - Flashcard ID
+   * @param data - Fields to update
+   * @returns Updated flashcard
+   */
+  async updateFlashcard(id: string, data: FlashcardUpdate): Promise<FlashcardRead> {
+    console.log(`[FlashcardsService] Updating flashcard: ${id}`);
+
+    const response = await api.patch<FlashcardRead>(
+      API_ENDPOINTS.FLASHCARDS.UPDATE(id),
+      data,
+    );
+
+    console.log(`[FlashcardsService] Flashcard updated: ${id}`);
+    return response;
+  },
+
+  /**
+   * Delete a flashcard
+   * @param id - Flashcard ID
+   */
+  async deleteFlashcard(id: string): Promise<void> {
+    console.log(`[FlashcardsService] Deleting flashcard: ${id}`);
+
+    await api.delete(
+      API_ENDPOINTS.FLASHCARDS.DELETE(id),
+    );
+
+    console.log(`[FlashcardsService] Flashcard deleted: ${id}`);
   },
 } as const;

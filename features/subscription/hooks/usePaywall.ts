@@ -8,6 +8,10 @@ import { Platform, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSubscriptionStore } from '@/store';
 import { IAPService, type ProductSubscription } from '@/shared/services';
+import type { StorePlatform } from '@/shared/api';
+
+const storePlatform = (os: string): StorePlatform =>
+  os === 'ios' ? 'apple' : 'google';
 
 export function usePaywall() {
   const { t } = useTranslation();
@@ -44,7 +48,7 @@ export function usePaywall() {
           }
 
           const success = await verifyPurchase(
-            Platform.OS as 'ios' | 'android',
+            storePlatform(Platform.OS),
             receiptData,
             purchase.productId,
           );
@@ -103,7 +107,7 @@ export function usePaywall() {
 
       if (receiptData) {
         const success = await verifyPurchase(
-          Platform.OS as 'ios' | 'android',
+          storePlatform(Platform.OS),
           receiptData,
           latest.productId,
         );

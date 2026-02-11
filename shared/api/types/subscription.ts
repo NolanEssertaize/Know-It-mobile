@@ -7,11 +7,17 @@ export type PlanType = 'free' | 'student' | 'unlimited';
 
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'grace_period';
 
+export type StorePlatform = 'apple' | 'google';
+
 export interface SubscriptionInfo {
   plan_type: PlanType;
   status: SubscriptionStatus;
   is_active: boolean;
   expires_at: string | null;
+  id?: string;
+  store_platform?: StorePlatform | null;
+  store_product_id?: string | null;
+  created_at?: string;
 }
 
 export interface UsageInfo {
@@ -22,10 +28,11 @@ export interface UsageInfo {
   generations_limit: number;
   generations_remaining: number;
   plan_type: PlanType;
+  usage_date: string;
 }
 
 export interface VerifyReceiptRequest {
-  platform: 'ios' | 'android';
+  platform: StorePlatform;
   receipt_data: string;
   product_id: string;
 }
@@ -34,4 +41,6 @@ export interface VerifyReceiptResponse {
   success: boolean;
   subscription: SubscriptionInfo;
   message: string;
+  error?: string;
+  code?: string;
 }

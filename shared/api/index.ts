@@ -61,6 +61,9 @@ export type {
   ReviewSubmission,
   ReviewResult,
   DeckWithStats,
+  FlashcardCreate,
+  FlashcardUpdate,
+  DelayLabel,
   // Generic
   ValidationError,
   HTTPValidationError,
@@ -72,6 +75,7 @@ export type {
 export type {
   PlanType,
   SubscriptionStatus,
+  StorePlatform,
   SubscriptionInfo,
   UsageInfo,
   VerifyReceiptRequest,

@@ -457,6 +457,20 @@
     "manage": {
       "title": "Gérer les paquets"
     },
+    "deck": {
+      "createTitle": "Créer un paquet",
+      "namePlaceholder": "Nom du paquet (ex: Biologie Chapitre 3)",
+      "createError": "Échec de la création du paquet",
+      "detail": "Détail du paquet",
+      "addCard": "Ajouter une carte"
+    },
+    "card": {
+      "front": "Recto",
+      "back": "Verso",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "confirmDelete": "Supprimer cette flashcard ?"
+    },
     "review": {
       "loading": "Chargement des cartes...",
       "allDone": "Terminé !",

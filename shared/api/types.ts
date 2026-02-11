@@ -230,7 +230,7 @@ export interface DeckRead {
 
 export interface FlashcardBulkCreate {
   deck_id: string;
-  cards: { front: string; back: string }[];
+  cards: { front: string; back: string; delay?: DelayLabel }[];
 }
 
 export interface BulkCreateResponse {
@@ -252,7 +252,7 @@ export interface FlashcardRead {
 export type ReviewDifficulty = 'forgot' | 'hard' | 'good';
 
 export interface FlashcardWithReview extends FlashcardRead {
-  next_review: string | null;
+  next_review_at: string | null;
   interval_days: number;
   ease_factor: number;
   review_count: number;
@@ -301,4 +301,21 @@ export interface DeckWithStats extends DeckRead {
   due_count: number;
   new_count: number;
   review_count: number;
+}
+
+// Delay labels for scheduling new/updated cards into specific timeline periods
+export type DelayLabel = 'now' | '1_day' | '1_week' | '1_month' | '3_months' | '6_months' | '12_months' | '18_months' | '24_months' | '36_months';
+
+// Single flashcard CRUD types
+export interface FlashcardCreate {
+  deck_id: string;
+  front_content: string;
+  back_content: string;
+  delay?: DelayLabel;
+}
+
+export interface FlashcardUpdate {
+  front_content?: string;
+  back_content?: string;
+  delay?: DelayLabel;
 }

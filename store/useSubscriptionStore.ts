@@ -12,6 +12,7 @@ import { ApiException } from '@/shared/api';
 import type {
   PlanType,
   SubscriptionStatus,
+  StorePlatform,
 } from '@/shared/api';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -40,10 +41,9 @@ interface SubscriptionState {
 }
 
 interface SubscriptionActions {
-  fetchSubscription: () => Promise<void>;
   fetchUsage: () => Promise<void>;
   refreshAll: () => Promise<void>;
-  verifyPurchase: (platform: 'ios' | 'android', receiptData: string, productId: string) => Promise<boolean>;
+  verifyPurchase: (platform: StorePlatform, receiptData: string, productId: string) => Promise<boolean>;
   showPaywall: () => void;
   hidePaywall: () => void;
   checkQuota: (type: 'session' | 'generation') => boolean;
@@ -80,33 +80,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   ...INITIAL_STATE,
 
   /**
-   * Fetch subscription info from API
-   */
-  fetchSubscription: async () => {
-    console.log('[SubscriptionStore] Fetching subscription...');
-    set({ isLoading: true, error: null });
-
-    try {
-      const info = await SubscriptionService.getSubscription();
-      set({
-        planType: info.plan_type,
-        status: info.status,
-        isActive: info.is_active,
-        expiresAt: info.expires_at,
-        isLoading: false,
-      });
-      console.log('[SubscriptionStore] Subscription:', info.plan_type, info.status);
-    } catch (error) {
-      console.error('[SubscriptionStore] Fetch subscription failed:', error);
-      set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch subscription',
-      });
-    }
-  },
-
-  /**
-   * Fetch usage info from API
+   * Fetch usage info from API (includes plan_type)
    */
   fetchUsage: async () => {
     console.log('[SubscriptionStore] Fetching usage...');
@@ -114,6 +88,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
     try {
       const usage = await SubscriptionService.getUsage();
       set({
+        planType: usage.plan_type,
         sessionsUsed: usage.sessions_used,
         sessionsLimit: usage.sessions_limit,
         sessionsRemaining: usage.sessions_remaining,
@@ -128,23 +103,17 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   },
 
   /**
-   * Refresh both subscription and usage data
+   * Refresh subscription and usage data
    */
   refreshAll: async () => {
     console.log('[SubscriptionStore] Refreshing all...');
     set({ isLoading: true, error: null });
 
     try {
-      const [info, usage] = await Promise.all([
-        SubscriptionService.getSubscription(),
-        SubscriptionService.getUsage(),
-      ]);
+      const usage = await SubscriptionService.getUsage();
 
       set({
-        planType: info.plan_type,
-        status: info.status,
-        isActive: info.is_active,
-        expiresAt: info.expires_at,
+        planType: usage.plan_type,
         sessionsUsed: usage.sessions_used,
         sessionsLimit: usage.sessions_limit,
         sessionsRemaining: usage.sessions_remaining,
@@ -179,7 +148,14 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
       });
 
       if (result.success) {
-        await get().refreshAll();
+        set({
+          planType: result.subscription.plan_type,
+          status: result.subscription.status,
+          isActive: result.subscription.is_active,
+          expiresAt: result.subscription.expires_at,
+          isLoading: false,
+        });
+        get().fetchUsage();
         console.log('[SubscriptionStore] Purchase verified');
         return true;
       } else {
@@ -191,9 +167,12 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
       }
     } catch (error) {
       console.error('[SubscriptionStore] Verify failed:', error);
+      const isRateLimit = error instanceof ApiException && error.status === 429;
       set({
         isLoading: false,
-        error: error instanceof ApiException ? error.message : 'Verification failed',
+        error: isRateLimit
+          ? 'Too many requests. Please wait a moment and try again.'
+          : error instanceof ApiException ? error.message : 'Verification failed',
       });
       return false;
     }

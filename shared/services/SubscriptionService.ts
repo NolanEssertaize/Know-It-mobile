@@ -5,21 +5,12 @@
 
 import { api, API_ENDPOINTS } from '@/shared/api';
 import type {
-  SubscriptionInfo,
   UsageInfo,
   VerifyReceiptRequest,
   VerifyReceiptResponse,
 } from '@/shared/api';
 
 export const SubscriptionService = {
-  /**
-   * Get current subscription info
-   */
-  async getSubscription(): Promise<SubscriptionInfo> {
-    console.log('[SubscriptionService] Fetching subscription info');
-    return api.get<SubscriptionInfo>(API_ENDPOINTS.SUBSCRIPTIONS.INFO);
-  },
-
   /**
    * Get current usage info
    */
