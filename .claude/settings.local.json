@@ -15,7 +15,10 @@
       "Bash(dir:*)",
       "Bash(npm install:*)",
       "Bash(node -e:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls \"C:\\\\Users\\\\xyz12\\\\WebstormProjects\\\\KnowIt\\\\features\\\\topics\\\\components\"\" 2>NUL || echo \"No components dir \")",
+      "Bash(ls:*)",
+      "Bash(python:*)"
     ]
   }
 }

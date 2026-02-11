@@ -81,8 +81,8 @@ function computeNextDueLabel(
   // Find the card with the earliest next_review date
   let earliestDate: Date | null = null;
   for (const card of nextPeriod.cards) {
-    if (card.next_review) {
-      const d = new Date(card.next_review);
+    if (card.next_review_at) {
+      const d = new Date(card.next_review_at);
       if (!earliestDate || d < earliestDate) {
         earliestDate = d;
       }

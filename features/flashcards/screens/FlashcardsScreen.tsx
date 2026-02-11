@@ -22,6 +22,7 @@ import { useTheme, Spacing, BorderRadius } from '@/theme';
 import { ScreenWrapper, GlassView } from '@/shared/components';
 import { useFlashcards } from '../hooks/useFlashcards';
 import { TimelineModal } from '../components/TimelineModal';
+import { CreateDeckModal } from '../components/CreateDeckModal/CreateDeckModal';
 import type { DeckWithStats } from '@/shared/api';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -105,6 +106,7 @@ export const FlashcardsManageScreen = memo(function FlashcardsManageScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showCreateDeck, setShowCreateDeck] = useState(false);
   const {
     decks,
     isLoading,
@@ -121,7 +123,7 @@ export const FlashcardsManageScreen = memo(function FlashcardsManageScreen() {
   };
 
   const handleCreateFlashcard = () => {
-    console.log('Create flashcard pressed');
+    setShowCreateDeck(true);
   };
 
   const renderDeckItem = ({ item }: { item: DeckWithStats }) => (
@@ -259,6 +261,13 @@ export const FlashcardsManageScreen = memo(function FlashcardsManageScreen() {
       <TimelineModal
         visible={showTimeline}
         onClose={() => setShowTimeline(false)}
+      />
+
+      {/* Create Deck Modal */}
+      <CreateDeckModal
+        visible={showCreateDeck}
+        onClose={() => setShowCreateDeck(false)}
+        onCreated={() => refresh()}
       />
     </ScreenWrapper>
   );

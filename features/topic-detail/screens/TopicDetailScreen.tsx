@@ -110,7 +110,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
 
                 {/* Section header */}
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{t('topicDetail.history')}</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{t('topicDetail.history.title')}</Text>
                 </View>
             </View>
         ),

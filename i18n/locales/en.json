@@ -457,6 +457,20 @@
     "manage": {
       "title": "Manage Decks"
     },
+    "deck": {
+      "createTitle": "Create Deck",
+      "namePlaceholder": "Deck name (e.g., Biology Chapter 3)",
+      "createError": "Failed to create deck",
+      "detail": "Deck Detail",
+      "addCard": "Add Card"
+    },
+    "card": {
+      "front": "Front",
+      "back": "Back",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete this flashcard?"
+    },
     "review": {
       "loading": "Loading cards...",
       "allDone": "All Done!",

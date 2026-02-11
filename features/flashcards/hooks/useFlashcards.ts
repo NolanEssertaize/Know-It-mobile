@@ -60,9 +60,12 @@ export function useFlashcards(): UseFlashcardsReturn {
   const totalDue = decks.reduce((sum, deck) => sum + deck.due_count, 0);
 
   const handleDeckPress = useCallback((deckId: string) => {
-    // Navigate to deck detail (could be implemented later)
-    console.log('[useFlashcards] Deck pressed:', deckId);
-  }, []);
+    const deck = decks.find(d => d.id === deckId);
+    router.push({
+      pathname: '/deck-detail',
+      params: { deckId, deckName: deck?.name || '' },
+    });
+  }, [router, decks]);
 
   const handleStartReview = useCallback((deckId: string) => {
     router.push({
