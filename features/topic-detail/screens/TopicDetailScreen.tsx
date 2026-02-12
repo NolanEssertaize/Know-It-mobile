@@ -18,6 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { ScreenWrapper, GlassView, GlassButton } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
+import { QuotaExhaustedModal } from '@/features/subscription';
 
 import { useTopicDetail } from '../hooks/useTopicDetail';
 import type { SessionItemData } from '../hooks/useTopicDetail';
@@ -47,11 +48,6 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
         router.back();
     }, [router]);
 
-    const handleStartSession = useCallback(() => {
-        if (topicId) {
-            router.push(`/${topicId}/session`);
-        }
-    }, [router, topicId]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER HELPERS - Define ALL useCallback hooks BEFORE any returns
@@ -221,7 +217,7 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
             {/* FAB - "Nouvelle Session" button - THEME AWARE */}
             <View style={styles.fabContainer}>
                 <Pressable
-                    onPress={handleStartSession}
+                    onPress={logic.handleStartSession}
                     style={({ pressed }) => [
                         styles.fabButton,
                         {
@@ -245,6 +241,13 @@ export const TopicDetailScreen = memo(function TopicDetailScreen() {
                     <Text style={[styles.fabText, { color: colors.text.inverse }]}>{t('topicDetail.startSession')}</Text>
                 </Pressable>
             </View>
+
+            <QuotaExhaustedModal
+                visible={logic.quotaModalVisible}
+                type={logic.quotaType}
+                onDismiss={logic.dismissQuotaModal}
+                onChangePlan={logic.openPaywall}
+            />
         </ScreenWrapper>
     );
 });

@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 import { GlassView } from '@/shared/components';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
+import { QuotaExhaustedModal } from '@/features/subscription';
 
 import { useResult } from '../hooks/useResult';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -59,7 +60,11 @@ function ResultScreenComponent(): React.JSX.Element {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
-    const { score, sections, summary, handleClose, handleRetry, handleGenerateFlashcards, isFromHistory, isLoading, transcription } = useResult();
+    const {
+        score, sections, summary, handleClose, handleRetry, handleGenerateFlashcards,
+        isFromHistory, isLoading, transcription,
+        quotaModalVisible, quotaType, dismissQuotaModal, openPaywall,
+    } = useResult();
     const [showTranscription, setShowTranscription] = React.useState(false);
 
     // Theme-aware sections
@@ -290,6 +295,13 @@ function ResultScreenComponent(): React.JSX.Element {
                     </Pressable>
                 </View>
             </ScrollView>
+
+            <QuotaExhaustedModal
+                visible={quotaModalVisible}
+                type={quotaType}
+                onDismiss={dismissQuotaModal}
+                onChangePlan={openPaywall}
+            />
         </View>
     );
 }

@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useStore, selectCurrentTopic, selectIsLoading, selectError } from '@/store';
 import type { Topic, Session } from '@/store';
 import { formatSessionHistoryDate } from '@/shared/utils/dateUtils';
+import { useQuotaGuard } from '@/features/subscription';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -46,6 +47,12 @@ interface UseTopicDetailReturn {
     handleDeleteTopic: () => Promise<void>;
     handleStartSession: () => void;
     handleSessionPress: (sessionId: string) => void;
+
+    // Quota guard
+    quotaModalVisible: boolean;
+    quotaType: 'session' | 'generation';
+    dismissQuotaModal: () => void;
+    openPaywall: () => void;
     setEditTitle: (title: string) => void;
     showEditModal: () => void;
     hideEditModal: () => void;
@@ -58,6 +65,7 @@ interface UseTopicDetailReturn {
 
 export function useTopicDetail(topicId: string): UseTopicDetailReturn {
     const router = useRouter();
+    const { quotaModalVisible, quotaType, checkAndProceed, dismissQuotaModal, openPaywall } = useQuotaGuard();
 
     // Local state for edit modal
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -168,10 +176,11 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
      * Navigate to session recording screen
      */
     const handleStartSession = useCallback(() => {
+        if (!checkAndProceed('session')) return;
         if (topicId) {
             router.push(`/${topicId}/session`);
         }
-    }, [topicId, router]);
+    }, [topicId, router, checkAndProceed]);
 
     /**
      * Navigate to session result screen
@@ -227,5 +236,11 @@ export function useTopicDetail(topicId: string): UseTopicDetailReturn {
         showEditModal,
         hideEditModal,
         clearError,
+
+        // Quota guard
+        quotaModalVisible,
+        quotaType,
+        dismissQuotaModal,
+        openPaywall,
     };
 }

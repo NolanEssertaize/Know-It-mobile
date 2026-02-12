@@ -254,7 +254,10 @@
       "permissionDenied": "Microphone permission denied",
       "recordingFailed": "Recording failed. Please try again.",
       "tooShort": "Recording is too short. Please record at least 10 seconds."
-    }
+    },
+    "analysisTimeout": "Analysis took too long. Please try again.",
+    "analysisError": "An error occurred during analysis.",
+    "retry": "Retry"
   },
   "result": {
     "title": "Analysis Result",
@@ -580,7 +583,40 @@
       "nothingToRestore": "No purchases to restore"
     },
     "sessionsPerDay": "{{count}} sessions/day",
-    "generationsPerDay": "{{count}} generations/day"
+    "generationsPerDay": "{{count}} generations/day",
+    "quota": {
+      "noMoreSessions": "No more sessions today",
+      "noMoreGenerations": "No more generations today",
+      "waitMessage": "Wait {{time}} or upgrade your plan for more.",
+      "changePlan": "Change Plan",
+      "notNow": "Not now"
+    }
+  },
+  "legal": {
+    "mentionsLegales": "Legal Mentions",
+    "cgu": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "consent": {
+      "cgu": "I accept the",
+      "privacy": "I accept the",
+      "required": "You must accept the terms to continue"
+    }
+  },
+  "notifications": {
+    "eveningReminder": {
+      "title": "Time to practice!",
+      "body": "Learned anything today? Time to review what you know."
+    },
+    "flashcardReview": {
+      "title": "Flashcards ready",
+      "body": "You have new flashcards waiting for review."
+    },
+    "settings": {
+      "eveningReminder": "Evening practice reminder",
+      "eveningReminderDesc": "Daily reminder to practice what you learned",
+      "flashcardReminder": "Flashcard review reminder",
+      "flashcardReminderDesc": "Daily reminder when flashcards are due"
+    }
   },
   "languages": {
     "en": "English",

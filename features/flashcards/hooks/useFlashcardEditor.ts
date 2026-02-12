@@ -6,6 +6,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FlashcardsService } from '@/shared/services';
+import { ApiException } from '@/shared/api';
 import type { EditableFlashcard } from '../types';
 
 interface UseFlashcardEditorReturn {
@@ -14,6 +15,9 @@ interface UseFlashcardEditorReturn {
   isSaving: boolean;
   error: string | null;
   topicTitle: string;
+  quotaExhausted: boolean;
+  dismissQuotaModal: () => void;
+  openPaywall: () => void;
   updateCard: (id: string, field: 'front' | 'back', value: string) => void;
   deleteCard: (id: string) => void;
   addCard: () => void;
@@ -38,10 +42,22 @@ export function useFlashcardEditor(): UseFlashcardEditorReturn {
   const [isGenerating, setIsGenerating] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quotaExhausted, setQuotaExhausted] = useState(false);
 
   const topicId = params.topicId || '';
   const topicTitle = params.topicTitle || '';
   const content = params.content || '';
+
+  const dismissQuotaModal = useCallback(() => {
+    setQuotaExhausted(false);
+    router.back();
+  }, [router]);
+
+  const openPaywall = useCallback(() => {
+    setQuotaExhausted(false);
+    router.back();
+    router.push({ pathname: '/profile', params: { tab: 'subscription', showPaywall: 'true' } });
+  }, [router]);
 
   // Generate flashcards on mount
   useEffect(() => {
@@ -70,6 +86,10 @@ export function useFlashcardEditor(): UseFlashcardEditorReturn {
         console.log(`[useFlashcardEditor] Generated ${editableCards.length} cards`);
       } catch (err) {
         console.error('[useFlashcardEditor] Failed to generate flashcards:', err);
+        if (err instanceof ApiException && err.message.toLowerCase().includes('limit')) {
+          setQuotaExhausted(true);
+          return;
+        }
         setError('Failed to generate flashcards');
       } finally {
         setIsGenerating(false);
@@ -154,6 +174,9 @@ export function useFlashcardEditor(): UseFlashcardEditorReturn {
     isSaving,
     error,
     topicTitle,
+    quotaExhausted,
+    dismissQuotaModal,
+    openPaywall,
     updateCard,
     deleteCard,
     addCard,

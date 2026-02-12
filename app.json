@@ -52,7 +52,14 @@
       ],
       "expo-audio",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#4A90D9"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

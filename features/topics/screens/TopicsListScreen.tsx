@@ -29,7 +29,6 @@ import { ProfileButton } from '@/features/profile';
 
 import { ScreenWrapper, GlassView } from '@/shared/components';
 import { Spacing, BorderRadius, useTheme } from '@/theme';
-import { UsageIndicator } from '@/features/subscription';
 
 import { useTopicsList, type TopicItemData } from '../hooks/useTopicsList';
 import { TopicCard } from '../components/TopicCard';
@@ -186,9 +185,6 @@ export const TopicsListScreen = memo(function TopicsListScreen() {
                     streakAtRisk={logic.streakAtRisk}
                     yesterdayStreak={logic.yesterdayStreak}
                 />
-
-                {/* Usage Indicator */}
-                <UsageIndicator />
 
                 {/* Recherche */}
                 <GlassView style={styles.searchContainer}>

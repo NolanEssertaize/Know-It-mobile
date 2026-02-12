@@ -254,7 +254,10 @@
       "permissionDenied": "Permission du microphone refusée",
       "recordingFailed": "Échec de l'enregistrement. Réessaie.",
       "tooShort": "L'enregistrement est trop court. Enregistre au moins 10 secondes."
-    }
+    },
+    "analysisTimeout": "L'analyse a pris trop de temps. Veuillez réessayer.",
+    "analysisError": "Une erreur est survenue lors de l'analyse.",
+    "retry": "Réessayer"
   },
   "result": {
     "title": "Resultat de l'analyse",
@@ -580,7 +583,40 @@
       "nothingToRestore": "Aucun achat à restaurer"
     },
     "sessionsPerDay": "{{count}} sessions/jour",
-    "generationsPerDay": "{{count}} générations/jour"
+    "generationsPerDay": "{{count}} générations/jour",
+    "quota": {
+      "noMoreSessions": "Plus de sessions aujourd'hui",
+      "noMoreGenerations": "Plus de générations aujourd'hui",
+      "waitMessage": "Patiente {{time}} ou change de plan pour continuer.",
+      "changePlan": "Changer de plan",
+      "notNow": "Pas maintenant"
+    }
+  },
+  "legal": {
+    "mentionsLegales": "Mentions Legales",
+    "cgu": "Conditions Generales d'Utilisation",
+    "privacy": "Politique de Confidentialite",
+    "consent": {
+      "cgu": "J'accepte les",
+      "privacy": "J'accepte la",
+      "required": "Vous devez accepter les conditions pour continuer"
+    }
+  },
+  "notifications": {
+    "eveningReminder": {
+      "title": "C'est l'heure de pratiquer !",
+      "body": "Tu as appris quelque chose aujourd'hui ? Revois ce que tu sais."
+    },
+    "flashcardReview": {
+      "title": "Flashcards pretes",
+      "body": "Tu as de nouvelles flashcards a revoir."
+    },
+    "settings": {
+      "eveningReminder": "Rappel de pratique du soir",
+      "eveningReminderDesc": "Rappel quotidien pour pratiquer ce que tu as appris",
+      "flashcardReminder": "Rappel de revision des flashcards",
+      "flashcardReminderDesc": "Rappel quotidien quand des flashcards sont a revoir"
+    }
   },
   "languages": {
     "en": "Anglais",

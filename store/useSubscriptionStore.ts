@@ -33,6 +33,7 @@ interface SubscriptionState {
   generationsUsed: number;
   generationsLimit: number;
   generationsRemaining: number;
+  usageDate: string | null;
 
   // UI state
   isLoading: boolean;
@@ -67,6 +68,7 @@ const INITIAL_STATE: SubscriptionState = {
   generationsUsed: 0,
   generationsLimit: 1,
   generationsRemaining: 1,
+  usageDate: null,
   isLoading: false,
   error: null,
   isPaywallVisible: false,
@@ -95,6 +97,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         generationsUsed: usage.generations_used,
         generationsLimit: usage.generations_limit,
         generationsRemaining: usage.generations_remaining,
+        usageDate: usage.usage_date,
       });
       console.log('[SubscriptionStore] Usage fetched');
     } catch (error) {
@@ -120,6 +123,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         generationsUsed: usage.generations_used,
         generationsLimit: usage.generations_limit,
         generationsRemaining: usage.generations_remaining,
+        usageDate: usage.usage_date,
         isLoading: false,
       });
 

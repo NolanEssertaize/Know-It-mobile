@@ -20,7 +20,7 @@ import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-rout
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useAuthStore, useSubscriptionStore } from '@/store';
+import { useAuthStore, useSubscriptionStore, useNotificationStore } from '@/store';
 import { api } from '@/shared/api';
 import { IAPService } from '@/shared/services';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -165,7 +165,7 @@ function ThemedAppContent() {
     const { isAuthenticated } = useAuthStore();
     const appState = useRef(AppState.currentState);
 
-    // Initialize subscription store after auth
+    // Initialize subscription store + notifications after auth
     useEffect(() => {
         if (isAuthenticated) {
             // IAP initialization may fail in Expo Go (Nitro Modules not available)
@@ -173,8 +173,14 @@ function ThemedAppContent() {
                 console.warn('[Layout] IAP not available (Expo Go?)')
             );
             useSubscriptionStore.getState().refreshAll();
+
+            // Initialize notification preferences & re-schedule
+            useNotificationStore.getState().initialize().catch(() =>
+                console.warn('[Layout] Notification init failed')
+            );
         } else {
             useSubscriptionStore.getState().reset();
+            useNotificationStore.getState().reset().catch(() => {});
         }
 
         return () => {
@@ -216,7 +222,7 @@ function ThemedAppContent() {
                     <Stack.Screen name="index" options={{ headerShown: false }} />
                     <Stack.Screen
                         name="profile"
-                        options={{ presentation: 'modal', animation: 'slide_from_left' }}
+                        options={{ headerShown: false, animation: 'none' }}
                     />
                     <Stack.Screen
                         name="[topicId]/index"
@@ -241,6 +247,18 @@ function ThemedAppContent() {
                     <Stack.Screen
                         name="flashcards-manage"
                         options={{ presentation: 'modal', animation: 'slide_from_right' }}
+                    />
+                    <Stack.Screen
+                        name="legal-mentions"
+                        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                    />
+                    <Stack.Screen
+                        name="terms-of-service"
+                        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                    />
+                    <Stack.Screen
+                        name="privacy-policy"
+                        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
                     />
                 </Stack>
                 <PaywallModal />

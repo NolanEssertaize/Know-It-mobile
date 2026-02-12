@@ -33,5 +33,14 @@ export {
   selectIsActive,
 } from './useSubscriptionStore';
 
+// Notification Store
+export {
+  useNotificationStore,
+  selectEveningEnabled,
+  selectFlashcardEnabled,
+  selectEveningTime,
+  selectFlashcardTime,
+} from './useNotificationStore';
+
 // Types
 export type { Topic, Session } from './useStore';

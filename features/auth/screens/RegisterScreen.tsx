@@ -26,6 +26,7 @@ import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { GlassInput } from '@/features/auth/components/GlassInput';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
+import { Check } from 'lucide-react-native';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -56,6 +57,8 @@ export const RegisterScreen = memo(function RegisterScreen() {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const [step, setStep] = useState(1);
+    const [cguAccepted, setCguAccepted] = useState(false);
+    const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
@@ -220,6 +223,71 @@ export const RegisterScreen = memo(function RegisterScreen() {
                             {t('auth.register.weakPassword')}
                         </Text>
                     </View>
+
+                    {/* Legal Consent Checkboxes */}
+                    <View style={styles.consentContainer}>
+                        <View style={styles.consentRow}>
+                            <TouchableOpacity
+                                onPress={() => setCguAccepted(prev => !prev)}
+                                activeOpacity={0.7}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: cguAccepted }}
+                                accessibilityLabel={`${t('legal.consent.cgu')} ${t('legal.cgu')}`}
+                            >
+                                <View
+                                    style={[
+                                        styles.checkbox,
+                                        {
+                                            borderColor: colors.text.muted,
+                                            backgroundColor: cguAccepted ? colors.text.primary : 'transparent',
+                                        },
+                                    ]}
+                                >
+                                    {cguAccepted && <Check size={14} color={colors.text.inverse} strokeWidth={3} />}
+                                </View>
+                            </TouchableOpacity>
+                            <Text style={[styles.consentText, { color: colors.text.secondary }]}>
+                                {t('legal.consent.cgu')}{' '}
+                            </Text>
+                            <TouchableOpacity onPress={() => router.push('/terms-of-service')} activeOpacity={0.7}>
+                                <Text style={[styles.consentLink, { color: colors.text.primary }]}>
+                                    {t('legal.cgu')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.consentRow}>
+                            <TouchableOpacity
+                                onPress={() => setPrivacyAccepted(prev => !prev)}
+                                activeOpacity={0.7}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: privacyAccepted }}
+                                accessibilityLabel={`${t('legal.consent.privacy')} ${t('legal.privacy')}`}
+                            >
+                                <View
+                                    style={[
+                                        styles.checkbox,
+                                        {
+                                            borderColor: colors.text.muted,
+                                            backgroundColor: privacyAccepted ? colors.text.primary : 'transparent',
+                                        },
+                                    ]}
+                                >
+                                    {privacyAccepted && <Check size={14} color={colors.text.inverse} strokeWidth={3} />}
+                                </View>
+                            </TouchableOpacity>
+                            <Text style={[styles.consentText, { color: colors.text.secondary }]}>
+                                {t('legal.consent.privacy')}{' '}
+                            </Text>
+                            <TouchableOpacity onPress={() => router.push('/privacy-policy')} activeOpacity={0.7}>
+                                <Text style={[styles.consentLink, { color: colors.text.primary }]}>
+                                    {t('legal.privacy')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </>
             )}
 
@@ -230,18 +298,22 @@ export const RegisterScreen = memo(function RegisterScreen() {
                 </View>
             )}
 
-            {/* Create Account Button - only at final step */}
+            {/* Create Account Button - only at final step, requires consent */}
             {step >= 4 && (
                 <TouchableOpacity
                     onPress={onRegisterPress}
-                    disabled={isLoading}
+                    disabled={isLoading || !cguAccepted || !privacyAccepted}
                     activeOpacity={0.8}
                     style={styles.buttonContainer}
                 >
                     <View
                         style={[
                             styles.registerButton,
-                            { backgroundColor: isLoading ? colors.surface.glass : colors.text.primary },
+                            {
+                                backgroundColor: (isLoading || !cguAccepted || !privacyAccepted)
+                                    ? colors.surface.glass
+                                    : colors.text.primary,
+                            },
                         ]}
                     >
                         {isLoading ? (
@@ -356,6 +428,33 @@ const styles = StyleSheet.create({
     googleButtonText: {
         fontSize: 16,
         fontWeight: '600',
+    },
+    consentContainer: {
+        marginBottom: Spacing.sm,
+        gap: Spacing.sm,
+    },
+    consentRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: Spacing.sm,
+    },
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 1,
+    },
+    consentText: {
+        flex: 1,
+        fontSize: 13,
+        lineHeight: 18,
+    },
+    consentLink: {
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
 });
 

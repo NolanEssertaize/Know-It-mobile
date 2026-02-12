@@ -161,30 +161,34 @@ export const StatsRow = memo(function StatsRow({
         <>
             <View style={styles.statsRow}>
                 {/* Topics — Green */}
-                <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                    <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.topics.background }]}>
-                        <MaterialCommunityIcons name="book-multiple" size={18} color={KPI_COLORS.topics.icon} />
-                    </View>
-                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                        {topicsCount}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
-                </GlassView>
+                <View style={styles.statCardWrapper}>
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.topics.background }]}>
+                            <MaterialCommunityIcons name="book-multiple" size={18} color={KPI_COLORS.topics.icon} />
+                        </View>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {topicsCount}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.topics')}</Text>
+                    </GlassView>
+                </View>
 
                 {/* Sessions — Blue */}
-                <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
-                    <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.sessions.background }]}>
-                        <MaterialCommunityIcons name="microphone" size={18} color={KPI_COLORS.sessions.icon} />
-                    </View>
-                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                        {totalSessions}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
-                </GlassView>
+                <View style={styles.statCardWrapper}>
+                    <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
+                        <View style={[styles.statIconContainer, { backgroundColor: KPI_COLORS.sessions.background }]}>
+                            <MaterialCommunityIcons name="microphone" size={18} color={KPI_COLORS.sessions.icon} />
+                        </View>
+                        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                            {totalSessions}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.text.muted }]}>{t('topics.stats.sessions')}</Text>
+                    </GlassView>
+                </View>
 
                 {/* Streak — Dark by default, Red flame when active today, Grey ash when at risk */}
                 <Pressable
-                    style={styles.statCardPressable}
+                    style={styles.statCardWrapper}
                     onPress={streakAtRisk ? showStreakWarning : undefined}
                 >
                     <GlassView style={[styles.statCard, { borderColor: colors.glass.border }]}>
@@ -261,12 +265,11 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
         marginBottom: Spacing.sm,
     },
-    statCardPressable: {
+    statCardWrapper: {
         flex: 1,
     },
     statCard: {
-        flex: 1,
-        paddingVertical: Spacing.sm,
+        paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.sm,
         borderRadius: BorderRadius.lg,
         alignItems: 'center',

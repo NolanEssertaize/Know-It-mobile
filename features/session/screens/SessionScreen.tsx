@@ -85,6 +85,47 @@ export const SessionScreen = memo(function SessionScreen() {
                         <Text style={[styles.analyzingHint, { color: colors.text.secondary }]}>
                             {t('session.analyzing')}
                         </Text>
+                        <Pressable
+                            style={[styles.cancelButton, { borderColor: colors.text.secondary }]}
+                            onPress={logic.cancelAnalysis}
+                        >
+                            <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>
+                                {t('session.actions.cancel')}
+                            </Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    if (logic.error) {
+        const isTimeout = logic.error === 'ANALYSIS_TIMEOUT';
+        return (
+            <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+                <View style={[styles.content, { paddingTop: insets.top + 16 }]}>
+                    <View style={styles.errorContainer}>
+                        <MaterialIcons name="error-outline" size={64} color={colors.text.secondary} />
+                        <Text style={[styles.errorMessage, { color: colors.text.primary }]}>
+                            {isTimeout ? t('session.analysisTimeout') : t('session.analysisError')}
+                        </Text>
+                        <Pressable
+                            style={[styles.retryButton, { backgroundColor: colors.text.primary }]}
+                            onPress={logic.retryAnalysis}
+                        >
+                            <Text style={[styles.retryButtonText, { color: colors.text.inverse }]}>
+                                {t('session.retry')}
+                            </Text>
+                        </Pressable>
+                        <Pressable
+                            style={[styles.cancelButton, { borderColor: colors.text.secondary }]}
+                            onPress={handleClose}
+                        >
+                            <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>
+                                {t('common.goBack')}
+                            </Text>
+                        </Pressable>
                     </View>
                 </View>
             </View>
@@ -333,6 +374,43 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: Spacing.sm,
         textAlign: 'center',
+    },
+    errorContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: Spacing.lg,
+    },
+    errorMessage: {
+        fontSize: 16,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.xl,
+    },
+    retryButton: {
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: BorderRadius.md,
+        marginBottom: Spacing.md,
+        minWidth: 160,
+        alignItems: 'center',
+    },
+    retryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    cancelButton: {
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.xl,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        marginTop: Spacing.md,
+        minWidth: 160,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
     },
     instructionsContainer: {
         marginTop: Spacing.xl,

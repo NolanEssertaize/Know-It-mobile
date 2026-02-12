@@ -26,5 +26,8 @@ export { SubscriptionService } from './SubscriptionService';
 export { IAPService } from './IAPService';
 export type { Purchase, PurchaseError, ProductSubscription, EventSubscription } from './IAPService';
 
+// Notification Service
+export { NotificationService } from './NotificationService';
+
 // Storage Service (keep existing if present)
 // export { StorageService } from './StorageService';

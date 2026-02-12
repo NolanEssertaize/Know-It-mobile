@@ -23,7 +23,8 @@
       "Bash(npx expo config:*)",
       "Bash(npx expo:*)",
       "Bash(npx expo-linking:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run type-check:*)"
     ]
   }
 }

@@ -8,17 +8,22 @@
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Detect Expo Go — NitroModules crash on import there
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 // ─── Lazy accessor ──────────────────────────────────────────────────────────
 // We keep a cached reference so require() only runs once.
 let _iap: typeof import('react-native-iap') | null = null;
 
 function getIAP(): typeof import('react-native-iap') | null {
+  if (isExpoGo) return null;
   if (!_iap) {
     try {
       _iap = require('react-native-iap');
     } catch {
-      console.warn('[IAPService] react-native-iap not available (expected in Expo Go)');
+      console.warn('[IAPService] react-native-iap not available');
       return null;
     }
   }

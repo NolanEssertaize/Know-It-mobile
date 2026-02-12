@@ -42,7 +42,7 @@ import { LogoutConfirmationModal } from '../components/LogoutConfirmationModal';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useSubscription, PlanBadge, UsageProgressBar } from '@/features/subscription';
 import { IAPService } from '@/shared/services';
-import { useSubscriptionStore } from '@/store';
+import { useSubscriptionStore, useNotificationStore } from '@/store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -134,13 +134,84 @@ const PrimaryButton = memo(function PrimaryButton({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// NOTIFICATION TOGGLES COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const NotificationToggles = memo(function NotificationToggles({ colors }: { colors: any }) {
+    const { t } = useTranslation();
+    const eveningEnabled = useNotificationStore((s) => s.eveningReminderEnabled);
+    const flashcardEnabled = useNotificationStore((s) => s.flashcardReminderEnabled);
+    const toggleEvening = useNotificationStore((s) => s.toggleEveningReminder);
+    const toggleFlashcard = useNotificationStore((s) => s.toggleFlashcardReminder);
+
+    return (
+        <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
+                {t('profile.sections.notifications')}
+            </Text>
+            <GlassView variant="default" style={styles.sectionCard}>
+                <View style={styles.switchItem}>
+                    <View style={styles.switchLabel}>
+                        <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                            {t('notifications.settings.eveningReminder')}
+                        </Text>
+                        <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                            {t('notifications.settings.eveningReminderDesc')}
+                        </Text>
+                    </View>
+                    <Switch
+                        value={eveningEnabled}
+                        onValueChange={toggleEvening}
+                        trackColor={{
+                            false: colors.surface.glass,
+                            true: colors.text.primary,
+                        }}
+                        thumbColor={
+                            eveningEnabled
+                                ? colors.background.primary
+                                : colors.text.primary
+                        }
+                        ios_backgroundColor={colors.surface.glass}
+                    />
+                </View>
+
+                <View style={[styles.switchItem, styles.listItemLast]}>
+                    <View style={styles.switchLabel}>
+                        <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
+                            {t('notifications.settings.flashcardReminder')}
+                        </Text>
+                        <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
+                            {t('notifications.settings.flashcardReminderDesc')}
+                        </Text>
+                    </View>
+                    <Switch
+                        value={flashcardEnabled}
+                        onValueChange={toggleFlashcard}
+                        trackColor={{
+                            false: colors.surface.glass,
+                            true: colors.text.primary,
+                        }}
+                        thumbColor={
+                            flashcardEnabled
+                                ? colors.background.primary
+                                : colors.text.primary
+                        }
+                        ios_backgroundColor={colors.surface.glass}
+                    />
+                </View>
+            </GlassView>
+        </View>
+    );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ProfileScreenComponent() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { tab } = useLocalSearchParams<{ tab?: string }>();
+    const { tab, showPaywall: showPaywallParam } = useLocalSearchParams<{ tab?: string; showPaywall?: string }>();
     const logic = useProfile(tab as ProfileTab | undefined);
     const { t, i18n } = useTranslation();
 
@@ -150,6 +221,15 @@ function ProfileScreenComponent() {
     // Subscription hooks - MUST be before any early return to satisfy Rules of Hooks
     const sub = useSubscription();
     const showPaywall = useSubscriptionStore((s) => s.showPaywall);
+
+    // Auto-show paywall when navigated with showPaywall param
+    useEffect(() => {
+        if (showPaywallParam === 'true') {
+            // Small delay to let the profile screen render first
+            const timer = setTimeout(() => showPaywall(), 400);
+            return () => clearTimeout(timer);
+        }
+    }, [showPaywallParam, showPaywall]);
 
     const handleManageSubscription = useCallback(() => {
         const url = Platform.OS === 'ios'
@@ -403,37 +483,7 @@ function ProfileScreenComponent() {
     const renderPreferencesTab = () => (
         <>
             {/* Notifications */}
-            <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text.muted }]}>
-                    {t('profile.sections.notifications')}
-                </Text>
-                <GlassView variant="default" style={styles.sectionCard}>
-                    <View style={[styles.switchItem, styles.listItemLast]}>
-                        <View style={styles.switchLabel}>
-                            <Text style={[styles.switchTitle, { color: colors.text.primary }]}>
-                                {t('profile.preferences.pushNotifications')}
-                            </Text>
-                            <Text style={[styles.switchDescription, { color: colors.text.secondary }]}>
-                                {t('profile.preferences.studyReminders')}
-                            </Text>
-                        </View>
-                        <Switch
-                            value={logic.preferences.notifications}
-                            onValueChange={logic.toggleNotifications}
-                            trackColor={{
-                                false: colors.surface.glass,
-                                true: colors.text.primary,
-                            }}
-                            thumbColor={
-                                logic.preferences.notifications
-                                    ? colors.background.primary
-                                    : colors.text.primary
-                            }
-                            ios_backgroundColor={colors.surface.glass}
-                        />
-                    </View>
-                </GlassView>
-            </View>
+            <NotificationToggles colors={colors} />
 
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* THEME SELECTOR - NEW SECTION */}
@@ -714,7 +764,19 @@ function ProfileScreenComponent() {
                     {t('profile.sections.legal')}
                 </Text>
                 <GlassView variant="default" style={styles.sectionCard}>
-                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7} onPress={() => router.push('/legal-mentions')}>
+                        <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
+                            <MaterialIcons name="gavel" size={20} color={colors.text.primary} />
+                        </View>
+                        <View style={styles.listItemContent}>
+                            <Text style={[styles.listItemLabel, { color: colors.text.secondary }]}>
+                                {t('legal.mentionsLegales')}
+                            </Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7} onPress={() => router.push('/terms-of-service')}>
                         <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
                             <MaterialIcons name="description" size={20} color={colors.text.primary} />
                         </View>
@@ -726,7 +788,7 @@ function ProfileScreenComponent() {
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.listItem} activeOpacity={0.7} onPress={() => router.push('/privacy-policy')}>
                         <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
                             <MaterialIcons name="privacy-tip" size={20} color={colors.text.primary} />
                         </View>
@@ -738,7 +800,7 @@ function ProfileScreenComponent() {
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.listItem, styles.listItemLast]} activeOpacity={0.7}>
+                    <TouchableOpacity style={[styles.listItem, styles.listItemLast]} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:knowit-support@essertaize.com')}>
                         <View style={[styles.listItemIcon, { backgroundColor: colors.surface.glass }]}>
                             <MaterialIcons name="email" size={20} color={colors.text.primary} />
                         </View>
@@ -747,7 +809,7 @@ function ProfileScreenComponent() {
                                 {t('profile.actions.contactUs')}
                             </Text>
                             <Text style={[styles.listItemValue, { color: colors.text.primary }]}>
-                                support@knowit.app
+                                knowit-support@essertaize.com
                             </Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />

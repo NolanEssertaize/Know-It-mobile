@@ -27,7 +27,11 @@ export function usePaywall() {
   // Fetch products when paywall becomes visible
   useEffect(() => {
     if (isVisible) {
-      IAPService.getProducts().then(setProducts);
+      IAPService.getProducts()
+        .then(setProducts)
+        .catch(() => {
+          console.warn('[usePaywall] Failed to fetch products (Expo Go?)');
+        });
     }
   }, [isVisible]);
 
@@ -85,10 +89,12 @@ export function usePaywall() {
     setIsPurchasing(true);
     try {
       await IAPService.purchaseProduct(productId);
-    } catch {
+    } catch (error) {
+      console.warn('[usePaywall] Purchase failed:', error);
       setIsPurchasing(false);
+      Alert.alert(t('common.error'), t('subscription.purchase.failed'));
     }
-  }, []);
+  }, [t]);
 
   const handleRestore = useCallback(async () => {
     setIsRestoring(true);

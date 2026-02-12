@@ -10,13 +10,15 @@
  * - NOW ADDS SESSION TO STORE after successful analysis
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStore, selectCurrentTopic } from '@/store/useStore';
 import { useAudioRecording } from './useAudioRecording';
 import { LLMService } from '@/shared/services';
 import type { Topic, RecordingState } from '@/types';
 import type { Session } from '@/store';
+
+const ANALYSIS_TIMEOUT = 60_000;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -38,6 +40,8 @@ export interface UseSessionWithAudioReturn {
     toggleRecording: () => Promise<void>;
     handleClose: () => void;
     requestPermission: () => Promise<boolean>;
+    cancelAnalysis: () => void;
+    retryAnalysis: () => Promise<void>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -78,6 +82,9 @@ export function useSessionWithAudio(): UseSessionWithAudioReturn {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisError, setAnalysisError] = useState<string | null>(null);
 
+    // Store last recording URI for retry
+    const lastRecordingUriRef = useRef<string | null>(null);
+
     // Derived state pour combiner les états
     const recordingState: RecordingState = isAnalyzing
         ? 'analyzing'
@@ -91,79 +98,89 @@ export function useSessionWithAudio(): UseSessionWithAudioReturn {
     // HANDLERS
     // ─────────────────────────────────────────────────────────────────────────
 
+    const processAndNavigate = useCallback(async (uri: string, currentTopic: Topic) => {
+        setIsAnalyzing(true);
+        setAnalysisError(null);
+
+        console.log('[useSessionWithAudio] Audio URI:', uri);
+        console.log('[useSessionWithAudio] Processing recording for topic:', currentTopic.title);
+
+        try {
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('ANALYSIS_TIMEOUT')), ANALYSIS_TIMEOUT)
+            );
+
+            const result = await Promise.race([
+                LLMService.processRecording(uri, currentTopic.title, {
+                    topicId: currentTopic.id,
+                    language: 'fr',
+                }),
+                timeoutPromise,
+            ]);
+
+            console.log('[useSessionWithAudio] Transcription:', result.transcription.substring(0, 100) + '...');
+            console.log('[useSessionWithAudio] Analysis:', result.analysis);
+
+            const newSession: Session = {
+                id: generateId(),
+                date: new Date().toISOString(),
+                audioUri: uri,
+                transcription: result.transcription,
+                analysis: result.analysis,
+            };
+
+            addSessionToTopic(currentTopic.id, newSession);
+            console.log('[useSessionWithAudio] Session added to store:', newSession.id);
+
+            setIsAnalyzing(false);
+
+            router.replace({
+                pathname: `/${topicId}/result`,
+                params: {
+                    topicId: currentTopic.id,
+                    topicTitle: currentTopic.title,
+                    sessionId: newSession.id,
+                    audioUri: uri,
+                    transcription: result.transcription,
+                    valid: JSON.stringify(result.analysis.valid),
+                    corrections: JSON.stringify(result.analysis.corrections),
+                    missing: JSON.stringify(result.analysis.missing),
+                },
+            });
+        } catch (error) {
+            console.error('[useSessionWithAudio] API Error:', error);
+            setIsAnalyzing(false);
+
+            const errorMessage = error instanceof Error && error.message === 'ANALYSIS_TIMEOUT'
+                ? 'ANALYSIS_TIMEOUT'
+                : error instanceof Error
+                    ? error.message
+                    : 'ANALYSIS_ERROR';
+
+            setAnalysisError(errorMessage);
+        }
+    }, [topicId, router, addSessionToTopic]);
+
+    const cancelAnalysis = useCallback(() => {
+        setIsAnalyzing(false);
+        setAnalysisError(null);
+    }, []);
+
+    const retryAnalysis = useCallback(async () => {
+        const uri = lastRecordingUriRef.current;
+        if (uri && topic) {
+            await processAndNavigate(uri, topic);
+        }
+    }, [topic, processAndNavigate]);
+
     const toggleRecording = useCallback(async () => {
         if (audio.isRecording) {
             // Arrêter l'enregistrement
             const uri = await audio.stopRecording();
 
             if (uri && topic) {
-                setIsAnalyzing(true);
-                setAnalysisError(null);
-
-                console.log('[useSessionWithAudio] Audio URI:', uri);
-                console.log('[useSessionWithAudio] Duration:', audio.duration, 'seconds');
-                console.log('[useSessionWithAudio] Processing recording for topic:', topic.title);
-
-                try {
-                    // ═══════════════════════════════════════════════════════════
-                    // REAL API CALL - Transcription + Analysis
-                    // ═══════════════════════════════════════════════════════════
-                    const result = await LLMService.processRecording(
-                        uri,
-                        topic.title,
-                        {
-                            topicId: topic.id,
-                            language: 'fr', // ou détecter automatiquement
-                        }
-                    );
-
-                    console.log('[useSessionWithAudio] Transcription:', result.transcription.substring(0, 100) + '...');
-                    console.log('[useSessionWithAudio] Analysis:', result.analysis);
-
-                    // ═══════════════════════════════════════════════════════════
-                    // FIX: Create session and add to store
-                    // ═══════════════════════════════════════════════════════════
-                    const newSession: Session = {
-                        id: generateId(), // The backend should return session_id, but we generate one for now
-                        date: new Date().toISOString(),
-                        audioUri: uri,
-                        transcription: result.transcription,
-                        analysis: result.analysis,
-                    };
-
-                    // Add session to store so it appears in TopicDetailScreen
-                    addSessionToTopic(topic.id, newSession);
-                    console.log('[useSessionWithAudio] Session added to store:', newSession.id);
-
-                    setIsAnalyzing(false);
-
-                    // Navigation vers les résultats avec les vraies données
-                    router.replace({
-                        pathname: `/${topicId}/result`,
-                        params: {
-                            topicId: topic.id,
-                            topicTitle: topic.title,
-                            sessionId: newSession.id,
-                            audioUri: uri,
-                            transcription: result.transcription,
-                            valid: JSON.stringify(result.analysis.valid),
-                            corrections: JSON.stringify(result.analysis.corrections),
-                            missing: JSON.stringify(result.analysis.missing),
-                        },
-                    });
-                } catch (error) {
-                    console.error('[useSessionWithAudio] API Error:', error);
-                    setIsAnalyzing(false);
-
-                    const errorMessage = error instanceof Error
-                        ? error.message
-                        : 'Une erreur est survenue lors de l\'analyse';
-
-                    setAnalysisError(errorMessage);
-
-                    // Optionnel: vous pouvez aussi naviguer vers une page d'erreur
-                    // ou afficher l'erreur dans l'UI
-                }
+                lastRecordingUriRef.current = uri;
+                await processAndNavigate(uri, topic);
             } else if (!topic) {
                 console.error('[useSessionWithAudio] No topic found');
                 setAnalysisError('Topic introuvable');
@@ -173,7 +190,7 @@ export function useSessionWithAudio(): UseSessionWithAudioReturn {
             setAnalysisError(null);
             await audio.startRecording();
         }
-    }, [audio, topic, topicId, router, addSessionToTopic]);
+    }, [audio, topic, processAndNavigate]);
 
     const handleClose = useCallback(() => {
         // Arrêter l'enregistrement si en cours
@@ -214,6 +231,8 @@ export function useSessionWithAudio(): UseSessionWithAudioReturn {
         toggleRecording,
         handleClose,
         requestPermission: audio.requestPermission,
+        cancelAnalysis,
+        retryAnalysis,
     };
 }
 

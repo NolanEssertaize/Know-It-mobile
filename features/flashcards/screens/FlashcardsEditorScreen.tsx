@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
+import { QuotaExhaustedModal } from '@/features/subscription';
 import { useFlashcardEditor } from '../hooks/useFlashcardEditor';
 import { FlashcardEditorCard } from '../components/FlashcardEditorCard';
 
@@ -30,6 +31,9 @@ function FlashcardsEditorScreenComponent(): React.JSX.Element {
     isSaving,
     error,
     topicTitle,
+    quotaExhausted,
+    dismissQuotaModal,
+    openPaywall,
     updateCard,
     deleteCard,
     addCard,
@@ -170,6 +174,13 @@ function FlashcardsEditorScreenComponent(): React.JSX.Element {
           )}
         </Pressable>
       </View>
+
+      <QuotaExhaustedModal
+        visible={quotaExhausted}
+        type="generation"
+        onDismiss={dismissQuotaModal}
+        onChangePlan={openPaywall}
+      />
     </View>
   );
 }

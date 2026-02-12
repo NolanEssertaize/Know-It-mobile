@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { AnalysisResult } from '@/types';
 import { GlassColors } from '@/theme';
 import { LLMService } from '@/shared/services';
+import { useQuotaGuard } from '@/features/subscription';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -59,6 +60,12 @@ export interface UseResultReturn {
     readonly handleClose: () => void;
     readonly handleRetry: () => void;
     readonly handleGenerateFlashcards: () => void;
+
+    // Quota guard
+    readonly quotaModalVisible: boolean;
+    readonly quotaType: 'session' | 'generation';
+    readonly dismissQuotaModal: () => void;
+    readonly openPaywall: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -101,6 +108,7 @@ function calculateSummary(analysis: AnalysisResult): SummaryData {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useResult(): UseResultReturn {
+    const { quotaModalVisible, quotaType, checkAndProceed, dismissQuotaModal, openPaywall } = useQuotaGuard();
     const params = useLocalSearchParams<{
         topicId?: string;
         topicTitle?: string;
@@ -259,6 +267,8 @@ export function useResult(): UseResultReturn {
     }, [router, isFromHistory, params.topicId]);
 
     const handleGenerateFlashcards = useCallback(() => {
+        if (!checkAndProceed('generation')) return;
+
         // Build content string from analysis
         const contentParts: string[] = [];
 
@@ -284,7 +294,7 @@ export function useResult(): UseResultReturn {
                 content,
             },
         });
-    }, [analysis, params.topicId, params.topicTitle, router]);
+    }, [analysis, params.topicId, params.topicTitle, router, checkAndProceed]);
 
     return {
         // Data
@@ -302,5 +312,11 @@ export function useResult(): UseResultReturn {
         handleClose,
         handleRetry,
         handleGenerateFlashcards,
+
+        // Quota guard
+        quotaModalVisible,
+        quotaType,
+        dismissQuotaModal,
+        openPaywall,
     };
 }
