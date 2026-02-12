@@ -126,6 +126,64 @@ export const AuthService = {
   },
 
   /**
+   * Login with Google ID token
+   */
+  async googleLogin(idToken: string): Promise<AuthResponse> {
+    console.log('[AuthService] Google login');
+
+    const response = await api.post<AuthResponse>(
+      API_ENDPOINTS.AUTH.GOOGLE_TOKEN,
+      { id_token: idToken },
+      false,
+    );
+
+    await SecureTokenManager.setTokens(response.tokens);
+    await SecureTokenManager.setUser(response.user);
+
+    console.log('[AuthService] Google login successful');
+    return response;
+  },
+
+  /**
+   * Request a password reset code
+   */
+  async forgotPassword(email: string): Promise<MessageResponse> {
+    console.log('[AuthService] Requesting password reset for:', email);
+
+    return await api.post<MessageResponse>(
+      API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+      { email },
+      false,
+    );
+  },
+
+  /**
+   * Verify reset code and get reset token
+   */
+  async verifyResetCode(email: string, code: string): Promise<{ reset_token: string; expires_in: number }> {
+    console.log('[AuthService] Verifying reset code');
+
+    return await api.post<{ reset_token: string; expires_in: number }>(
+      API_ENDPOINTS.AUTH.VERIFY_RESET_CODE,
+      { email, code },
+      false,
+    );
+  },
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(resetToken: string, newPassword: string): Promise<MessageResponse> {
+    console.log('[AuthService] Resetting password');
+
+    return await api.post<MessageResponse>(
+      API_ENDPOINTS.AUTH.RESET_PASSWORD,
+      { reset_token: resetToken, new_password: newPassword },
+      false,
+    );
+  },
+
+  /**
    * Logout current user
    */
   async logout(): Promise<void> {

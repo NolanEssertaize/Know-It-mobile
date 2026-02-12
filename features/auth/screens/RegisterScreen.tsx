@@ -1,9 +1,9 @@
 /**
  * @file RegisterScreen.tsx
- * @description Register screen - Theme Aware, NO EMOJI
+ * @description Register screen - Step-by-step form with Google sign-up, Theme Aware, NO EMOJI
  */
 
-import React, { memo, useRef } from 'react';
+import React, { memo, useRef, useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -12,15 +12,40 @@ import {
     ActivityIndicator,
     Alert,
     StyleSheet,
+    LayoutAnimation,
+    Platform,
+    UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mail, Lock, User } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import Svg, { Path } from 'react-native-svg';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { GlassInput } from '@/features/auth/components/GlassInput';
 import { useTheme, Spacing, BorderRadius } from '@/theme';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GOOGLE LOGO
+// ═══════════════════════════════════════════════════════════════════════════
+
+function GoogleLogo({ size = 20 }: { size?: number }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 48 48">
+            <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <Path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z" />
+            <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+        </Svg>
+    );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -30,6 +55,7 @@ export const RegisterScreen = memo(function RegisterScreen() {
     const router = useRouter();
     const { colors } = useTheme();
     const { t } = useTranslation();
+    const [step, setStep] = useState(1);
 
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
@@ -51,6 +77,22 @@ export const RegisterScreen = memo(function RegisterScreen() {
         clearError,
     } = useAuth();
 
+    const { handleGoogleSignIn, isLoading: isGoogleLoading } = useGoogleAuth();
+
+    const advanceStep = useCallback((nextStep: number) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setStep(nextStep);
+    }, []);
+
+    const onGooglePress = useCallback(async () => {
+        const result = await handleGoogleSignIn();
+        if (result.success) {
+            router.replace('/');
+        } else if (result.error) {
+            Alert.alert(t('auth.register.registrationFailed'), result.error);
+        }
+    }, [handleGoogleSignIn, router, t]);
+
     const onRegisterPress = async () => {
         clearError();
         const result = await handleRegister();
@@ -65,9 +107,26 @@ export const RegisterScreen = memo(function RegisterScreen() {
         router.back();
     };
 
-    const onFullNameSubmit = () => emailInputRef.current?.focus();
-    const onEmailSubmit = () => passwordInputRef.current?.focus();
-    const onPasswordSubmit = () => confirmPasswordInputRef.current?.focus();
+    const onFullNameSubmit = () => {
+        if (fullName.trim()) {
+            advanceStep(2);
+            setTimeout(() => emailInputRef.current?.focus(), 100);
+        }
+    };
+
+    const onEmailSubmit = () => {
+        if (email.trim()) {
+            advanceStep(3);
+            setTimeout(() => passwordInputRef.current?.focus(), 100);
+        }
+    };
+
+    const onPasswordSubmit = () => {
+        if (password.trim()) {
+            advanceStep(4);
+            setTimeout(() => confirmPasswordInputRef.current?.focus(), 100);
+        }
+    };
 
     return (
         <AuthLayout
@@ -84,7 +143,7 @@ export const RegisterScreen = memo(function RegisterScreen() {
                 </View>
             }
         >
-            {/* Full Name Input */}
+            {/* Step 1: Full Name Input */}
             <GlassInput
                 label={t('auth.register.fullName')}
                 placeholder={t('auth.register.fullNamePlaceholder')}
@@ -99,62 +158,70 @@ export const RegisterScreen = memo(function RegisterScreen() {
                 editable={!isLoading}
             />
 
-            {/* Email Input */}
-            <GlassInput
-                ref={emailInputRef}
-                label={t('auth.register.email')}
-                placeholder={t('auth.register.emailPlaceholder')}
-                value={email}
-                onChangeText={setEmail}
-                error={validationErrors.email}
-                leftIcon={Mail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                returnKeyType="next"
-                onSubmitEditing={onEmailSubmit}
-                editable={!isLoading}
-            />
+            {/* Step 2: Email Input */}
+            {step >= 2 && (
+                <GlassInput
+                    ref={emailInputRef}
+                    label={t('auth.register.email')}
+                    placeholder={t('auth.register.emailPlaceholder')}
+                    value={email}
+                    onChangeText={setEmail}
+                    error={validationErrors.email}
+                    leftIcon={Mail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    returnKeyType="next"
+                    onSubmitEditing={onEmailSubmit}
+                    editable={!isLoading}
+                />
+            )}
 
-            {/* Password Input */}
-            <GlassInput
-                ref={passwordInputRef}
-                label={t('auth.register.password')}
-                placeholder={t('auth.register.passwordPlaceholder')}
-                value={password}
-                onChangeText={setPassword}
-                error={validationErrors.password}
-                leftIcon={Lock}
-                isPassword
-                autoComplete="password-new"
-                returnKeyType="next"
-                onSubmitEditing={onPasswordSubmit}
-                editable={!isLoading}
-            />
+            {/* Step 3: Password Input */}
+            {step >= 3 && (
+                <GlassInput
+                    ref={passwordInputRef}
+                    label={t('auth.register.password')}
+                    placeholder={t('auth.register.passwordPlaceholder')}
+                    value={password}
+                    onChangeText={setPassword}
+                    error={validationErrors.password}
+                    leftIcon={Lock}
+                    isPassword
+                    autoComplete="password-new"
+                    returnKeyType="next"
+                    onSubmitEditing={onPasswordSubmit}
+                    editable={!isLoading}
+                />
+            )}
 
-            {/* Confirm Password Input */}
-            <GlassInput
-                ref={confirmPasswordInputRef}
-                label={t('auth.register.confirmPassword')}
-                placeholder={t('auth.register.confirmPasswordPlaceholder')}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                error={validationErrors.confirmPassword}
-                leftIcon={Lock}
-                isPassword
-                autoComplete="password-new"
-                returnKeyType="done"
-                onSubmitEditing={onRegisterPress}
-                editable={!isLoading}
-            />
+            {/* Step 4: Confirm Password Input */}
+            {step >= 4 && (
+                <>
+                    <GlassInput
+                        ref={confirmPasswordInputRef}
+                        label={t('auth.register.confirmPassword')}
+                        placeholder={t('auth.register.confirmPasswordPlaceholder')}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        error={validationErrors.confirmPassword}
+                        leftIcon={Lock}
+                        isPassword
+                        autoComplete="password-new"
+                        returnKeyType="done"
+                        onSubmitEditing={onRegisterPress}
+                        editable={!isLoading}
+                    />
 
-            {/* Password Requirements Hint */}
-            <View style={styles.hintContainer}>
-                <Text style={[styles.hintText, { color: colors.text.muted }]}>
-                    {t('auth.register.weakPassword')}
-                </Text>
-            </View>
+                    {/* Password Requirements Hint */}
+                    <View style={styles.hintContainer}>
+                        <Text style={[styles.hintText, { color: colors.text.muted }]}>
+                            {t('auth.register.weakPassword')}
+                        </Text>
+                    </View>
+                </>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -163,27 +230,55 @@ export const RegisterScreen = memo(function RegisterScreen() {
                 </View>
             )}
 
-            {/* Register Button */}
-            <TouchableOpacity
-                onPress={onRegisterPress}
-                disabled={isLoading}
-                activeOpacity={0.8}
-                style={styles.buttonContainer}
-            >
-                <View
-                    style={[
-                        styles.registerButton,
-                        { backgroundColor: isLoading ? colors.surface.glass : colors.text.primary },
-                    ]}
+            {/* Create Account Button - only at final step */}
+            {step >= 4 && (
+                <TouchableOpacity
+                    onPress={onRegisterPress}
+                    disabled={isLoading}
+                    activeOpacity={0.8}
+                    style={styles.buttonContainer}
                 >
-                    {isLoading ? (
-                        <ActivityIndicator size="small" color={colors.text.primary} />
-                    ) : (
-                        <Text style={[styles.registerButtonText, { color: colors.text.inverse }]}>
-                            {t('auth.register.createAccount')}
+                    <View
+                        style={[
+                            styles.registerButton,
+                            { backgroundColor: isLoading ? colors.surface.glass : colors.text.primary },
+                        ]}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color={colors.text.primary} />
+                        ) : (
+                            <Text style={[styles.registerButtonText, { color: colors.text.inverse }]}>
+                                {t('auth.register.createAccount')}
+                            </Text>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            )}
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
+                <Text style={[styles.dividerText, { color: colors.text.muted }]}>{t('auth.register.orContinueWith')}</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.glass.border }]} />
+            </View>
+
+            {/* Google Sign-Up Button */}
+            <TouchableOpacity
+                style={[styles.googleButton, { backgroundColor: colors.surface.glass, borderColor: colors.glass.border }]}
+                disabled={isLoading || isGoogleLoading}
+                onPress={onGooglePress}
+                activeOpacity={0.8}
+            >
+                {isGoogleLoading ? (
+                    <ActivityIndicator size="small" color={colors.text.primary} />
+                ) : (
+                    <>
+                        <GoogleLogo size={22} />
+                        <Text style={[styles.googleButtonText, { color: colors.text.primary }]}>
+                            {t('auth.register.signUpWithGoogle')}
                         </Text>
-                    )}
-                </View>
+                    </>
+                )}
             </TouchableOpacity>
         </AuthLayout>
     );
@@ -224,6 +319,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         marginTop: Spacing.md,
+        marginBottom: Spacing.lg,
     },
     registerButton: {
         height: 56,
@@ -232,6 +328,32 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     registerButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        marginHorizontal: Spacing.md,
+        fontSize: 14,
+    },
+    googleButton: {
+        height: 56,
+        borderRadius: BorderRadius.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        gap: Spacing.sm,
+    },
+    googleButtonText: {
         fontSize: 16,
         fontWeight: '600',
     },

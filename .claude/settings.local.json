@@ -18,7 +18,12 @@
       "Bash(grep:*)",
       "Bash(ls \"C:\\\\Users\\\\xyz12\\\\WebstormProjects\\\\KnowIt\\\\features\\\\topics\\\\components\"\" 2>NUL || echo \"No components dir \")",
       "Bash(ls:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx expo config:*)",
+      "Bash(npx expo:*)",
+      "Bash(npx expo-linking:*)",
+      "Bash(curl:*)"
     ]
   }
 }
