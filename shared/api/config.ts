@@ -6,7 +6,7 @@
 // API Base URL - Uses env variable if set, otherwise switches by environment
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  (__DEV__ ? 'http://192.168.1.81:8000' : 'https://essertaize.com');
+  (__DEV__ ? 'http://192.168.1.236:8000' : 'https://essertaize.com');
 
 // API Version prefix
 export const API_VERSION = '/api/v1';
@@ -27,6 +27,11 @@ export const API_ENDPOINTS = {
     ME: `${API_VERSION}/auth/me`,
     CHANGE_PASSWORD: `${API_VERSION}/auth/change-password`,
     LOGOUT: `${API_VERSION}/auth/logout`,
+    GOOGLE_TOKEN: `${API_VERSION}/auth/google/token`,
+    GOOGLE_MOBILE: `${API_VERSION}/auth/google/mobile`,
+    FORGOT_PASSWORD: `${API_VERSION}/auth/forgot-password`,
+    VERIFY_RESET_CODE: `${API_VERSION}/auth/verify-reset-code`,
+    RESET_PASSWORD: `${API_VERSION}/auth/reset-password`,
   },
 
   // Transcription

@@ -27,6 +27,7 @@ interface AuthActions {
   initialize: () => Promise<void>;
   register: (data: UserCreate) => Promise<void>;
   login: (data: UserLogin) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: UserUpdate) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -141,6 +142,38 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         error: message,
       });
       
+      throw error;
+    }
+  },
+
+  /**
+   * Login with Google ID token
+   */
+  googleLogin: async (idToken: string) => {
+    console.log('[AuthStore] Google login...');
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await AuthService.googleLogin(idToken);
+
+      set({
+        user: response.user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+
+      console.log('[AuthStore] Google login successful');
+    } catch (error) {
+      const message = error instanceof ApiException
+        ? error.message
+        : 'Google sign-in failed';
+
+      console.error('[AuthStore] Google login failed:', message);
+      set({
+        isLoading: false,
+        error: message,
+      });
+
       throw error;
     }
   },

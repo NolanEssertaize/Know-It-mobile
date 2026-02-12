@@ -147,6 +147,44 @@ function ProfileScreenComponent() {
     // Get theme
     const { colors, isDark } = useTheme();
 
+    // Subscription hooks - MUST be before any early return to satisfy Rules of Hooks
+    const sub = useSubscription();
+    const showPaywall = useSubscriptionStore((s) => s.showPaywall);
+
+    const handleManageSubscription = useCallback(() => {
+        const url = Platform.OS === 'ios'
+            ? 'https://apps.apple.com/account/subscriptions'
+            : 'https://play.google.com/store/account/subscriptions';
+        Linking.openURL(url);
+    }, []);
+
+    const handleRestorePurchases = useCallback(async () => {
+        try {
+            const purchases = await IAPService.restorePurchases();
+            if (purchases.length === 0) {
+                Alert.alert(t('common.ok'), t('subscription.purchase.nothingToRestore'));
+                return;
+            }
+            const latest = purchases[purchases.length - 1];
+            const receiptData = latest.purchaseToken ?? '';
+            if (receiptData) {
+                const success = await useSubscriptionStore.getState().verifyPurchase(
+                    Platform.OS as 'ios' | 'android',
+                    receiptData,
+                    latest.productId,
+                );
+                if (success) {
+                    await IAPService.finishPurchase(latest);
+                    Alert.alert(t('common.success'), t('subscription.purchase.restored'));
+                } else {
+                    Alert.alert(t('common.error'), t('subscription.purchase.verifyFailed'));
+                }
+            }
+        } catch {
+            Alert.alert(t('common.error'), t('subscription.purchase.failed'));
+        }
+    }, [t]);
+
     // Animation
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -193,18 +231,15 @@ function ProfileScreenComponent() {
     const handleLogoutConfirm = useCallback(async () => {
         try {
             const result = await logic.handleLogout();
-            if (result.success) {
-                handleClose();
-                setTimeout(() => {
-                    router.replace('/(auth)/login');
-                }, 300);
-            } else if (result.error) {
+            if (!result.success && result.error) {
                 Alert.alert(t('common.error'), result.error);
             }
+            // On success: AuthNavigator in _layout.tsx redirects to login
+            // automatically when isAuthenticated flips to false
         } catch (error) {
             Alert.alert(t('common.error'), t('errors.logoutFailed'));
         }
-    }, [logic, router, handleClose, t]);
+    }, [logic, t]);
 
     const handleDeleteConfirm = useCallback(
         async (password: string) => {
@@ -499,43 +534,6 @@ function ProfileScreenComponent() {
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER SUBSCRIPTION TAB
     // ─────────────────────────────────────────────────────────────────────────
-
-    const sub = useSubscription();
-    const showPaywall = useSubscriptionStore((s) => s.showPaywall);
-
-    const handleManageSubscription = useCallback(() => {
-        const url = Platform.OS === 'ios'
-            ? 'https://apps.apple.com/account/subscriptions'
-            : 'https://play.google.com/store/account/subscriptions';
-        Linking.openURL(url);
-    }, []);
-
-    const handleRestorePurchases = useCallback(async () => {
-        try {
-            const purchases = await IAPService.restorePurchases();
-            if (purchases.length === 0) {
-                Alert.alert(t('common.ok'), t('subscription.purchase.nothingToRestore'));
-                return;
-            }
-            const latest = purchases[purchases.length - 1];
-            const receiptData = latest.purchaseToken ?? '';
-            if (receiptData) {
-                const success = await useSubscriptionStore.getState().verifyPurchase(
-                    Platform.OS as 'ios' | 'android',
-                    receiptData,
-                    latest.productId,
-                );
-                if (success) {
-                    await IAPService.finishPurchase(latest);
-                    Alert.alert(t('common.success'), t('subscription.purchase.restored'));
-                } else {
-                    Alert.alert(t('common.error'), t('subscription.purchase.verifyFailed'));
-                }
-            }
-        } catch {
-            Alert.alert(t('common.error'), t('subscription.purchase.failed'));
-        }
-    }, [t]);
 
     const renderSubscriptionTab = () => (
         <>
